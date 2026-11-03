@@ -1,7 +1,7 @@
 # CONTRACTS — контракти між модулями
 Веде лише Керівник проєкту. Версії v0.N.
 
-## v0.1 (Затверджено для MVP, 2026-11-03)
+## v0.2 (Затверджено: Етап 2.1 — Малювання, Підпис та Текст, 2026-11-03)
 
 ### 1. Модуль `core-pdf` ↔ `app`
 
@@ -11,6 +11,7 @@
 ```kotlin
 package com.savoj.volumpdf.core.pdf.model
 
+import android.graphics.PointF
 import android.net.Uri
 
 data class PdfDocumentMetadata(
@@ -32,6 +33,21 @@ sealed interface PdfOperationResult {
     data class Progress(val currentStep: Int, val totalSteps: Int) : PdfOperationResult
     data class Error(val cause: Throwable, val userMessage: String) : PdfOperationResult
 }
+
+// Моделі для анотацій та редагування (v0.2)
+data class InkStroke(
+    val points: List<PointF>,
+    val color: Int, // ARGB
+    val strokeWidth: Float
+)
+
+data class FreeTextData(
+    val text: String,
+    val x: Float,
+    val y: Float,
+    val fontSize: Float = 14f,
+    val color: Int // ARGB
+)
 ```
 
 #### 1.2 Інтерфейс інструментів сторінок (`PageOperationsEngine`)
@@ -58,6 +74,55 @@ interface PageOperationsEngine {
 
     // Створення PDF із зображень (JPEG/PNG)
     suspend fun imagesToPdf(context: Context, imageUris: List<Uri>, outputUri: Uri): PdfOperationResult
+}
+```
+
+#### 1.3 Інтерфейс анотацій та редагування (`AnnotationEngine`) (v0.2)
+```kotlin
+package com.savoj.volumpdf.core.pdf
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.RectF
+import android.net.Uri
+import com.savoj.volumpdf.core.pdf.model.FreeTextData
+import com.savoj.volumpdf.core.pdf.model.InkStroke
+import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
+
+interface AnnotationEngine {
+    // Запис рукописного малювання (S Pen / палець) на задану сторінку (/Ink анотація ISO 32000-1)
+    suspend fun addInkAnnotations(
+        context: Context,
+        sourceUri: Uri,
+        pageIndex: Int,
+        strokes: List<InkStroke>,
+        pageWidthPt: Float,
+        pageHeightPt: Float,
+        outputUri: Uri
+    ): PdfOperationResult
+
+    // Вставка підпису як штампа/зображення на сторінку
+    suspend fun addSignatureStamp(
+        context: Context,
+        sourceUri: Uri,
+        pageIndex: Int,
+        signatureBitmap: Bitmap,
+        targetRectPt: RectF,
+        pageWidthPt: Float,
+        pageHeightPt: Float,
+        outputUri: Uri
+    ): PdfOperationResult
+
+    // Додавання тексту поверх документа (/FreeText)
+    suspend fun addFreeText(
+        context: Context,
+        sourceUri: Uri,
+        pageIndex: Int,
+        textData: FreeTextData,
+        pageWidthPt: Float,
+        pageHeightPt: Float,
+        outputUri: Uri
+    ): PdfOperationResult
 }
 ```
 
