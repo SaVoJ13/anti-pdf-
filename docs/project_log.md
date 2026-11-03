@@ -1,5 +1,44 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-03 — PDF-ядро (Реалізація AnnotationEngine: малювання штрихів, вставка підпису та додавання тексту)
+**Що зроблено:**
+- Розширено модуль `:core-pdf` реалізацією `AnnotationEngine` згідно з CONTRACTS.md v0.2.
+- Додано моделі даних:
+  - `com.savoj.volumpdf.core.pdf.model.InkStroke` (points: List<PointF>, color: Int, strokeWidth: Float).
+  - `com.savoj.volumpdf.core.pdf.model.FreeTextData` (text: String, x: Float, y: Float, fontSize: Float, color: Int).
+  - Забезпечено типізовані typealias у `com.pdfreader.core.pdf.model` та `com.pdfreader.core.pdf` для зворотної сумісності.
+- Реалізовано інтерфейс `AnnotationEngine` та рушій `PdfBoxAnnotationEngine` на базі `com.tom-roush:pdfbox-android:2.0.27.0`:
+  - `addInkAnnotations`: створення анотацій `PDAnnotationMarkup` з типом `PDAnnotationMarkup.SUB_TYPE_INK` (/Ink за стандартом ISO 32000-1), конвертація координат з Android Canvas у PDF координатну систему (`pdfY = pageHeightPt - touchY`), нормалізація кольору RGB у `PDColor`, обчислення bounding box `PDRectangle`, встановлення `PDBorderStyleDictionary` та генерація `AppearanceStream` (`constructAppearances`).
+  - `addSignatureStamp`: надійна конвертація бітмапа підпису у `PDImageXObject` через `LosslessFactory.createFromImage` (збереження прозорості та альфа-каналу) з fallback на `JPEGFactory`, малювання у `PDPageContentStream` в режимі `APPEND` на цільових координатах `targetRectPt` з інверсією осі Y (`pdfY = pageHeightPt - targetRectPt.bottom`).
+  - `addFreeText`: нанесення текстового блоку в `PDPageContentStream` в режимі `APPEND` за допомогою `PDType1Font.HELVETICA` із захисним санітайзингом символів поза WinAnsi кодуванням.
+  - Безпечне збереження результатів у `outputUri` (SAF чи file) через проміжний файл для захисту від блокування дескрипторів та пошкодження документів при перезаписі (in-place save).
+- Написано повний набір модульних unit-тестів у `core-pdf/src/test/java/com/savoj/volumpdf/core/pdf/PdfBoxAnnotationEngineTest.kt`:
+  - `testAddInkAnnotation`: перевірка створення PDF, нанесення штриха `InkStroke`, наявності анотації типу `/Ink` у списку `page.annotations`, коректності координат та конвертації осі Y.
+  - `testAddSignatureStamp`: перевірка нанесення бітмапа підпису та валідності створеного PDF.
+  - `testAddFreeText`: перевірка нанесення тексту та його вилучення через `PDFTextStripper`.
+  - `testInvalidPageIndex`: перевірка валідації діапазону сторінок.
+- Успішно верифіковано: прогнано `./gradlew :core-pdf:test :core-pdf:assembleRelease` з JDK 21 (100% тестів пройдено, AAR зібрано).
+**Що змінено:**
+- Модуль `core-pdf/`:
+  - `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/model/InkStroke.kt`
+  - `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/model/FreeTextData.kt`
+  - `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/AnnotationEngine.kt`
+  - `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/PdfBoxAnnotationEngine.kt`
+  - `core-pdf/src/main/java/com/pdfreader/core/pdf/model/Compatibility.kt`
+  - `core-pdf/src/main/java/com/pdfreader/core/pdf/Compatibility.kt`
+  - `core-pdf/src/test/java/com/savoj/volumpdf/core/pdf/PdfBoxAnnotationEngineTest.kt`
+- `.gitignore` (додано `.kotlin/`)
+- `docs/project_log.md`
+**Рішення, які ухвалено:**
+- Використано пряму генерацію векторних `/Ink` анотацій через `PDAnnotationMarkup` з побудовою нормального `AppearanceStream` (`constructAppearances`), що забезпечує коректне відображення малюнків як у системному `androidx.pdf` / `PdfRenderer`, так і у сторонніх програмах (Adobe Acrobat, Google Drive PDF тощо).
+- Для вставки підпису використано `LosslessFactory.createFromImage`, що гарантує збереження прозорого фону (альфа-каналу) рукописного підпису без артефактів стиснення JPEG.
+- Збереження змінених файлів реалізовано через тимчасовий буфер із наступним атомарним переносом у вихідний URI, що повністю виключає пошкодження оригінального файлу при аварійних збоях чи перезаписі того самого файлу.
+**Що передати далі:**
+- Керівнику проєкту: `AnnotationEngine` готовий, контракт `CONTRACTS.md` v0.2 повністю імплементовано.
+- Агенту Android/UI: можна інтегрувати інструменти малювання (Ink), додавання підпису та тексту у відповідні UI-екрани.
+**Відкриті питання:**
+- Немає. Усі тести проходять успішно (100% зелених).
+
 ## 2026-11-03 — Монетизація і Google Play (Створення модуля core-ads, інтеграція в app та підготовка документів для Google Play)
 **Що зроблено:**
 - Створено Android Library модуль `:core-ads` (`namespace = "com.savoj.volumpdf.core.ads"`, `compileSdk = 36`, `compileSdkExtension = 19`, `minSdk = 28`).

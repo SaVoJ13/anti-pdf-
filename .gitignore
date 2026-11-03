@@ -12,6 +12,7 @@ google-services.json
 
 # Android / Gradle
 .gradle/
+.kotlin/
 build/
 .idea/
 *.iml
