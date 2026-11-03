@@ -1,0 +1,30 @@
+package com.savoj.volumpdf
+
+import android.app.Application
+import com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine
+import com.savoj.volumpdf.data.db.AppDatabase
+import com.savoj.volumpdf.data.repository.DocumentRepository
+import com.savoj.volumpdf.data.repository.DocumentRepositoryImpl
+
+class VolumPdfApp : Application() {
+
+    val database: AppDatabase by lazy {
+        AppDatabase.getInstance(this)
+    }
+
+    val repository: DocumentRepository by lazy {
+        DocumentRepositoryImpl(database)
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+        // Ініціалізація ресурсів PDFBox
+        PdfBoxPageOperationsEngine.init(this)
+    }
+
+    companion object {
+        lateinit var instance: VolumPdfApp
+            private set
+    }
+}

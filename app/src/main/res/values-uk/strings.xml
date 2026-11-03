@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Volum PDF</string>
+    <string name="app_full_name">Volum PDF: Читач та інструменти</string>
+
+    <!-- Navigation & Tabs -->
+    <string name="tab_recents">Останні документи</string>
+    <string name="tab_tools">Інструменти</string>
+    <string name="action_open_pdf">Відкрити PDF</string>
+    <string name="action_search">Пошук</string>
+    <string name="search_hint">Пошук документів…</string>
+    <string name="action_sort">Сортувати за</string>
+    <string name="sort_date_desc">Нещодавно відкриті</string>
+    <string name="sort_name_asc">Назвою (А–Я)</string>
+    <string name="sort_size_desc">Розміром (спадання)</string>
+    <string name="filter_all">Всі</string>
+    <string name="filter_favorites">Вибрані</string>
+
+    <!-- Empty State -->
+    <string name="empty_recents_title">Немає останніх документів</string>
+    <string name="empty_recents_desc">Відкрийте будь-який PDF-файл за допомогою кнопки нижче для читання.</string>
+    <string name="empty_search_title">Документів не знайдено</string>
+    <string name="empty_search_desc">Спробуйте змінити пошуковий запит.</string>
+
+    <!-- Document Card & Item Actions -->
+    <string name="document_pages_count">%1$d стор.</string>
+    <string name="document_page_progress">Стор. %1$d з %2$d</string>
+    <string name="action_favorite">В обране</string>
+    <string name="action_unfavorite">З обраного</string>
+    <string name="action_delete">Видалити</string>
+    <string name="action_delete_history">Видалити з історії</string>
+    <string name="action_share">Поділитися</string>
+    <string name="action_details">Відомості</string>
+    <string name="dialog_details_title">Інформація про документ</string>
+    <string name="details_title">Назва: %1$s</string>
+    <string name="details_pages">Всього сторінок: %1$d</string>
+    <string name="details_size">Розмір: %1$s</string>
+    <string name="details_last_opened">Востаннє відкрито: %1$s</string>
+    <string name="details_uri">Місцезнаходження: %1$s</string>
+
+    <!-- Reader -->
+    <string name="reader_title">PDF Читач</string>
+    <string name="dialog_password_title">Захищений документ</string>
+    <string name="dialog_password_desc">Цей PDF-файл зашифровано. Введіть пароль для відкриття.</string>
+    <string name="password_hint">Пароль</string>
+    <string name="action_unlock">Відкрити</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="action_ok">ОК</string>
+    <string name="error_invalid_password">Невірний пароль. Спробуйте ще раз.</string>
+    <string name="error_open_document">Не вдалося відкрити PDF-файл: %1$s</string>
+
+    <!-- Tools Hub -->
+    <string name="tools_hub_title">Інструменти PDF</string>
+    <string name="tool_merge_title">Злиття PDF</string>
+    <string name="tool_merge_desc">Обʼєднання двох або більше PDF-файлів в один документ.</string>
+    <string name="tool_split_title">Розділення PDF</string>
+    <string name="tool_split_desc">Вилучення обраних сторінок чи діапазонів у новий PDF.</string>
+    <string name="tool_rotate_title">Поворот сторінок</string>
+    <string name="tool_rotate_desc">Поворот сторінок на 90°, 180° або 270°.</string>
+    <string name="tool_delete_title">Видалення сторінок</string>
+    <string name="tool_delete_desc">Вилучення непотрібних сторінок із документа.</string>
+    <string name="tool_images_to_pdf_title">Зображення в PDF</string>
+    <string name="tool_images_to_pdf_desc">Конвертація фото JPEG та PNG у якісний PDF-документ.</string>
+
+    <!-- Tools Flow -->
+    <string name="action_select_files">Вибрати файли</string>
+    <string name="action_select_file">Вибрати файл</string>
+    <string name="action_select_images">Вибрати зображення</string>
+    <string name="action_add_more">Додати ще</string>
+    <string name="action_clear_selection">Очистити вибір</string>
+    <string name="action_process_save">Зберегти як…</string>
+    <string name="selected_files_count">Вибрано файлів: %1$d</string>
+    <string name="selected_images_count">Вибрано зображень: %1$d</string>
+    <string name="input_pages_hint">Номери сторінок (напр. 1-3, 5, 8)</string>
+    <string name="input_pages_label">Сторінки для вилучення</string>
+    <string name="input_delete_pages_label">Сторінки для видалення (з 1)</string>
+    <string name="rotation_angle_label">Оберіть кут повороту:</string>
+    <string name="rotation_90">90° за годинниковою</string>
+    <string name="rotation_180">180° розворот</string>
+    <string name="rotation_270">270° проти годинникової</string>
+    <string name="apply_to_all_pages">Застосувати до всіх сторінок</string>
+    <string name="apply_to_custom_pages">Застосувати до окремих сторінок</string>
+
+    <!-- Operations Status -->
+    <string name="status_processing">Обробка документа…</string>
+    <string name="status_step">Обробка кроку %1$d з %2$d…</string>
+    <string name="operation_success_title">Успішно!</string>
+    <string name="operation_success_message">Новий PDF успішно створено (%1$d стор.).</string>
+    <string name="action_open_result">Відкрити PDF</string>
+    <string name="error_title">Помилка операції</string>
+    <string name="error_select_min_two_files">Виберіть щонайменше 2 PDF-файли для злиття.</string>
+    <string name="error_select_source_file">Спершу виберіть вхідний PDF-документ.</string>
+    <string name="error_select_images">Виберіть щонайменше одне зображення.</string>
+    <string name="error_invalid_page_range">Вказано некоректні номери сторінок.</string>
+    <string name="error_cannot_delete_all_pages">Неможливо видалити всі сторінки документа.</string>
+
+    <!-- Default File Names -->
+    <string name="filename_merged">zlytyi_dokument.pdf</string>
+    <string name="filename_split">vylucheni_storinky.pdf</string>
+    <string name="filename_rotated">povernutyi_dokument.pdf</string>
+    <string name="filename_deleted">dokument_bez_storinok.pdf</string>
+    <string name="filename_images">foto_dokument.pdf</string>
+</resources>

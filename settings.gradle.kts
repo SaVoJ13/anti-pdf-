@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "volum-pdf"
 include(":core-pdf")
+include(":app")

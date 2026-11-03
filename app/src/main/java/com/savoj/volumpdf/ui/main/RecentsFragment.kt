@@ -1,0 +1,138 @@
+package com.savoj.volumpdf.ui.main
+
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.savoj.volumpdf.R
+import com.savoj.volumpdf.data.db.RecentDocument
+import com.savoj.volumpdf.databinding.FragmentRecentsBinding
+import com.savoj.volumpdf.ui.reader.ReaderActivity
+import com.savoj.volumpdf.util.SafUtils
+import kotlinx.coroutines.launch
+
+class RecentsFragment : Fragment() {
+
+    private var _binding: FragmentRecentsBinding? = null
+    private val binding get() = _binding!!
+
+    private val viewModel: MainViewModel by activityViewModels()
+    private lateinit var adapter: RecentsAdapter
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentRecentsBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        setupRecyclerView()
+        setupObservers()
+
+        binding.btnEmptyOpen.setOnClickListener {
+            (activity as? MainActivity)?.launchSafOpenDocument()
+        }
+    }
+
+    private fun setupRecyclerView() {
+        adapter = RecentsAdapter(
+            onItemClicked = { doc ->
+                openDocumentInReader(doc.uri, doc.title)
+            },
+            onFavoriteToggled = { doc ->
+                viewModel.toggleFavorite(doc.uri)
+            },
+            onShareClicked = { doc ->
+                shareDocument(doc.uri)
+            },
+            onDetailsClicked = { doc ->
+                showDocumentDetails(doc)
+            },
+            onDeleteClicked = { doc ->
+                viewModel.deleteDocument(doc.uri)
+            }
+        )
+
+        binding.recyclerViewRecents.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerViewRecents.adapter = adapter
+    }
+
+    private fun setupObservers() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.recentDocuments.collect { documents ->
+                    adapter.submitList(documents)
+                    val isEmpty = documents.isEmpty()
+                    binding.layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                    binding.recyclerViewRecents.visibility = if (isEmpty) View.GONE else View.VISIBLE
+
+                    if (isEmpty && viewModel.searchQuery.value.isNotBlank()) {
+                        binding.tvEmptyTitle.setText(R.string.empty_search_title)
+                        binding.tvEmptyDesc.setText(R.string.empty_search_desc)
+                        binding.btnEmptyOpen.visibility = View.GONE
+                    } else if (isEmpty) {
+                        binding.tvEmptyTitle.setText(R.string.empty_recents_title)
+                        binding.tvEmptyDesc.setText(R.string.empty_recents_desc)
+                        binding.btnEmptyOpen.visibility = View.VISIBLE
+                    }
+                }
+            }
+        }
+    }
+
+    private fun openDocumentInReader(uriString: String, title: String) {
+        val intent = Intent(requireContext(), ReaderActivity::class.java).apply {
+            data = Uri.parse(uriString)
+            putExtra(ReaderActivity.EXTRA_DOCUMENT_TITLE, title)
+        }
+        startActivity(intent)
+    }
+
+    private fun shareDocument(uriString: String) {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, Uri.parse(uriString))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.action_share)))
+    }
+
+    private fun showDocumentDetails(doc: RecentDocument) {
+        val message = StringBuilder()
+            .append(getString(R.string.details_title, doc.title)).append("\n\n")
+            .append(getString(R.string.details_pages, doc.pageCount)).append("\n")
+            .append(getString(R.string.details_size, SafUtils.formatFileSize(doc.fileSizeBytes))).append("\n")
+            .append(getString(R.string.details_last_opened, SafUtils.formatTimestamp(doc.lastOpenedTimestamp))).append("\n\n")
+            .append(getString(R.string.details_uri, doc.uri))
+            .toString()
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.dialog_details_title)
+            .setMessage(message)
+            .setPositiveButton(R.string.action_ok, null)
+            .show()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    companion object {
+        fun newInstance() = RecentsFragment()
+    }
+}

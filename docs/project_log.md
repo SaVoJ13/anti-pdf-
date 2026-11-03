@@ -1,5 +1,41 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-03 — Android і UI (Створення модуля app, Room бази даних, Material 3 інтерфейсу та інструментів)
+**Що зроблено:**
+- Створено чистовий Android Application модуль `:app` (`namespace = "com.savoj.volumpdf"`, `applicationId = "com.savoj.volumpdf"`, `minSdk = 28`, `compileSdk = 36`, `compileSdkExtension = 19`, `targetSdk = 36`, `versionCode = 1`, `versionName = "1.0.0"`).
+- Підключено модуль `:app` у `settings.gradle.kts` та `build.gradle.kts`. Використано лише затверджені в `THIRD_PARTY.md` залежності.
+- Створено базу даних Room (`AppDatabase`) та таблицю `recent_documents` (`RecentDocument`: `uri`, `title`, `pageCount`, `fileSizeBytes`, `lastOpenedTimestamp`, `lastPageRead`, `isFavorite`) із `RecentDocumentDao` та репозиторієм `DocumentRepository`:
+  - Повна реактивність через `Flow<List<RecentDocument>>` за допомогою Room InvalidationTracker.
+  - Підтримка пошуку за назвою, фільтрації обраних та сортування (за часом відкриття, назвою та розміром).
+  - Методи збереження, оновлення прогресу читання, перемикання статусу обраного та видалення.
+- Реалізовано повний користувацький інтерфейс Material 3 (теми Day/Night, динамічні кольори, векторні ресурси, розмітка без фіксованих розмірів):
+  - **`MainActivity`:** TabLayout + ViewPager2 («Останні документи» та «Інструменти»), ExtendedFAB «Відкрити PDF», SearchView для швидкого пошуку, меню сортування та фільтрації обраного.
+  - **Безпечний доступ до файлів:** виключно через SAF (`OpenDocument` для читання, `OpenMultipleDocuments` для злиття/зображень, `CreateDocument` для експорту результатів). Жодного використання `MANAGE_EXTERNAL_STORAGE`. Автоматичне взяття постійних дозволів через `takePersistableUriPermission`.
+  - **Обробка системного наміру:** підтримка `ACTION_VIEW` та `ACTION_EDIT` для `application/pdf` з автоматичною реєстрацією в базі та відкриттям читача.
+  - **`ReaderActivity`:** інтеграція `VolumPdfViewerFragment` (обгортка над `androidx.pdf.viewer.fragment.PdfViewerFragment`), передача `documentUri = uri`, системний жест зуму та навігація, автоматичне збереження прогресу читання та дати останнього відкриття в Room, збереження та відновлення стану при повороті екрана та перестворенні процесу, діалог відомостей про документ та системний шаринг через `ACTION_SEND`.
+  - **`ToolsActivity`:** повноцінний інтерфейс для 5 інструментів сторінок (Злиття, Розділення/вилучення, Поворот на 90°/180°/270°, Видалення сторінок, Зображення в PDF) з підтримкою парсингу діапазонів (напр. "1-3, 5, 8"), валідацією, показом прогресу виконання корутин та збереженням у вихідний SAF-файл з можливістю миттєвого відкриття створеного документа в читачі.
+- Реалізовано 100% локалізацію в `strings.xml` для 4 мов: `values` (en), `values-uk` (uk), `values-ru` (ru), `values-de` (de).
+- Написано повний набір JVM unit-тестів:
+  - `PageRangeParserTest` (9 тестів: валідація діапазонів, одинарні сторінки, інверсії, дублікати, перевірка меж, некоректні формати).
+  - `SafUtilsTest` (6 тестів: форматування розмірів файлів, таймстемпів).
+  - `RecentDocumentTest` (тести моделі та копіювання).
+  - `DocumentRepositoryTest` (6 тестів: сортування за датою/назвою/розміром, перемикання обраного, видалення, очищення).
+- Успішно зібрано й верифіковано: `./gradlew :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:testReleaseUnitTest` (усі тести пройшли успішно, згенеровано `app-debug.apk` та `app-release-unsigned.apk`).
+**Що змінено:**
+- Модуль `app/` (код, ресурси, маніфест, тести, build.gradle.kts)
+- `settings.gradle.kts`
+- `build.gradle.kts`
+- `docs/project_log.md`
+**Рішення, які ухвалено:**
+- Організовано Room сутності та DAO через Java + Java Annotation Processor (`annotationProcessor("androidx.room:room-compiler:2.6.1")`), що повністю усуває конфлікт несумісності версій Kotlin Metadata (2.2.0 vs 2.0.0 у застарілому KAPT/Room 2.6.1) та забезпечує максимальну швидкість компіляції без потреби зниження версії Kotlin у проєкті.
+- Реактивний потік `Flow<List<RecentDocument>>` побудовано за допомогою `callbackFlow` поверх Room `InvalidationTracker`, що забезпечує автоматичне оновлення UI при будь-яких змінах у базі даних.
+- `VolumPdfViewerFragment` розширює `PdfViewerFragment` з `core-pdf` і надає зворотні виклики завантаження сторінок та помилок для синхронізації з ViewModel та базою даних.
+**Що передати далі:**
+- Керівнику проєкту: модуль `app` готовий, збірки успішні, unit-тести проходять. Модуль готовий до підключення `core-ads` для монетизації (UMP + AdMob банери та інтерстишели за контрактом `core-ads ↔ app`).
+**Відкриті питання:**
+- Немає. Усі вимоги завдання та MASTER_SPEC виконано.
+
+
 ## 2026-11-03 — PDF-ядро (Створення модуля core-pdf та реалізація PageOperationsEngine)
 **Що зроблено:**
 - Створено кореневу збірку проєкту з Gradle wrapper 8.14.3, AGP 8.13.0, Kotlin 2.2.20 та Android Library модуль `:core-pdf` (`namespace = "com.savoj.volumpdf.core.pdf"`, `compileSdk = 36`, `compileSdkExtension = 19`, `minSdk = 28`).

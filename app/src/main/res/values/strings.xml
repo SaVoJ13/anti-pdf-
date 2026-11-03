@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Volum PDF</string>
+    <string name="app_full_name">Volum PDF: Reader &amp; Tools</string>
+
+    <!-- Navigation & Tabs -->
+    <string name="tab_recents">Recent Documents</string>
+    <string name="tab_tools">Tools</string>
+    <string name="action_open_pdf">Open PDF</string>
+    <string name="action_search">Search</string>
+    <string name="search_hint">Search documents…</string>
+    <string name="action_sort">Sort by</string>
+    <string name="sort_date_desc">Recently opened</string>
+    <string name="sort_name_asc">Name (A–Z)</string>
+    <string name="sort_size_desc">Size (largest first)</string>
+    <string name="filter_all">All</string>
+    <string name="filter_favorites">Favorites</string>
+
+    <!-- Empty State -->
+    <string name="empty_recents_title">No recent documents</string>
+    <string name="empty_recents_desc">Open a PDF file using the button below to start reading.</string>
+    <string name="empty_search_title">No matching files found</string>
+    <string name="empty_search_desc">Try searching with a different file name.</string>
+
+    <!-- Document Card & Item Actions -->
+    <string name="document_pages_count">%1$d pages</string>
+    <string name="document_page_progress">Page %1$d of %2$d</string>
+    <string name="action_favorite">Favorite</string>
+    <string name="action_unfavorite">Unfavorite</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_delete_history">Remove from recents</string>
+    <string name="action_share">Share</string>
+    <string name="action_details">Details</string>
+    <string name="dialog_details_title">Document Information</string>
+    <string name="details_title">Title: %1$s</string>
+    <string name="details_pages">Total pages: %1$d</string>
+    <string name="details_size">Size: %1$s</string>
+    <string name="details_last_opened">Last opened: %1$s</string>
+    <string name="details_uri">Location: %1$s</string>
+
+    <!-- Reader -->
+    <string name="reader_title">PDF Reader</string>
+    <string name="dialog_password_title">Password Protected Document</string>
+    <string name="dialog_password_desc">This PDF is encrypted. Enter the password to unlock it.</string>
+    <string name="password_hint">Password</string>
+    <string name="action_unlock">Unlock</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_ok">OK</string>
+    <string name="error_invalid_password">Incorrect password. Please try again.</string>
+    <string name="error_open_document">Could not open PDF file: %1$s</string>
+
+    <!-- Tools Hub -->
+    <string name="tools_hub_title">PDF Utilities</string>
+    <string name="tool_merge_title">Merge PDFs</string>
+    <string name="tool_merge_desc">Combine two or more PDF files into a single document.</string>
+    <string name="tool_split_title">Split PDF</string>
+    <string name="tool_split_desc">Extract specific pages or page ranges into a new PDF.</string>
+    <string name="tool_rotate_title">Rotate Pages</string>
+    <string name="tool_rotate_desc">Rotate pages by 90°, 180°, or 270°.</string>
+    <string name="tool_delete_title">Delete Pages</string>
+    <string name="tool_delete_desc">Remove unwanted pages from your document.</string>
+    <string name="tool_images_to_pdf_title">Images to PDF</string>
+    <string name="tool_images_to_pdf_desc">Convert JPEG and PNG images into a clean PDF document.</string>
+
+    <!-- Tools Flow -->
+    <string name="action_select_files">Select Files</string>
+    <string name="action_select_file">Select File</string>
+    <string name="action_select_images">Select Images</string>
+    <string name="action_add_more">Add more</string>
+    <string name="action_clear_selection">Clear selection</string>
+    <string name="action_process_save">Save As…</string>
+    <string name="selected_files_count">%1$d files selected</string>
+    <string name="selected_images_count">%1$d images selected</string>
+    <string name="input_pages_hint">Page numbers (e.g. 1-3, 5, 8)</string>
+    <string name="input_pages_label">Pages to extract</string>
+    <string name="input_delete_pages_label">Pages to delete (1-based)</string>
+    <string name="rotation_angle_label">Select rotation angle:</string>
+    <string name="rotation_90">90° Clockwise</string>
+    <string name="rotation_180">180° Half Turn</string>
+    <string name="rotation_270">270° Counter-Clockwise</string>
+    <string name="apply_to_all_pages">Apply to all pages</string>
+    <string name="apply_to_custom_pages">Apply to specific pages</string>
+
+    <!-- Operations Status -->
+    <string name="status_processing">Processing document…</string>
+    <string name="status_step">Processing step %1$d of %2$d…</string>
+    <string name="operation_success_title">Success!</string>
+    <string name="operation_success_message">New PDF created successfully (%1$d pages).</string>
+    <string name="action_open_result">Open PDF</string>
+    <string name="error_title">Operation Failed</string>
+    <string name="error_select_min_two_files">Please select at least 2 PDF files to merge.</string>
+    <string name="error_select_source_file">Please select a source PDF document first.</string>
+    <string name="error_select_images">Please select at least one image.</string>
+    <string name="error_invalid_page_range">Invalid page numbers entered. Check total pages count.</string>
+    <string name="error_cannot_delete_all_pages">Cannot delete all pages in document.</string>
+
+    <!-- Default File Names -->
+    <string name="filename_merged">merged_document.pdf</string>
+    <string name="filename_split">extracted_pages.pdf</string>
+    <string name="filename_rotated">rotated_document.pdf</string>
+    <string name="filename_deleted">pages_removed.pdf</string>
+    <string name="filename_images">photos_document.pdf</string>
+</resources>

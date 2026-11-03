@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- White PDF page symbol -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,26 L62,26 L74,38 L74,82 C74,84.2 72.2,86 70,86 L34,86 C31.8,86 30,84.2 30,82 L30,30 C30,27.8 31.8,26 34,26 Z M60,28 L34,28 C32.9,28 32,28.9 32,30 L32,82 C32,83.1 32.9,84 34,84 L70,84 C71.1,84 72,83.1 72,82 L72,40 L60,40 L60,28 Z M62,30.8 L69.2,38 L62,38 L62,30.8 Z"/>
+    <!-- Red Accent Inner Text / Bars -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,50 h32 v3 h-32 z M38,58 h32 v3 h-32 z M38,66 h20 v3 h-20 z"/>
+</vector>
