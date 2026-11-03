@@ -53,28 +53,34 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun setupViewerFragment(uri: Uri, savedInstanceState: Bundle?) {
+        val fragment: VolumPdfViewerFragment
         if (savedInstanceState == null) {
-            val fragment = VolumPdfViewerFragment().apply {
-                documentUri = uri
-            }
+            fragment = VolumPdfViewerFragment()
             supportFragmentManager.beginTransaction()
                 .replace(R.id.pdfViewerContainer, fragment, TAG_PDF_VIEWER)
-                .commit()
+                .commitNow()
             viewerFragment = fragment
         } else {
-            viewerFragment = supportFragmentManager.findFragmentByTag(TAG_PDF_VIEWER) as? VolumPdfViewerFragment
-            if (viewerFragment?.documentUri == null) {
-                viewerFragment?.documentUri = uri
-            }
+            fragment = (supportFragmentManager.findFragmentByTag(TAG_PDF_VIEWER) as? VolumPdfViewerFragment)
+                ?: VolumPdfViewerFragment().also {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.pdfViewerContainer, it, TAG_PDF_VIEWER)
+                        .commitNow()
+                }
+            viewerFragment = fragment
         }
 
-        viewerFragment?.onDocumentLoadedListener = { count ->
+        fragment.onDocumentLoadedListener = { count ->
             viewModel.updatePageCount(count)
         }
 
-        viewerFragment?.onDocumentErrorListener = { cause ->
+        fragment.onDocumentErrorListener = { cause ->
             val msg = cause.localizedMessage ?: getString(R.string.error_open_document, cause.javaClass.simpleName)
             Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+        }
+
+        if (fragment.documentUri == null) {
+            fragment.documentUri = uri
         }
     }
 
