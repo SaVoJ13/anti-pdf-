@@ -9,7 +9,7 @@
 
 #### 1.1 Моделі даних (`core-pdf:models`)
 ```kotlin
-package com.pdfreader.core.pdf.model
+package com.savoj.volumpdf.core.pdf.model
 
 import android.net.Uri
 
@@ -36,11 +36,11 @@ sealed interface PdfOperationResult {
 
 #### 1.2 Інтерфейс інструментів сторінок (`PageOperationsEngine`)
 ```kotlin
-package com.pdfreader.core.pdf
+package com.savoj.volumpdf.core.pdf
 
 import android.content.Context
 import android.net.Uri
-import com.pdfreader.core.pdf.model.PdfOperationResult
+import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import kotlinx.coroutines.flow.Flow
 
 interface PageOperationsEngine {
@@ -68,7 +68,7 @@ interface PageOperationsEngine {
 Модуль `core-ads` відповідає за стан згоди GDPR/UMP та безпечний показ реклами без порушення політик Google Play.
 
 ```kotlin
-package com.pdfreader.core.ads
+package com.savoj.volumpdf.core.ads
 
 import android.app.Activity
 import android.view.ViewGroup

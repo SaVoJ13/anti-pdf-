@@ -6,6 +6,10 @@
 |-------|--------|-------------------------------------|---------------------|-------------------------------------------|-----------------|------|
 | `androidx.pdf:pdf-viewer-fragment` | 1.0.0-beta01 | Apache-2.0 (Google Maven POM, META-INF/LICENSE.txt; перевірено спайком 2026-11-03) | `core-pdf` (перегляд PDF, жест зуму, навігація, системне виділення й пошук тексту) | так | Так, затверджено власником для MVP 2026-11-03 | 2026-11-03 |
 | `com.tom-roush:pdfbox-android` | 2.0.27.0 | Apache-2.0 (Maven Central POM, LICENSE.txt; BouncyCastle під адаптованою MIT; перевірено 2026-11-03) | `core-pdf` (операції зі сторінками: злиття, спліт, поворот, видалення, зображення->PDF, паролі) | так | Так, затверджено власником для MVP 2026-11-03 | 2026-11-03 |
+| `org.jetbrains.kotlinx:kotlinx-coroutines-android` | 1.10.1 | Apache-2.0 (GitHub / Maven Central POM) | `core-pdf` (асинхронні потоки Flow, корутини) | так | Так, стандартна бібліотека середовища (дозволено Керівником) | 2026-11-03 |
+| `junit:junit` | 4.13.2 | EPL-1.0 (Maven Central POM) | `core-pdf` (виключно JVM unit-тести, не потрапляє в релізний APK) | так (test only) | Так (дозволено Керівником для тестів) | 2026-11-03 |
+| `org.jetbrains.kotlinx:kotlinx-coroutines-test` | 1.10.1 | Apache-2.0 (Maven Central POM) | `core-pdf` (виключно unit-тести, не потрапляє в APK) | так (test only) | Так (дозволено Керівником для тестів) | 2026-11-03 |
+| `org.mockito:mockito-core` | 5.15.2 | MIT (Maven Central POM) | `core-pdf` (виключно unit-тести, не потрапляє в APK) | так (test only) | Так (дозволено Керівником для тестів) | 2026-11-03 |
 | _(інше порожньо)_ | | | | | | |
 
 ## Сервіси
