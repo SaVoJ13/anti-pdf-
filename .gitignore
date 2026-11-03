@@ -23,3 +23,7 @@ captures/
 # ОС
 .DS_Store
 Thumbs.db
+
+# Spike experiment (one-off)
+spike/
+
