@@ -19,6 +19,8 @@
 | `androidx.room:room-runtime` | 2.6.1 | Apache-2.0 (Google Maven POM) | `app` (локальна SQLite база «Останні документи» та закладки) | так | Так, стандартний AndroidX (дозволено Керівником) | 2026-11-03 |
 | `androidx.room:room-ktx` | 2.6.1 | Apache-2.0 (Google Maven POM) | `app` (Flow та Coroutines підтримка в Room) | так | Так, стандартний AndroidX (дозволено Керівником) | 2026-11-03 |
 | `androidx.room:room-compiler` | 2.6.1 | Apache-2.0 (Google Maven POM) | `app` (KSP кодогенератор для Room) | так | Так, стандартний AndroidX (дозволено Керівником) | 2026-11-03 |
+| `com.google.android.gms:play-services-ads` | 23.6.0 | Google Play Services SDK (AdMob SDK License; сумісна із закритими комерційними додатками) | `core-ads` (показ банерів та інтерстишелів за затвердженими правилами) | так | Так, затверджено власником для MVP 2026-11-03 | 2026-11-03 |
+| `com.google.android.ump:user-messaging-platform` | 3.1.0 | Google Play Services / UMP SDK License (сумісна із закритими комерційними додатками) | `core-ads` (форма згоди користувача GDPR / EEA) | так | Так, затверджено власником для MVP 2026-11-03 | 2026-11-03 |
 | _(інше порожньо)_ | | | | | | |
 
 ## Сервіси
