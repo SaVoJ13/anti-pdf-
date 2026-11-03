@@ -100,4 +100,36 @@
     <string name="filename_rotated">rotated_document.pdf</string>
     <string name="filename_deleted">pages_removed.pdf</string>
     <string name="filename_images">photos_document.pdf</string>
+
+    <!-- Annotations & Editing -->
+    <string name="action_draw">Draw</string>
+    <string name="action_signature">Signature</string>
+    <string name="action_add_text">Add Text</string>
+    <string name="action_undo">Undo</string>
+    <string name="action_clear_all">Clear all</string>
+    <string name="action_save">Save</string>
+    <string name="saving_annotations">Saving annotations…</string>
+    <string name="brush_pen">Pen</string>
+    <string name="brush_marker">Marker</string>
+    <string name="brush_highlighter">Highlighter</string>
+    <string name="color_label">Color:</string>
+    <string name="color_black">Black</string>
+    <string name="color_red">Red</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_green">Green</string>
+    <string name="color_yellow">Yellow</string>
+    <string name="signature_dialog_title">Create Signature</string>
+    <string name="signature_dialog_hint">Draw your signature using finger or stylus</string>
+    <string name="signature_clear">Clear</string>
+    <string name="signature_insert">Insert</string>
+    <string name="signature_error_empty">Please draw your signature before inserting</string>
+    <string name="signature_success">Signature added successfully</string>
+    <string name="text_dialog_title">Add Text</string>
+    <string name="text_input_hint">Enter annotation text</string>
+    <string name="text_size_label">Font size:</string>
+    <string name="text_size_format">Font size: %1$d pt</string>
+    <string name="text_insert">Add to document</string>
+    <string name="text_error_empty">Text cannot be empty</string>
+    <string name="text_success">Text added successfully</string>
+    <string name="drawing_success">Drawing saved successfully</string>
 </resources>

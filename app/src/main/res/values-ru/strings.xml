@@ -100,4 +100,36 @@
     <string name="filename_rotated">povernutyi_dokument.pdf</string>
     <string name="filename_deleted">dokument_bez_stranits.pdf</string>
     <string name="filename_images">foto_dokument.pdf</string>
+
+    <!-- Annotations & Editing -->
+    <string name="action_draw">Рисовать</string>
+    <string name="action_signature">Подпись</string>
+    <string name="action_add_text">Добавить текст</string>
+    <string name="action_undo">Отменить</string>
+    <string name="action_clear_all">Очистить все</string>
+    <string name="action_save">Сохранить</string>
+    <string name="saving_annotations">Сохранение аннотаций…</string>
+    <string name="brush_pen">Ручка</string>
+    <string name="brush_marker">Маркер</string>
+    <string name="brush_highlighter">Выделитель</string>
+    <string name="color_label">Цвет:</string>
+    <string name="color_black">Черный</string>
+    <string name="color_red">Красный</string>
+    <string name="color_blue">Синий</string>
+    <string name="color_green">Зеленый</string>
+    <string name="color_yellow">Желтый</string>
+    <string name="signature_dialog_title">Создать подпись</string>
+    <string name="signature_dialog_hint">Распишитесь пальцем или стилусом в поле ниже</string>
+    <string name="signature_clear">Очистить</string>
+    <string name="signature_insert">Вставить</string>
+    <string name="signature_error_empty">Пожалуйста, распишитесь перед вставкой</string>
+    <string name="signature_success">Подпись успешно добавлена</string>
+    <string name="text_dialog_title">Добавить текст</string>
+    <string name="text_input_hint">Введите текст аннотации</string>
+    <string name="text_size_label">Размер шрифта:</string>
+    <string name="text_size_format">Размер шрифта: %1$d pt</string>
+    <string name="text_insert">Добавить в документ</string>
+    <string name="text_error_empty">Текст не может быть пустым</string>
+    <string name="text_success">Текст успешно добавлен</string>
+    <string name="drawing_success">Рисунок успешно сохранен</string>
 </resources>

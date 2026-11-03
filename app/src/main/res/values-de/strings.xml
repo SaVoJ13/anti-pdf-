@@ -100,4 +100,36 @@
     <string name="filename_rotated">gedrehtes_dokument.pdf</string>
     <string name="filename_deleted">dokument_ohne_seiten.pdf</string>
     <string name="filename_images">foto_dokument.pdf</string>
+
+    <!-- Annotations & Editing -->
+    <string name="action_draw">Zeichnen</string>
+    <string name="action_signature">Unterschrift</string>
+    <string name="action_add_text">Text hinzufügen</string>
+    <string name="action_undo">Rückgängig</string>
+    <string name="action_clear_all">Alles löschen</string>
+    <string name="action_save">Speichern</string>
+    <string name="saving_annotations">Anmerkungen werden gespeichert…</string>
+    <string name="brush_pen">Stift</string>
+    <string name="brush_marker">Marker</string>
+    <string name="brush_highlighter">Textmarker</string>
+    <string name="color_label">Farbe:</string>
+    <string name="color_black">Schwarz</string>
+    <string name="color_red">Rot</string>
+    <string name="color_blue">Blau</string>
+    <string name="color_green">Grün</string>
+    <string name="color_yellow">Gelb</string>
+    <string name="signature_dialog_title">Unterschrift erstellen</string>
+    <string name="signature_dialog_hint">Zeichnen Sie Ihre Unterschrift mit Finger oder Stylus</string>
+    <string name="signature_clear">Löschen</string>
+    <string name="signature_insert">Einfügen</string>
+    <string name="signature_error_empty">Bitte unterschreiben Sie vor dem Einfügen</string>
+    <string name="signature_success">Unterschrift erfolgreich hinzugefügt</string>
+    <string name="text_dialog_title">Text hinzufügen</string>
+    <string name="text_input_hint">Anmerkungstext eingeben</string>
+    <string name="text_size_label">Schriftgröße:</string>
+    <string name="text_size_format">Schriftgröße: %1$d pt</string>
+    <string name="text_insert">Zum Dokument hinzufügen</string>
+    <string name="text_error_empty">Text darf nicht leer sein</string>
+    <string name="text_success">Text erfolgreich hinzugefügt</string>
+    <string name="drawing_success">Zeichnung erfolgreich gespeichert</string>
 </resources>

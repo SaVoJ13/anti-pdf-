@@ -1,4 +1,66 @@
-# Журнал проєкту (нові записи зверху)
+﻿# Журнал проєкту (нові записи зверху)
+
+## 2026-11-03 — Android і UI (Інтеграція інструментів малювання, підпису та тексту в ReaderActivity)
+**Що зроблено:**
+- Реалізовано інтерактивне полотно для малювання InkCanvasView:
+  - Прозорий оверлей над PDF-читалкою, за замовчуванням GONE (не перехоплює дотики та скрол).
+  - У режимі малювання (VISIBLE) відслідковує дотики пальця або стилуса S Pen (MotionEvent.TOOL_TYPE_STYLUS).
+  - Підтримка згладжування ліній кривими Безьє (quadTo), вибір кольорів (червоний, чорний, синій, зелений, жовтий маркер) та типів пензля (тонка ручка 5pt, середній маркер 12pt, жирний хайлайтер 28pt з напівпрозорістю 0x66).
+  - Функції скасування останнього штриха (undo()), повного очищення (clear()) та конвертації/масштабування точок екранних координат у систему координат сторінки PDF.
+- Створено діалог створення та нанесення підпису SignatureBottomSheetDialogFragment:
+  - Полотно SignaturePadView для рукописного розпису на контрастному білому фоні.
+  - Генерація чистого прозорого Bitmap (ARGB_8888) з автообрізкою зайвих порожніх полів.
+  - Нанесення підпису на відкриту сторінку через AnnotationEngine.addSignatureStamp у фоновому потоці.
+- Створено діалог введення тексту AddTextBottomSheetDialogFragment:
+  - Поле введення тексту, вибір розміру шрифту через слайдер (10–48 pt) та палітра кольорів.
+  - Нанесення тексту на відкриту сторінку через AnnotationEngine.addFreeText.
+- Оновлено ReaderActivity та activity_reader.xml:
+  - Додано кнопки дій у меню/тулбар: ✏️ «Малювати», ✍️ «Підпис», 🔤 «Додати текст».
+  - Плаваюча панель інструментів малювання drawingToolbarCard (вибір пензля, палітра кольорів, Undo, Очистити, Зберегти, Закрити).
+  - Індикатор збереження анотацій savingOverlay під час фонової обробки через PdfBoxAnnotationEngine (Dispatchers.IO).
+  - Динамічне визначення розмірів поточної сторінки (cropBox / mediaBox.width, height) через PdfBox.
+  - Миттєве перезавантаження документа в PdfViewerFragment після збереження (documentUri = null; documentUri = savedUri) для відображення нанесених правок.
+  - Перехоплення кнопки «Назад» у режимі малювання для безпечного виходу без закриття документа.
+- Додано векторні XML-іконки Material Design (ic_draw, ic_signature, ic_text_fields, ic_undo, ic_check, ic_close, ic_clear_all) та стиль фону bg_rounded_card.
+- Повна 4-мовна локалізація (uk, en, de, ru) у файлах strings.xml.
+- Написано модульні тести AnnotationsUiLogicTest для перевірки розрахунків масштабування штрихів, позиціонування підпису та структури текстових даних.
+- Успішна збірка та верифікація: ./gradlew :app:assembleDebug :app:testDebugUnitTest (всі тести пройдено, APK зібрано без помилок).
+**Що змінено:**
+- Модуль app/:
+  - app/src/main/java/com/savoj/volumpdf/ui/reader/InkCanvasView.kt
+  - app/src/main/java/com/savoj/volumpdf/ui/reader/SignaturePadView.kt
+  - app/src/main/java/com/savoj/volumpdf/ui/reader/SignatureBottomSheetDialogFragment.kt
+  - app/src/main/java/com/savoj/volumpdf/ui/reader/AddTextBottomSheetDialogFragment.kt
+  - app/src/main/java/com/savoj/volumpdf/ui/reader/VolumPdfViewerFragment.kt
+  - app/src/main/java/com/savoj/volumpdf/ui/reader/ReaderActivity.kt
+  - app/src/main/res/layout/activity_reader.xml
+  - app/src/main/res/layout/dialog_signature_bottom_sheet.xml
+  - app/src/main/res/layout/dialog_add_text_bottom_sheet.xml
+  - app/src/main/res/menu/menu_reader.xml
+  - app/src/main/res/drawable/ic_draw.xml
+  - app/src/main/res/drawable/ic_signature.xml
+  - app/src/main/res/drawable/ic_text_fields.xml
+  - app/src/main/res/drawable/ic_undo.xml
+  - app/src/main/res/drawable/ic_check.xml
+  - app/src/main/res/drawable/ic_close.xml
+  - app/src/main/res/drawable/ic_clear_all.xml
+  - app/src/main/res/drawable/bg_rounded_card.xml
+  - app/src/main/res/values/strings.xml
+  - app/src/main/res/values-uk/strings.xml
+  - app/src/main/res/values-de/strings.xml
+  - app/src/main/res/values-ru/strings.xml
+  - app/src/test/java/com/savoj/volumpdf/ui/reader/AnnotationsUiLogicTest.kt
+- docs/project_log.md
+**Рішення, які ухвалено:**
+- Розміщення InkCanvasView безпосередньо у viewerWrapper поверх pdfViewerContainer з видимістю GONE у режимі читання, що усуває будь-які конфлікти з жестами читача (зум, панорамування, скрол).
+- Використання плаваючої палітри drawingToolbarCard у Material 3 стилі з пресетами пензлів (Ручка, Маркер, Хайлайтер) і швидкими діями (Undo, Clear, Save, Close), що забезпечує компактність та зручність на будь-якому розмірі екрана.
+- Автоматична обрізка прозорих країв бітмапа підпису у SignaturePadView.getTransparentSignatureBitmap() для отримання акуратного компактного штампа без небажаних порожніх зон.
+- Визначення актуального індексу відкритої сторінки через attachedPdfView?.firstVisiblePage у VolumPdfViewerFragment з анотацією @OptIn(ExperimentalPdfApi::class).
+- Робота виключно через SAF і локальні файли користувача: жодні дані не передаються в мережу, збереження відбувається атомарно.
+**Що передати далі:**
+- Керівнику проєкту: Етап 2.1 «Малювання, Підпис та Текст у ReaderActivity» повністю завершено, збірка та тести успішні, можна перевіряти гілку feature/annotations-ui.
+**Відкриті питання:**
+- Немає.
 
 ## 2026-11-03 — PDF-ядро (Реалізація AnnotationEngine: малювання штрихів, вставка підпису та додавання тексту)
 **Що зроблено:**

@@ -100,4 +100,36 @@
     <string name="filename_rotated">povernutyi_dokument.pdf</string>
     <string name="filename_deleted">dokument_bez_storinok.pdf</string>
     <string name="filename_images">foto_dokument.pdf</string>
+
+    <!-- Annotations & Editing -->
+    <string name="action_draw">Малювати</string>
+    <string name="action_signature">Підпис</string>
+    <string name="action_add_text">Додати текст</string>
+    <string name="action_undo">Скасувати</string>
+    <string name="action_clear_all">Очистити все</string>
+    <string name="action_save">Зберегти</string>
+    <string name="saving_annotations">Збереження анотацій…</string>
+    <string name="brush_pen">Ручка</string>
+    <string name="brush_marker">Маркер</string>
+    <string name="brush_highlighter">Хайлайтер</string>
+    <string name="color_label">Колір:</string>
+    <string name="color_black">Чорний</string>
+    <string name="color_red">Червоний</string>
+    <string name="color_blue">Синій</string>
+    <string name="color_green">Зелений</string>
+    <string name="color_yellow">Жовтий</string>
+    <string name="signature_dialog_title">Створити підпис</string>
+    <string name="signature_dialog_hint">Розпишіться пальцем або стилусом у полі нижче</string>
+    <string name="signature_clear">Очистити</string>
+    <string name="signature_insert">Вставити</string>
+    <string name="signature_error_empty">Будь ласка, розпишіться перед вставкою</string>
+    <string name="signature_success">Підпис успішно додано</string>
+    <string name="text_dialog_title">Додати текст</string>
+    <string name="text_input_hint">Введіть текст анотації</string>
+    <string name="text_size_label">Розмір шрифту:</string>
+    <string name="text_size_format">Розмір шрифту: %1$d pt</string>
+    <string name="text_insert">Додати на документ</string>
+    <string name="text_error_empty">Текст не може бути порожнім</string>
+    <string name="text_success">Текст успішно додано</string>
+    <string name="drawing_success">Малюнок успішно збережено</string>
 </resources>

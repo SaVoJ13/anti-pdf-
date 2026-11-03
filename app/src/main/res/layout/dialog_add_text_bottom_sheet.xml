@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+        android:id="@+id/dragHandle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/addTextTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/text_dialog_title"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="@string/text_input_hint"
+        app:boxBackgroundMode="outline">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etAnnotationText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textMultiLine|textCapSentences"
+            android:maxLines="4" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Вибір розміру шрифту -->
+    <TextView
+        android:id="@+id/tvFontSizeLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/text_size_label"
+        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderFontSize"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="10.0"
+        android:valueTo="48.0"
+        android:stepSize="2.0"
+        android:value="16.0" />
+
+    <!-- Вибір кольору -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/color_label"
+        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/toggleColorGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:singleSelection="true"
+        app:selectionRequired="true">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnColorBlack"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/color_black"
+            android:textColor="#000000" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnColorRed"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/color_red"
+            android:textColor="#D32F2F" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnColorBlue"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/color_blue"
+            android:textColor="#1976D2" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnColorGreen"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/color_green"
+            android:textColor="#388E3C" />
+
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <!-- Кнопка додавання -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAddTextConfirm"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="@string/text_insert"
+        app:icon="@drawable/ic_check" />
+
+</LinearLayout>
