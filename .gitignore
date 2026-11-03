@@ -1,0 +1,25 @@
+# Секрети: ніколи в репозиторій
+*.jks
+*.keystore
+*.p12
+*.pem
+keystore.properties
+local.properties
+secrets.properties
+google-services.json
+.env
+.env.*
+
+# Android / Gradle
+.gradle/
+build/
+.idea/
+*.iml
+captures/
+.cxx/
+*.apk
+*.aab
+
+# ОС
+.DS_Store
+Thumbs.db
