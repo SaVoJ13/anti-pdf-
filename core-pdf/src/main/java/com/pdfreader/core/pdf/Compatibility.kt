@@ -1,0 +1,7 @@
+package com.pdfreader.core.pdf
+
+import com.savoj.volumpdf.core.pdf.PageOperationsEngine as ActualPageOperationsEngine
+import com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine as ActualPdfBoxPageOperationsEngine
+
+typealias PageOperationsEngine = ActualPageOperationsEngine
+typealias PdfBoxPageOperationsEngine = ActualPdfBoxPageOperationsEngine

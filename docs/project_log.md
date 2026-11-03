@@ -1,5 +1,39 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-03 — PDF-ядро (Створення модуля core-pdf та реалізація PageOperationsEngine)
+**Що зроблено:**
+- Створено кореневу збірку проєкту з Gradle wrapper 8.14.3, AGP 8.13.0, Kotlin 2.2.20 та Android Library модуль `:core-pdf` (`namespace = "com.savoj.volumpdf.core.pdf"`, `compileSdk = 36`, `compileSdkExtension = 19`, `minSdk = 28`).
+- Реалізовано моделі даних за CONTRACTS.md: `PdfDocumentMetadata`, `PdfLoadResult`, `PdfOperationResult` у пакеті `com.savoj.volumpdf.core.pdf.model`.
+- Реалізовано інтерфейс `PageOperationsEngine` та рушій `PdfBoxPageOperationsEngine` на базі `com.tom-roush:pdfbox-android:2.0.27.0` у пакеті `com.savoj.volumpdf.core.pdf`:
+  - `mergePdfs`: послідовне злиття кількох PDF через `PDFMergerUtility` з емісією прогресу `Flow<PdfOperationResult>`.
+  - `extractPages`: експорт обраних сторінок у новий документ (`targetDoc.importPage(page)`).
+  - `rotatePages`: поворот сторінок на кут, кратний 90° (0..360° нормалізація).
+  - `deletePages`: видалення сторінок у порядку спадання індексів (запобігає зміщенню індексів) з перевіркою мінімуму в 1 сторінку.
+  - `imagesToPdf`: конвертація JPEG/PNG/зображень у PDF з надійним визначенням розмірів (через маркери SOF / IHDR для незалежності від середовища).
+  - Забезпечено коректну ініціалізацію `PDFBoxResourceLoader.init(context)`, безпечне закриття дескрипторів та потоків через `.use {}` / `try ... finally`, валідацію вхідних аргументів та перехоплення помилок.
+- Надано типізовані аліаси для зворотної сумісності у пакеті `com.pdfreader.core.pdf`.
+- Написано повний набір JVM unit-тестів у `PdfBoxPageOperationsEngineTest` (6 тестів: злиття, вилучення, поворот, видалення, створення PDF із зображення, валідація помилок).
+- Успішно зібрано й перевірено: `./gradlew :core-pdf:test :core-pdf:assembleRelease` (усі 6 тестів зелені, release AAR зібрано).
+**Що змінено:**
+- Модуль `core-pdf/`
+- Кореневі файли збірки (`settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradlew`, `gradlew.bat`, `gradle/wrapper/*`)
+- `docs/project_log.md`
+**Рішення, які ухвалено:**
+- Встановлено `compileSdkExtension = 19` для сумісності з `androidx.pdf:pdf-viewer-fragment:1.0.0-beta01` (вимога SDK Extension >= 19).
+- Організовано обробку потоків на `Dispatchers.IO` з коректним прокиданням `CancellationException`.
+- Реалізовано вбудований парсер заголовків зображень (SOF0/SOF2 для JPEG та IHDR для PNG) для надійного вилучення розмірів без залежності від platform `BitmapFactory` у тестовому оточенні.
+**Пропозиція до THIRD_PARTY.md (для затвердження Керівником):**
+- Залежності збірки та тестів:
+  - `org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1` (Apache-2.0)
+  - `junit:junit:4.13.2` (EPL-1.0, test only)
+  - `org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1` (Apache-2.0, test only)
+  - `org.mockito:mockito-core:5.15.2` (MIT, test only)
+**Що передати далі:**
+- Керівнику проєкту: оновити пакетні шляхи в CONTRACTS.md з `com.pdfreader...` на `com.savoj.volumpdf...` та внести за потреби тестові залежності в THIRD_PARTY.md.
+- Агенту UI/Android: модуль `core-pdf` готовий до підключення в застосунок `app` (інтерфейс `PageOperationsEngine` та AAR готові).
+**Відкриті питання:**
+- Немає. Усі тести проходять успішно.
+
 ## 2026-11-03 — Керівник проєкту (Затвердження назви продукту Volum PDF)
 **Що зроблено:**
 - Власник затвердив назву продукту: **Volum PDF** (назва в магазині: **Volum PDF: Reader & Tools**).
