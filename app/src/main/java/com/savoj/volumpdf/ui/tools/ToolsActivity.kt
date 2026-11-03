@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.savoj.volumpdf.R
+import com.savoj.volumpdf.core.ads.AdMobAdsManager
+import com.savoj.volumpdf.core.ads.AdsManager
 import com.savoj.volumpdf.databinding.ActivityToolsBinding
 import com.savoj.volumpdf.ui.reader.ReaderActivity
 import com.savoj.volumpdf.util.SafUtils
@@ -25,6 +27,7 @@ class ToolsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityToolsBinding
     private val viewModel: ToolsViewModel by viewModels()
+    private lateinit var adsManager: AdsManager
 
     private lateinit var toolType: ToolType
     private lateinit var filesAdapter: SelectedFileAdapter
@@ -77,6 +80,8 @@ class ToolsActivity : AppCompatActivity() {
         binding = ActivityToolsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        adsManager = AdMobAdsManager.getInstance(this)
+
         val toolName = intent.getStringExtra(EXTRA_TOOL_TYPE) ?: ToolType.MERGE.name
         toolType = try {
             ToolType.valueOf(toolName)
@@ -91,6 +96,9 @@ class ToolsActivity : AppCompatActivity() {
         setupRecyclerView()
         setupListeners()
         observeViewModel()
+
+        // Прив'язка банера внизу ToolsActivity
+        adsManager.bindAdaptiveBanner(this, binding.bannerContainer)
     }
 
     private fun setupToolUi() {
@@ -279,7 +287,10 @@ class ToolsActivity : AppCompatActivity() {
                             binding.containerProgress.visibility = View.GONE
                             binding.btnProcessAndSave.isEnabled = true
                             binding.btnSelectFiles.isEnabled = true
-                            showSuccessDialog(state.outputUri, state.pagesCount)
+                            // Показ Interstitial з кулдауном 5 хвилин перед показом діалогу результату
+                            adsManager.showActionInterstitial(this@ToolsActivity) {
+                                showSuccessDialog(state.outputUri, state.pagesCount)
+                            }
                         }
                         is OperationUiState.Error -> {
                             binding.containerProgress.visibility = View.GONE
@@ -311,7 +322,7 @@ class ToolsActivity : AppCompatActivity() {
             }
             .setCancelable(false)
             .show()
-    }
+        }
 
     private fun showError(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()

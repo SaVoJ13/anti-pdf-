@@ -240,6 +240,13 @@
 
     </androidx.core.widget.NestedScrollView>
 
+    <!-- Banner Container at Bottom of ToolsActivity -->
+    <FrameLayout
+        android:id="@+id/bannerContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
     <!-- Bottom Save Action Button Bar -->
     <LinearLayout
         android:layout_width="match_parent"

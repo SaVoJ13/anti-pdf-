@@ -5,14 +5,18 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.savoj.volumpdf.R
+import com.savoj.volumpdf.core.ads.AdMobAdsManager
+import com.savoj.volumpdf.core.ads.AdsManager
 import com.savoj.volumpdf.data.model.SortOrder
 import com.savoj.volumpdf.databinding.ActivityMainBinding
 import com.savoj.volumpdf.ui.reader.ReaderActivity
@@ -21,6 +25,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
+    private lateinit var adsManager: AdsManager
 
     private val openDocumentLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -35,12 +40,37 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        adsManager = AdMobAdsManager.getInstance(this)
+
         setSupportActionBar(binding.toolbar)
 
         setupViewPagerAndTabs()
         setupFab()
+        setupAds()
 
         handleIntent(intent)
+    }
+
+    private fun setupAds() {
+        // Запит згоди UMP (GDPR) та ініціалізація реклами
+        adsManager.requestConsentAndInit(this) {
+            adsManager.bindAdaptiveBanner(this, binding.bannerContainer)
+        }
+
+        // Динамічне коригування положення FAB при появі або зникненні банера
+        binding.bannerContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            val bannerHeight = binding.bannerContainer.height
+            val isBannerVisible = binding.bannerContainer.visibility == View.VISIBLE
+            val params = binding.fabOpenPdf.layoutParams as? CoordinatorLayout.LayoutParams
+            if (params != null) {
+                val baseMargin = (20 * resources.displayMetrics.density).toInt()
+                val targetMargin = if (isBannerVisible) baseMargin + bannerHeight else baseMargin
+                if (params.bottomMargin != targetMargin) {
+                    params.bottomMargin = targetMargin
+                    binding.fabOpenPdf.layoutParams = params
+                }
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

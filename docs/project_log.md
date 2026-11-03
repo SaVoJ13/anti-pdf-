@@ -1,5 +1,40 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-03 — Монетизація і Google Play (Створення модуля core-ads, інтеграція в app та підготовка документів для Google Play)
+**Що зроблено:**
+- Створено Android Library модуль `:core-ads` (`namespace = "com.savoj.volumpdf.core.ads"`, `compileSdk = 36`, `compileSdkExtension = 19`, `minSdk = 28`).
+- Підключено модуль `:core-ads` у `settings.gradle.kts` та `app/build.gradle.kts`.
+- Реалізовано контракт `AdsManager` та `ConsentStatus` (за `CONTRACTS.md`) у `AdMobAdsManager`:
+  - `requestConsentAndInit`: показ форми згоди Google UMP (User Messaging Platform) згідно з GDPR / ePrivacy Directive перед ініціалізацією реклами та завантаженням SDK.
+  - `bindAdaptiveBanner`: створення адаптивного AdView, автоматичне згортання (`View.GONE`) контейнера реклами при відсутності інтернету або помилці завантаження без порожніх білих дірок.
+  - `showActionInterstitial`: безпечний показ повноекранної реклами з обов'язковим інтервалом кулдауну не частіше 1 разу на 5 хвилин. При активному кулдауні або відсутності мережі дія користувача продовжується негайно без жодних блокувань.
+  - Використано виключно офіційні тестові ідентифікатори Google AdMob (`TEST_APP_ID = "ca-app-pub-3940256099942544~3347511713"`, `TEST_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"`, `TEST_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"`). Жодних бойових ключів у репозиторії.
+- Інтегровано рекламу в застосунок `app`:
+  - Додано метатег `com.google.android.gms.ads.APPLICATION_ID` та дозвіл `android.permission.INTERNET` в `AndroidManifest.xml`.
+  - Зареєстровано `ToolsActivity` в `AndroidManifest.xml`.
+  - У `MainActivity`: виклик `requestConsentAndInit` при старті, динамічний адаптивний банер у нижній частині екрана зі збереженням доступності FAB (автоматичне коригування відступу FAB при появі банера).
+  - У `ToolsActivity`: адаптивний банер над кнопкою дій та виклик `showActionInterstitial` після успішного збереження файлу перед показом діалогу результату.
+- Підготовлено документацію для публікації в Google Play у каталозі `docs/store/`:
+  - `PRIVACY_POLICY.md` — вичерпна політика конфіденційності (наголос на локальній обробці SAF, нульовій передачі документів у мережу, відсутності акаунтів та аналітики, передачі даних в AdMob лише за згодою UMP).
+  - `DATA_SAFETY.md` — точні відповіді для анкети Google Play Data Safety з обґрунтуванням для всіх категорій даних (файли й документи — Not Collected; приблизне розташування, діагностика та рекламні ID — збираються стороннім SDK Google AdMob за згодою).
+  - `STORE_LISTING.md` — маркетингова картка застосунку (назва 25 символів, короткий опис до 80 символів та повний опис до 4000 символів 4 мовами: uk, en, de, ru).
+- Написано JVM unit-тести для `core-ads` (`AdMobAdsManagerTest`: перевірка тестових ID, станів згоди, негайного спрацьовування кулдауну та відсутності затримок при порожньому кеші).
+- Успішно зібрано й верифіковано: `./gradlew :app:assembleDebug :core-ads:assembleRelease :core-ads:test :app:testDebugUnitTest`.
+**Що змінено:**
+- Модуль `core-ads/` (build.gradle.kts, AndroidManifest.xml, AdMobAdsManager.kt, AdsManager.kt, ConsentStatus.kt, тести)
+- Модуль `app/` (build.gradle.kts, AndroidManifest.xml, MainActivity.kt, ToolsActivity.kt, activity_main.xml, activity_tools.xml)
+- `settings.gradle.kts`
+- Каталог `docs/store/` (PRIVACY_POLICY.md, DATA_SAFETY.md, STORE_LISTING.md)
+- `docs/project_log.md`
+**Рішення, які ухвалено:**
+- Реалізовано єдиний синглтон `AdMobAdsManager.getInstance(context)`, що гарантує спільний таймер кулдауну (5 хвилин) між усіма активностями та екранами застосунку.
+- Для адаптивного банера в `MainActivity` реалізовано `addOnLayoutChangeListener`, який автоматично коригує `bottomMargin` для ExtendedFAB при зміні видимості рекламного контейнера, що повністю виключає перекриття елементів керування банером.
+- Контейнери реклами ініціалізуються як `View.GONE` і стають видимими лише після події `onAdLoaded()`. При помилці мережі контейнер очищується і знову стає `View.GONE`.
+**Що передати далі:**
+- Керівнику проєкту та QA: модуль `core-ads` готовий, реклама та згода інтегровані в `app`, документація для Play Console у `docs/store/` готова до аудиту.
+**Відкриті питання:**
+- Реєстрація бойового акаунту Google Play Console ($25) та налаштування рекламних блоків у Google AdMob консолі чекають на рішення та дії власника перед релізом у закрите тестування.
+
 ## 2026-11-03 — Android і UI (Створення модуля app, Room бази даних, Material 3 інтерфейсу та інструментів)
 **Що зроблено:**
 - Створено чистовий Android Application модуль `:app` (`namespace = "com.savoj.volumpdf"`, `applicationId = "com.savoj.volumpdf"`, `minSdk = 28`, `compileSdk = 36`, `compileSdkExtension = 19`, `targetSdk = 36`, `versionCode = 1`, `versionName = "1.0.0"`).
