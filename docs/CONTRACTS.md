@@ -1,7 +1,7 @@
 # CONTRACTS — контракти між модулями
 Веде лише Керівник проєкту. Версії v0.N.
 
-## v0.2 (Затверджено: Етап 2.1 — Малювання, Підпис та Текст, 2026-11-03)
+## v0.3 (Затверджено: Етап 2.2 — Інтерактивні форми AcroForm та ергономіка UI, 2026-11-04)
 
 ### 1. Модуль `core-pdf` ↔ `app`
 
@@ -47,6 +47,47 @@ data class FreeTextData(
     val y: Float,
     val fontSize: Float = 14f,
     val color: Int // ARGB
+)
+
+// Моделі для інтерактивних форм AcroForm (v0.3)
+sealed interface FormField {
+    val fullyQualifiedName: String
+    val partialName: String
+    val alternateTitle: String? // Опис/підказка поля (TU запис)
+    val isReadOnly: Boolean
+
+    data class Text(
+        override val fullyQualifiedName: String,
+        override val partialName: String,
+        override val alternateTitle: String?,
+        override val isReadOnly: Boolean,
+        val value: String,
+        val isMultiline: Boolean
+    ) : FormField
+
+    data class CheckBox(
+        override val fullyQualifiedName: String,
+        override val partialName: String,
+        override val alternateTitle: String?,
+        override val isReadOnly: Boolean,
+        val isChecked: Boolean,
+        val onValue: String = "Yes"
+    ) : FormField
+
+    data class Choice(
+        override val fullyQualifiedName: String,
+        override val partialName: String,
+        override val alternateTitle: String?,
+        override val isReadOnly: Boolean,
+        val options: List<String>,
+        val selectedValue: String?,
+        val isEditableCombo: Boolean
+    ) : FormField
+}
+
+data class FormFieldUpdate(
+    val fullyQualifiedName: String,
+    val value: Any // String для Text/Choice, Boolean для CheckBox
 )
 ```
 
@@ -121,6 +162,30 @@ interface AnnotationEngine {
         textData: FreeTextData,
         pageWidthPt: Float,
         pageHeightPt: Float,
+        outputUri: Uri
+    ): PdfOperationResult
+}
+```
+
+#### 1.4 Інтерфейс роботи з інтерактивними формами (`FormEngine`) (v0.3)
+```kotlin
+package com.savoj.volumpdf.core.pdf
+
+import android.content.Context
+import android.net.Uri
+import com.savoj.volumpdf.core.pdf.model.FormField
+import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
+import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
+
+interface FormEngine {
+    // Отримання списку всіх інтерактивних полів документа
+    suspend fun extractFormFields(context: Context, sourceUri: Uri): List<FormField>
+
+    // Запис оновлених значень у поля форми та збереження в новий або той самий URI
+    suspend fun fillFormFields(
+        context: Context,
+        sourceUri: Uri,
+        updates: List<FormFieldUpdate>,
         outputUri: Uri
     ): PdfOperationResult
 }
