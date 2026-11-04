@@ -98,7 +98,7 @@
     <string name="filename_merged">zusammengefuehrtes_dokument.pdf</string>
     <string name="filename_split">extrahierte_seiten.pdf</string>
     <string name="filename_rotated">gedrehtes_dokument.pdf</string>
-    <string name="filename_deleted">dokument_ohne_seiten.pdf</string>
+    <string name="filename_deleted">geloeschte_seiten.pdf</string>
     <string name="filename_images">foto_dokument.pdf</string>
 
     <!-- Annotations & Editing -->
@@ -132,4 +132,14 @@
     <string name="text_error_empty">Text darf nicht leer sein</string>
     <string name="text_success">Text erfolgreich hinzugefügt</string>
     <string name="drawing_success">Zeichnung erfolgreich gespeichert</string>
+
+    <!-- Interactive Forms (AcroForm) -->
+    <string name="action_forms">Formulare</string>
+    <string name="forms_sheet_title">Formular ausfüllen</string>
+    <string name="forms_sheet_subtitle">%1$d ausfüllbare Felder gefunden</string>
+    <string name="action_save_form">Formular speichern</string>
+    <string name="saving_form">Formulardaten werden gespeichert…</string>
+    <string name="form_saved_success">Formular erfolgreich gespeichert</string>
+    <string name="form_read_only_badge">Schreibgeschützt</string>
+    <string name="form_select_option">Option auswählen</string>
 </resources>

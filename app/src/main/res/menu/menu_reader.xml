@@ -3,24 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_draw"
-        android:icon="@drawable/ic_draw"
-        android:title="@string/action_draw"
-        app:showAsAction="ifRoom" />
-
-    <item
-        android:id="@+id/action_signature"
-        android:icon="@drawable/ic_signature"
-        android:title="@string/action_signature"
-        app:showAsAction="ifRoom" />
-
-    <item
-        android:id="@+id/action_add_text"
-        android:icon="@drawable/ic_text_fields"
-        android:title="@string/action_add_text"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/action_toggle_favorite"
         android:icon="@drawable/ic_star_outline"
         android:title="@string/action_favorite"
@@ -31,6 +13,24 @@
         android:icon="@drawable/ic_share"
         android:title="@string/action_share"
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_draw"
+        android:icon="@drawable/ic_draw"
+        android:title="@string/action_draw"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_signature"
+        android:icon="@drawable/ic_signature"
+        android:title="@string/action_signature"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_add_text"
+        android:icon="@drawable/ic_text_fields"
+        android:title="@string/action_add_text"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/action_details"

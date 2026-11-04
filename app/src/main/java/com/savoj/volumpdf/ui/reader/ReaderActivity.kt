@@ -19,8 +19,11 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.savoj.volumpdf.R
 import com.savoj.volumpdf.core.pdf.AnnotationEngine
+import com.savoj.volumpdf.core.pdf.FormEngine
 import com.savoj.volumpdf.core.pdf.PdfBoxAnnotationEngine
+import com.savoj.volumpdf.core.pdf.PdfBoxFormEngine
 import com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine
+import com.savoj.volumpdf.core.pdf.model.FormField
 import com.savoj.volumpdf.core.pdf.model.FreeTextData
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.savoj.volumpdf.data.db.RecentDocument
@@ -45,6 +48,9 @@ class ReaderActivity : AppCompatActivity() {
     private var viewerFragment: VolumPdfViewerFragment? = null
 
     private val annotationEngine: AnnotationEngine = PdfBoxAnnotationEngine()
+    private val formEngine: FormEngine = PdfBoxFormEngine()
+    private var detectedFormFields: List<FormField> = emptyList()
+
     private var isDrawingMode = false
 
     private enum class BrushType {
@@ -77,8 +83,11 @@ class ReaderActivity : AppCompatActivity() {
 
         setupViewerFragment(uri, savedInstanceState)
         setupDrawingToolbar()
+        setupBottomActionBar()
         setupBackNavigation()
         observeViewModel()
+
+        checkForFormFields(uri)
     }
 
     private fun setupViewerFragment(uri: Uri, savedInstanceState: Bundle?) {
@@ -111,6 +120,73 @@ class ReaderActivity : AppCompatActivity() {
         if (fragment.documentUri == null) {
             fragment.documentUri = uri
         }
+    }
+
+    private fun setupBottomActionBar() {
+        binding.bottomActionBar.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.action_forms -> {
+                    if (isDrawingMode) toggleDrawingMode(false)
+                    openFillFormDialog()
+                    false
+                }
+                R.id.action_draw -> {
+                    toggleDrawingMode()
+                    false
+                }
+                R.id.action_signature -> {
+                    if (isDrawingMode) toggleDrawingMode(false)
+                    openSignatureDialog()
+                    false
+                }
+                R.id.action_add_text -> {
+                    if (isDrawingMode) toggleDrawingMode(false)
+                    openAddTextDialog()
+                    false
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun checkForFormFields(uri: Uri) {
+        lifecycleScope.launch {
+            val fields = withContext(Dispatchers.IO) {
+                try {
+                    formEngine.extractFormFields(applicationContext, uri)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    emptyList()
+                }
+            }
+            detectedFormFields = fields
+            updateFormsActionButton(fields.size)
+        }
+    }
+
+    private fun updateFormsActionButton(count: Int) {
+        val formsItem = binding.bottomActionBar.menu.findItem(R.id.action_forms) ?: return
+        if (count > 0) {
+            formsItem.isVisible = true
+            val badge = binding.bottomActionBar.getOrCreateBadge(R.id.action_forms)
+            badge.number = count
+            badge.isVisible = true
+        } else {
+            formsItem.isVisible = false
+            binding.bottomActionBar.removeBadge(R.id.action_forms)
+        }
+    }
+
+    private fun openFillFormDialog() {
+        val uri = documentUri ?: return
+        val dialog = FillFormBottomSheetDialogFragment.newInstance(uri, detectedFormFields)
+        dialog.onFormSavedListener = { savedUri ->
+            documentUri = savedUri
+            reloadViewerDocument()
+            checkForFormFields(savedUri)
+            Snackbar.make(binding.root, R.string.form_saved_success, Snackbar.LENGTH_SHORT).show()
+        }
+        dialog.show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
     }
 
     private fun setupDrawingToolbar() {
@@ -170,7 +246,6 @@ class ReaderActivity : AppCompatActivity() {
                 binding.inkCanvasView.currentStrokeWidth = 12f
             }
             BrushType.HIGHLIGHTER -> {
-                // Напівпрозорий жовтий або вибраний колір з альфою 0x66
                 val r = Color.red(baseColor)
                 val g = Color.green(baseColor)
                 val b = Color.blue(baseColor)
@@ -198,6 +273,7 @@ class ReaderActivity : AppCompatActivity() {
         isDrawingMode = enable ?: !isDrawingMode
         binding.inkCanvasView.visibility = if (isDrawingMode) View.VISIBLE else View.GONE
         binding.drawingToolbarCard.visibility = if (isDrawingMode) View.VISIBLE else View.GONE
+        binding.bottomActionBar.visibility = if (isDrawingMode) View.GONE else View.VISIBLE
 
         if (!isDrawingMode) {
             binding.inkCanvasView.clear()
@@ -237,6 +313,7 @@ class ReaderActivity : AppCompatActivity() {
                         binding.inkCanvasView.clear()
                         toggleDrawingMode(false)
                         reloadViewerDocument()
+                        checkForFormFields(uri)
                         Snackbar.make(binding.root, R.string.drawing_success, Snackbar.LENGTH_SHORT).show()
                     }
                     is PdfOperationResult.Error -> {
@@ -294,6 +371,7 @@ class ReaderActivity : AppCompatActivity() {
                 when (result) {
                     is PdfOperationResult.Success -> {
                         reloadViewerDocument()
+                        checkForFormFields(uri)
                         Snackbar.make(binding.root, R.string.signature_success, Snackbar.LENGTH_SHORT).show()
                     }
                     is PdfOperationResult.Error -> {
@@ -351,6 +429,7 @@ class ReaderActivity : AppCompatActivity() {
                 when (result) {
                     is PdfOperationResult.Success -> {
                         reloadViewerDocument()
+                        checkForFormFields(uri)
                         Snackbar.make(binding.root, R.string.text_success, Snackbar.LENGTH_SHORT).show()
                     }
                     is PdfOperationResult.Error -> {

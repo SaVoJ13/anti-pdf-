@@ -268,4 +268,14 @@
 
     </FrameLayout>
 
+    <!-- Нижня панель швидких дій (Bottom Action Bar) під великий палець -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomActionBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        app:elevation="8dp"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/menu_reader_bottom" />
+
 </LinearLayout>

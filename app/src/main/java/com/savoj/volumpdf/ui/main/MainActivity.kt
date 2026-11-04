@@ -57,13 +57,13 @@ class MainActivity : AppCompatActivity() {
             adsManager.bindAdaptiveBanner(this, binding.bannerContainer)
         }
 
-        // Динамічне коригування положення FAB при появі або зникненні банера
+        // Динамічне коригування положення FAB при появі або зникненні банера (комфортна зона Galaxy S24 Ultra)
         binding.bannerContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             val bannerHeight = binding.bannerContainer.height
             val isBannerVisible = binding.bannerContainer.visibility == View.VISIBLE
             val params = binding.fabOpenPdf.layoutParams as? CoordinatorLayout.LayoutParams
             if (params != null) {
-                val baseMargin = (20 * resources.displayMetrics.density).toInt()
+                val baseMargin = (76 * resources.displayMetrics.density).toInt()
                 val targetMargin = if (isBannerVisible) baseMargin + bannerHeight else baseMargin
                 if (params.bottomMargin != targetMargin) {
                     params.bottomMargin = targetMargin

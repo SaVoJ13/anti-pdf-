@@ -1,5 +1,62 @@
 ﻿# Журнал проєкту (нові записи зверху)
 
+## 2026-11-04 — Android і UI (Інтерактивне заповнення форм AcroForm та покращення ергономіки UI)
+**Що зроблено:**
+- Виправлено ергономіку інтерфейсу згідно із зауваженнями власника:
+  - Піднято кнопку додавання PDF (`fabOpenPdf`) в `MainActivity`: збільшено базовий відступ до `marginBottom="76dp"`, додано динамічний розрахунок положення над рекламним банером (`baseMargin + bannerHeight`), щоб на великих флагманах на зразок Galaxy S24 Ultra на кнопку було комфортно натискати великим пальцем однієї руки.
+  - У `ReaderActivity` та `activity_reader.xml` додано нижню панель швидких дій (Bottom Action Bar) `bottomActionBar` під великий палець:
+    - 📋 «Форми» (`action_forms`) — відображається тільки якщо відкритий документ містить поля AcroForm, з автоматичним бейджем кількості знайдених полів.
+    - ✏️ «Малювати» (`action_draw`) — активує режим рукописного малювання S Pen / пальцем (автоматично приховує нижню панель під час малювання).
+    - ✍️ «Підпис» (`action_signature`) — відкриває Bottom Sheet створення та нанесення підпису.
+    - 🔤 «Текст» (`action_add_text`) — відкриває Bottom Sheet введення тексту анотації.
+    - У верхньому тулбарі меню розвантажено: залишено швидкий доступ до «Обраного» та «Поділитися».
+- Реалізовано інтерфейс заповнення інтерактивних форм AcroForm:
+  - У `ReaderActivity` налаштовано фонову перевірку наявності інтерактивних полів через `PdfBoxFormEngine.extractFormFields` у `Dispatchers.IO` при відкритті документа та після кожного збереження.
+  - Створено `FillFormBottomSheetDialogFragment` та `dialog_fill_form_bottom_sheet.xml`:
+    - Повноекранна зручна шторка (до 88% висоти екрана) з drag handle, лічильником полів, прогрес-індикатором та закріпленими нижніми кнопками збереження/скасування.
+    - `FormFieldsAdapter`:
+      - `FormField.Text`: `TextInputLayout` + `TextInputEditText` (підтримка однорядкового та багаторядкового вводу, підказки з `alternateTitle ?: partialName`, позначка `Read only`).
+      - `FormField.CheckBox`: картка з `MaterialCheckBox` та підписом.
+      - `FormField.Choice`: `TextInputLayout` зі стилем `ExposedDropdownMenu` та `MaterialAutoCompleteTextView` з переліком доступних опцій `options` і підтримкою редагованих комбобоксів.
+    - Збереження форми: збір `List<FormFieldUpdate>`, виклик `PdfBoxFormEngine.fillFormFields` у фоновому потоці, миттєве оновлення переглядача `PdfViewerFragment` (`documentUri = null; documentUri = savedUri`), перезавантаження детектора полів та сповіщення `Snackbar`.
+    - Збереження введених даних при зміні конфігурації (поворот екрана / переривання процесу) через `onSaveInstanceState`.
+- Повна локалізація:
+  - Додано переклади всіх нових рядків дій та форм у `strings.xml` для всіх підтримуваних мов: українська (`uk`), англійська (`en`), німецька (`de`), російська (`ru`).
+- Написано нові unit-тести `FormFieldsUiLogicTest`:
+  - Перевірка збору оновлень `FormFieldUpdate`, валідації полів, логіки відображення бейджів та розрахунку відступів під Galaxy S24 Ultra.
+- Проведено повну верифікацію:
+  - Успішна збірка та проходження тестів: `./gradlew :app:assembleDebug :app:testDebugUnitTest` та повний прогін `./gradlew test` (всі тести зелені).
+**Що змінено:**
+- Модуль `app/`:
+  - `app/src/main/res/layout/activity_main.xml`
+  - `app/src/main/java/com/savoj/volumpdf/ui/main/MainActivity.kt`
+  - `app/src/main/res/layout/activity_reader.xml`
+  - `app/src/main/res/menu/menu_reader.xml`
+  - `app/src/main/res/menu/menu_reader_bottom.xml`
+  - `app/src/main/res/drawable/ic_forms.xml`
+  - `app/src/main/res/layout/item_form_field_text.xml`
+  - `app/src/main/res/layout/item_form_field_checkbox.xml`
+  - `app/src/main/res/layout/item_form_field_choice.xml`
+  - `app/src/main/res/layout/dialog_fill_form_bottom_sheet.xml`
+  - `app/src/main/java/com/savoj/volumpdf/ui/reader/FormFieldsAdapter.kt`
+  - `app/src/main/java/com/savoj/volumpdf/ui/reader/FillFormBottomSheetDialogFragment.kt`
+  - `app/src/main/java/com/savoj/volumpdf/ui/reader/ReaderActivity.kt`
+  - `app/src/main/res/values/strings.xml`
+  - `app/src/main/res/values-uk/strings.xml`
+  - `app/src/main/res/values-de/strings.xml`
+  - `app/src/main/res/values-ru/strings.xml`
+  - `app/src/test/java/com/savoj/volumpdf/ui/reader/FormFieldsUiLogicTest.kt`
+- `docs/project_log.md`
+**Рішення, які ухвалено:**
+- Нижнє розміщення панелі швидких дій у `ReaderActivity` значно покращує роботу однією рукою на сучасних великих смартфонах (Galaxy S24 Ultra) порівняно з верхнім тулбаром.
+- Показ кнопки «Форми» лише за умови наявності AcroForm у відкритому файлі не перевантажує інтерфейс під час читання звичайних документів без форм.
+- Динамічний бейдж на кнопці «Форми» інформує користувача про точну кількість інтерактивних полів у документі.
+- Збереження поточного вводу у `onSaveInstanceState` гарантує, що при повороті екрана введені дані користувача у формі не будуть втрачені.
+**Що передати далі:**
+- Модуль `app` містить повноцінне заповнення форм та адаптивну ергономіку. Передати на перевірку Керівнику проєкту та агенту ролі «QA і безпека».
+**Відкриті питання:**
+- Немає. Завдання виконано згідно зі специфікацією.
+
 ## 2026-11-04 — PDF-ядро (Реалізація FormEngine для інтерактивних форм AcroForm згідно CONTRACTS.md v0.3)
 **Що зроблено:**
 - Розширено моделі модуля `core-pdf` у просторі `com.savoj.volumpdf.core.pdf.model`:

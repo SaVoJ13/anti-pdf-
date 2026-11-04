@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_forms"
+        android:icon="@drawable/ic_forms"
+        android:title="@string/action_forms"
+        android:visible="false"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_draw"
+        android:icon="@drawable/ic_draw"
+        android:title="@string/action_draw"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_signature"
+        android:icon="@drawable/ic_signature"
+        android:title="@string/action_signature"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_add_text"
+        android:icon="@drawable/ic_text_fields"
+        android:title="@string/action_add_text"
+        app:showAsAction="always" />
+
+</menu>

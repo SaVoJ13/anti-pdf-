@@ -132,4 +132,14 @@
     <string name="text_error_empty">Текст не може бути порожнім</string>
     <string name="text_success">Текст успішно додано</string>
     <string name="drawing_success">Малюнок успішно збережено</string>
+
+    <!-- Interactive Forms (AcroForm) -->
+    <string name="action_forms">Форми</string>
+    <string name="forms_sheet_title">Заповнення форми</string>
+    <string name="forms_sheet_subtitle">Знайдено %1$d полів для заповнення</string>
+    <string name="action_save_form">Зберегти форму</string>
+    <string name="saving_form">Збереження даних форми…</string>
+    <string name="form_saved_success">Форму успішно збережено</string>
+    <string name="form_read_only_badge">Лише читання</string>
+    <string name="form_select_option">Оберіть варіант</string>
 </resources>

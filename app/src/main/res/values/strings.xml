@@ -132,4 +132,14 @@
     <string name="text_error_empty">Text cannot be empty</string>
     <string name="text_success">Text added successfully</string>
     <string name="drawing_success">Drawing saved successfully</string>
+
+    <!-- Interactive Forms (AcroForm) -->
+    <string name="action_forms">Forms</string>
+    <string name="forms_sheet_title">Fill PDF Form</string>
+    <string name="forms_sheet_subtitle">%1$d fillable fields found</string>
+    <string name="action_save_form">Save Form</string>
+    <string name="saving_form">Saving form data…</string>
+    <string name="form_saved_success">Form saved successfully</string>
+    <string name="form_read_only_badge">Read only</string>
+    <string name="form_select_option">Select an option</string>
 </resources>
