@@ -1,5 +1,43 @@
 ﻿# Журнал проєкту (нові записи зверху)
 
+## 2026-11-04 — PDF-ядро (Реалізація FormEngine для інтерактивних форм AcroForm згідно CONTRACTS.md v0.3)
+**Що зроблено:**
+- Розширено моделі модуля `core-pdf` у просторі `com.savoj.volumpdf.core.pdf.model`:
+  - Додано `sealed interface FormField` з типами `Text` (багаторядковість, поточне значення), `CheckBox` (стан перемикача, значення onValue), `Choice` (список опцій, обране значення, ознака редагованого комбобокса) та базовими метаданими (fullyQualifiedName, partialName, alternateTitle, isReadOnly).
+  - Додано модель оновлення полів `FormFieldUpdate(fullyQualifiedName, value)`.
+  - Забезпечено повну зворотну сумісність через typealias у просторі `com.pdfreader.core.pdf.model` (`FormField`, `FormFieldUpdate`).
+- Створено інтерфейс `FormEngine` (`com.savoj.volumpdf.core.pdf.FormEngine`) з методами `extractFormFields` та `fillFormFields`.
+- Реалізовано рушій `PdfBoxFormEngine` на базі `com.tom-roush:pdfbox-android:2.0.27.0`:
+  - `extractFormFields`: безпечне відкриття через SAF/file stream, обхід дерева полів `acroForm.fieldTree` з коректним вилученням типів, значень, налаштувань вибору та підказок TU (`alternateFieldName`). Якщо AcroForm відсутня у документі — повертає `emptyList()`.
+  - `fillFormFields`: знаходження полів за `fullyQualifiedName`, безпечне встановлення значень (`PDTextField.setValue`, `PDCheckBox.check`/`unCheck` з підтримкою різних типів значень, `PDChoice.setValue`), оновлення стану відображення (`refreshAppearances` та `needAppearances = true`).
+  - Безпечне збереження результату через проміжний тимчасовий файл (SAF in-place friendly), що унеможливлює пошкодження оригіналу при оновленні того ж файлу.
+  - Додано сумісні typealias у просторі `com.pdfreader.core.pdf` (`FormEngine`, `PdfBoxFormEngine`).
+- Написано вичерпні unit-тести `PdfBoxFormEngineTest`:
+  - Створення тестових PDF з AcroForm програмно (текстові поля, чекбокси, випадаючі списки).
+  - Тестування екстракції полів з документа без форми та з формою.
+  - Тестування заповнення полів (зміна тексту, відмітка чекбокса, вибір нового елемента з комбобокса, зняття відмітки чекбокса) та верифікація збереженого результату як через повторний екстракт, так і через прямий парсинг PDDocument.
+  - Тестування обробки помилок при спробі заповнити документ без AcroForm.
+- Проведено повну верифікацію:
+  - `./gradlew :core-pdf:test :core-pdf:assembleRelease` з JDK 21: 100% тестів успішно пройдено (всі 15 unit-тестів модуля core-pdf зелені), релізний AAR зібрано без зауважень.
+**Що змінено:**
+- Модуль `core-pdf/`:
+  - `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/model/FormField.kt`
+  - `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/FormEngine.kt`
+  - `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/PdfBoxFormEngine.kt`
+  - `core-pdf/src/main/java/com/pdfreader/core/pdf/model/Compatibility.kt`
+  - `core-pdf/src/main/java/com/pdfreader/core/pdf/Compatibility.kt`
+  - `core-pdf/src/test/java/com/savoj/volumpdf/core/pdf/PdfBoxFormEngineTest.kt`
+- `docs/project_log.md`
+**Рішення, які ухвалено:**
+- Використання обходу `acroForm.fieldTree` з безпечним fallback на `acroForm.fields`, що гарантує знаходження всіх вкладених полів навіть у складних багатосторінкових або ієрархічних формах.
+- Для `PDCheckBox` реалізовано підтримку як булевих значень (`Boolean`), так і рядкових ("true", "yes", "on", значення onValue) для максимальної сумісності з UI-компонентами форми.
+- Безпечне збереження через тимчасовий файл у директорії кешу запобігає блокуванню дескрипторів та пошкодженню файлу при записі in-place поверх вихідного URI у SAF.
+- Усі операції з документами ізольовані на `Dispatchers.IO` та захищені блоками `try-finally` з гарантованим закриттям `PDDocument.close()`.
+**Що передати далі:**
+- Інтерфейс `FormEngine` та реалізація `PdfBoxFormEngine` готові для інтеграції в UI-шар застосунку (`app`). Агент ролі «Android і UI» може додавати діалоги та панелі заповнення форм у переглядач читалки `ReaderActivity`.
+**Відкриті питання:**
+- Немає. Усі контракти CONTRACTS.md v0.3 виконані повністю.
+
 ## 2026-11-03 — Android і UI (Інтеграція інструментів малювання, підпису та тексту в ReaderActivity)
 **Що зроблено:**
 - Реалізовано інтерактивне полотно для малювання InkCanvasView:
