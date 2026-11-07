@@ -20,6 +20,7 @@ import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationMarkup
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary
+import com.tom_roush.pdfbox.util.Matrix
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -33,6 +34,10 @@ import java.io.InputStream
  * Реалізація [AnnotationEngine] на базі бібліотеки PdfBox-Android (Apache-2.0).
  * Забезпечує нанесення векторних рукописних анотацій (/Ink за ISO 32000-1),
  * вставку штампів/підписів з прозорістю та нанесення текстових блоків.
+ *
+ * Координати (x, y, targetRectPt, точки штрихів) — у просторі PageViewPoint (CONTRACTS v0.4 §1.5);
+ * у простір користувача PDF їх переводить [PageGeometry] (CropBox + /Rotate). Параметри
+ * pageWidthPt/pageHeightPt лишаються в сигнатурі (контракт v0.3), але для координат не використовуються.
  */
 class PdfBoxAnnotationEngine : AnnotationEngine {
 
@@ -60,6 +65,7 @@ class PdfBoxAnnotationEngine : AnnotationEngine {
 
                     if (strokes.isNotEmpty()) {
                         val page = doc.getPage(pageIndex)
+                        val geometry = PageGeometry.of(page)
                         val existingAnnotations = page.annotations.toMutableList()
 
                         for (stroke in strokes) {
@@ -81,9 +87,10 @@ class PdfBoxAnnotationEngine : AnnotationEngine {
 
                             for (i in effectivePoints.indices) {
                                 val pt = effectivePoints[i]
-                                val pdfX = pt.x
-                                // Інверсія осі Y: у PDF (0,0) внизу ліворуч, у Canvas — вгорі ліворуч
-                                val pdfY = pageHeightPt - pt.y
+                                // PageViewPoint -> простір користувача PDF (CropBox + /Rotate)
+                                val user = geometry.toUser(pt.x, pt.y)
+                                val pdfX = user.x
+                                val pdfY = user.y
 
                                 coords[i * 2] = pdfX
                                 coords[i * 2 + 1] = pdfY
@@ -185,11 +192,13 @@ class PdfBoxAnnotationEngine : AnnotationEngine {
                         JPEGFactory.createFromImage(doc, signatureBitmap)
                     }
 
-                    // Обчислення координат з інверсією осі Y
-                    val pdfX = targetRectPt.left
-                    val pdfY = pageHeightPt - targetRectPt.bottom
-                    val width = maxOf(targetRectPt.width(), 1f)
-                    val height = maxOf(targetRectPt.height(), 1f)
+                    // Лівий нижній кут зображення на видимій сторінці; осі зображення — «праворуч» і «угору»
+                    // видимої сторінки, тому підпис стоїть рівно за будь-якого /Rotate.
+                    val geometry = PageGeometry.of(page)
+                    val width = maxOf(targetRectPt.right - targetRectPt.left, 1f)
+                    val height = maxOf(targetRectPt.bottom - targetRectPt.top, 1f)
+                    val m = geometry.contentMatrix(targetRectPt.left, targetRectPt.top + height)
+                    val matrix = Matrix(m[0] * width, m[1] * width, m[2] * height, m[3] * height, m[4], m[5])
 
                     PDPageContentStream(
                         doc,
@@ -198,7 +207,7 @@ class PdfBoxAnnotationEngine : AnnotationEngine {
                         true,
                         true
                     ).use { cs ->
-                        cs.drawImage(pdImage, pdfX, pdfY, width, height)
+                        cs.drawImage(pdImage, matrix)
                     }
 
                     saveDocumentSafely(context, doc, outputUri)
@@ -238,9 +247,10 @@ class PdfBoxAnnotationEngine : AnnotationEngine {
                     val page = doc.getPage(pageIndex)
                     val fontSize = if (textData.fontSize > 0f) textData.fontSize else 14f
 
-                    // Координати з інверсією осі Y для базової лінії тексту
-                    val pdfX = textData.x
-                    val pdfY = pageHeightPt - textData.y - fontSize
+                    // Базова лінія — на fontSize нижче верхнього краю рамки (у просторі PageViewPoint);
+                    // локальна система тексту повернута разом зі сторінкою.
+                    val geometry = PageGeometry.of(page)
+                    val m = geometry.contentMatrix(textData.x, textData.y + fontSize)
 
                     val r = ((textData.color shr 16) and 0xFF) / 255.0f
                     val g = ((textData.color shr 8) and 0xFF) / 255.0f
@@ -256,7 +266,7 @@ class PdfBoxAnnotationEngine : AnnotationEngine {
                         cs.beginText()
                         cs.setFont(PDType1Font.HELVETICA, fontSize)
                         cs.setNonStrokingColor(r, g, b)
-                        cs.newLineAtOffset(pdfX, pdfY)
+                        cs.setTextMatrix(Matrix(m[0], m[1], m[2], m[3], m[4], m[5]))
                         try {
                             cs.showText(textData.text)
                         } catch (_: IllegalArgumentException) {
