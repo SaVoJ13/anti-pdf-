@@ -18,12 +18,18 @@
 | `androidx.fragment:fragment-ktx` | 1.8.6 | Apache-2.0 (Google Maven POM) | `app` (робота з PdfViewerFragment) | так | Так, стандартний AndroidX (дозволено Керівником) | 2026-11-03 |
 | `androidx.room:room-runtime` | 2.6.1 | Apache-2.0 (Google Maven POM) | `app` (локальна SQLite база «Останні документи» та закладки) | так | Так, стандартний AndroidX (дозволено Керівником) | 2026-11-03 |
 | `androidx.room:room-ktx` | 2.6.1 | Apache-2.0 (Google Maven POM) | `app` (Flow та Coroutines підтримка в Room) | так | Так, стандартний AndroidX (дозволено Керівником) | 2026-11-03 |
-| `androidx.room:room-compiler` | 2.6.1 | Apache-2.0 (Google Maven POM) | `app` (KSP кодогенератор для Room) | так | Так, стандартний AndroidX (дозволено Керівником) | 2026-11-03 |
+| `androidx.room:room-compiler` | 2.6.1 | Apache-2.0 (Google Maven POM) | `app` (Java annotation processor для Room, підключено через `annotationProcessor`, не KSP; за `app/build.gradle.kts:55`) | так | Так, стандартний AndroidX (дозволено Керівником) | 2026-11-03 |
 | `com.google.android.gms:play-services-ads` | 23.6.0 | Google Play Services SDK (AdMob SDK License; сумісна із закритими комерційними додатками) | `core-ads` (показ банерів та інтерстишелів за затвердженими правилами) | так | Так, затверджено власником для MVP 2026-11-03 | 2026-11-03 |
 | `com.google.android.ump:user-messaging-platform` | 3.1.0 | Google Play Services / UMP SDK License (сумісна із закритими комерційними додатками) | `core-ads` (форма згоди користувача GDPR / EEA) | так | Так, затверджено власником для MVP 2026-11-03 | 2026-11-03 |
+| Roboto Regular (статичний TTF; шрифт, не бібліотека) | Назва файлу, URL, коміт `google/fonts` і SHA-256: НЕ ПЕРЕВІРЕНО (фіксує етап 1b при додаванні файла). Каталог `ofl/roboto` на GitHub 2026-11-07 не вдалося відкрити (robots_disallowed; API недоступний) | SIL OFL 1.1 (`google/fonts`, `ofl/roboto/OFL.txt`, «Copyright 2011 The Roboto Project Authors», без Reserved Font Name; за прочитаним Архітектором 2026-11-07, окремо не перевірялось) | `core-pdf` (`src/main/assets/fonts/`; вбудовується в PDF як підмножина для тексту з кирилицею) | так (OFL дозволяє вбудовування й постачання з програмою; не продавати окремо, не змінювати й не перейменовувати, `OFL.txt` постачати поруч) | Так, власник затвердив рішення Архітектора 2026-11-07; сам файл у репозиторій додає етап 1b | 2026-11-07 |
 | _(інше порожньо)_ | | | | | | |
 
 ## Сервіси
 | Сервіс | Призначення | Вартість | Дані, що передаються | Дозвіл власника |
 |--------|-------------|----------|----------------------|-----------------|
 | Google AdMob (Google Play Services Ads) | Монетизація банерами та інтерстишелами | Безкоштовно (комісія з показу) | Рекламний ідентифікатор, IP, взаємодії (за згодою через UMP) | Так, затверджено власником для MVP 2026-11-03 |
+
+## Відкриті розбіжності з build.gradle (звірка 2026-11-07)
+Звірено `app/build.gradle.kts`, `core-pdf/build.gradle.kts`, `core-ads/build.gradle.kts` з реєстром вище. Рядки не додавалися (потрібен дозвіл власника).
+- `androidx.recyclerview:recyclerview` і `androidx.viewpager2:viewpager2` використовуються в коді `app` (імпорти `androidx.recyclerview.widget.*`, `androidx.viewpager2.adapter.FragmentStateAdapter`), але не оголошені в жодному `build.gradle.kts` і відсутні в реєстрі. Імовірно, приходять транзитивно через `com.google.android.material:material:1.12.0`: НЕ ПЕРЕВІРЕНО.
+- Стовпець «Де використовується» неповний: `kotlinx-coroutines-android` також підключено в `app` і `core-ads`; `junit`, `kotlinx-coroutines-test`, `mockito-core` також у `app` і `core-ads` (у реєстрі вказано лише `core-pdf`).
