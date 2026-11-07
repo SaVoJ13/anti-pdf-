@@ -3,6 +3,7 @@ package com.savoj.volumpdf.core.pdf
 import android.content.Context
 import android.graphics.PointF
 import android.net.Uri
+import com.savoj.volumpdf.core.pdf.model.DocumentEditability
 import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
 import com.savoj.volumpdf.core.pdf.model.MarkKind
 import com.savoj.volumpdf.core.pdf.model.PageMarkup
@@ -12,6 +13,9 @@ import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 interface MarkupEngine {
     // Повертає символи, яких немає у вбудованому шрифті (порожній рядок = усе підтримується)
     fun findUnsupportedChars(text: String): String
+
+    // null — документ не відкрито (хибний пароль, пошкоджений файл)
+    suspend fun checkEditability(context: Context, sourceUri: Uri, password: String? = null): DocumentEditability?
 
     // Одне завантаження, одне збереження: спершу formUpdates, потім markups у заданому порядку.
     suspend fun applyEdits(

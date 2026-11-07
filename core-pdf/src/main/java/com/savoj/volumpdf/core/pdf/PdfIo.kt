@@ -2,8 +2,11 @@ package com.savoj.volumpdf.core.pdf
 
 import android.content.Context
 import android.net.Uri
+import com.savoj.volumpdf.core.pdf.model.DocumentEditability
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
+import com.savoj.volumpdf.core.pdf.model.PdfPermissionException
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
 import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
 import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import java.io.File
@@ -31,15 +34,43 @@ internal object PdfIo {
             if (password != null) PDDocument.load(stream, password) else PDDocument.load(stream)
         }
 
+    /** Права поточного відкриття: пароль власника дає все. */
+    fun editability(doc: PDDocument): DocumentEditability {
+        val ap = doc.currentAccessPermission
+        return DocumentEditability(
+            isEncrypted = doc.isEncrypted,
+            canMarkup = ap.isOwnerPermission || ap.canModify(),
+            canFillForms = ap.isOwnerPermission || ap.canFillInForm() || ap.canModifyAnnotations()
+        )
+    }
+
     /**
-     * PDFBox не зберігає завантажений зашифрований документ без політики захисту. Щоб не знімати захист
-     * мовчки, документ шифрується знову: той самий пароль (власника й користувача), ті самі дозволи й довжина ключа.
+     * Політика R15 (CONTRACTS §1.5.1 п. 8): відмова при забороні зміни; зашифрований документ
+     * не можна зберегти в той самий URI. Викликається одразу після завантаження, до будь-яких змін.
+     */
+    fun enforcePolicy(
+        doc: PDDocument, sourceUri: Uri, outputUri: Uri, needsModify: Boolean, needsFillForm: Boolean
+    ) {
+        val e = editability(doc)
+        if (needsModify && !e.canMarkup) throw PdfPermissionException("MODIFY")
+        if (needsFillForm && !e.canFillForms) throw PdfPermissionException("FILL_FORM")
+        if (e.isEncrypted && (sourceUri == outputUri || sourceUri.toString() == outputUri.toString())) {
+            throw IllegalArgumentException(
+                "Зашифрований документ можна зберегти лише як нову копію, а не поверх оригіналу"
+            )
+        }
+    }
+
+    /**
+     * PDFBox не зберігає завантажений зашифрований документ без політики захисту. Копія шифрується
+     * паролем, яким відкрито джерело (user = owner), з повними правами: пароль власника й обмеження
+     * прав не переносяться. Рівень алгоритму зберігається (RC4-128 → AES-128 допустимо).
      */
     fun keepEncryption(doc: PDDocument, password: String?) {
         if (!doc.isEncrypted) return
         val pw = password ?: ""
         val keyLength = doc.encryption?.length?.takeIf { it == 40 || it == 128 || it == 256 } ?: 128
-        val policy = StandardProtectionPolicy(pw, pw, doc.currentAccessPermission)
+        val policy = StandardProtectionPolicy(pw, pw, AccessPermission())
         policy.encryptionKeyLength = keyLength
         policy.isPreferAES = keyLength >= 128
         doc.protect(policy)
@@ -81,6 +112,8 @@ internal object PdfIo {
 
     fun mapToPdfError(cause: Throwable, defaultMessage: String): PdfOperationResult.Error {
         val userMessage = when (cause) {
+            is OutOfMemoryError -> "Файл завеликий для редагування"
+            is PdfPermissionException -> cause.message ?: defaultMessage
             is InvalidPasswordException -> "Невірний пароль для захищеного PDF-документа"
             is IllegalArgumentException -> cause.localizedMessage ?: defaultMessage
             is IndexOutOfBoundsException -> cause.localizedMessage ?: defaultMessage

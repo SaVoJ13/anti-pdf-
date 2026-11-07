@@ -1,6 +1,8 @@
 package com.savoj.volumpdf.core.pdf
 
 import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
+import com.savoj.volumpdf.core.pdf.model.InkStroke
+import com.savoj.volumpdf.core.pdf.model.PdfPermissionException
 import com.savoj.volumpdf.core.pdf.model.MarkKind
 import com.savoj.volumpdf.core.pdf.model.PageMarkup
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
@@ -19,13 +21,12 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 import java.io.File
 
 /**
  * QA етапу 1b: шифрування (RC4/AES-128/AES-256, обмежені права), крайні випадки, Choice з кирилицею.
- * Тести з @Ignore фіксують знайдені дефекти (див. docs/project_log.md); їх знімають, коли Архітектор вирішить.
+ * Дефекти QA 1b виправлено в етапі 1c (політика R15, Choice, розміри).
  */
 class MarkupQaTest : MarkupTestSupport() {
 
@@ -74,33 +75,87 @@ class MarkupQaTest : MarkupTestSupport() {
         PDDocument.load(r, "usr").use { assertEquals("AESV2", cfm(it)); assertEquals(4, it.encryption.version) }
     }
 
+    // Політика R15: обмеження прав НЕ переносяться; файл лише з обмеженням друку редагується, копія має повні права
     @Test
-    fun restrictedPermissionBitsArePreserved() {
-        val ap = AccessPermission().also { it.setCanModify(false); it.setCanPrint(false); it.setCanExtractContent(false) }
-        val src = encrypted("res.pdf", 256, true, ap); val dst = tempFolder.newFile("res_out.pdf")
+    fun printOnlyRestrictionIsNotCarriedOver() {
+        val ap = AccessPermission().also { it.setCanPrint(false); it.setCanExtractContent(false) }
+        val src = encrypted("pr.pdf", 256, true, ap); val dst = tempFolder.newFile("pr_out.pdf")
         assertTrue(run(src, dst, text, pw = "usr") is PdfOperationResult.Success)
-        val before = PDDocument.load(src, "usr").use { it.encryption.permissions }
-        val after = PDDocument.load(dst, "usr").use { it.encryption.permissions }
-        assertEquals(before, after)
+        PDDocument.load(dst, "usr").use { assertTrue(it.currentAccessPermission.canPrint()) }
     }
 
-    // ДЕФЕКТ: власник = користувач, тому відкриття користувацьким паролем дає права власника (обмеження неефективні)
-    @Ignore("QA 1b: keepEncryption ставить owner=user пароль; відкриття user-паролем дає isOwnerPermission=true")
     @Test
-    fun restrictedPdfOpenedWithUserPasswordStaysRestricted() {
-        val ap = AccessPermission().also { it.setCanModify(false); it.setCanPrint(false) }
-        val src = encrypted("res2.pdf", 256, true, ap); val dst = tempFolder.newFile("res2_out.pdf")
-        assertTrue(run(src, dst, text, pw = "usr") is PdfOperationResult.Success)
-        PDDocument.load(dst, "usr").use { assertFalse(it.currentAccessPermission.isOwnerPermission) }
+    fun modifyForbiddenGivesPermissionErrorAndKeepsOutput() {
+        val ap = AccessPermission().also { it.setCanModify(false) }
+        val src = encrypted("res.pdf", 256, true, ap); val dst = tempFolder.newFile("res_out.pdf"); dst.writeText("SENTINEL")
+        val before = src.readBytes()
+        val r = run(src, dst, text, pw = "usr")
+        assertTrue(r.toString(), r is PdfOperationResult.Error)
+        val cause = (r as PdfOperationResult.Error).cause
+        assertTrue(cause is PdfPermissionException); assertEquals("MODIFY", (cause as PdfPermissionException).deniedAction)
+        assertEquals("SENTINEL", dst.readText()); assertTrue(before.contentEquals(src.readBytes()))
+        val e = runBlocking { engine.checkEditability(mockContext, uri(src), "usr") }!!
+        assertTrue(e.isEncrypted); assertFalse(e.canMarkup)
     }
 
-    // ДЕФЕКТ: початковий пароль власника втрачено
-    @Ignore("QA 1b: пароль власника 'own' після збереження більше не відкриває документ")
     @Test
-    fun ownerPasswordStillWorksAfterSave() {
-        val src = encrypted("own.pdf", 256, true); val dst = tempFolder.newFile("own_out.pdf")
-        assertTrue(run(src, dst, text, pw = "usr") is PdfOperationResult.Success)
+    fun openedWithOwnerPasswordAllRightsGranted() {
+        val ap = AccessPermission().also { it.setCanModify(false); it.setCanFillInForm(false); it.setCanModifyAnnotations(false) }
+        val src = encrypted("own.pdf", 256, true, ap); val dst = tempFolder.newFile("own_out.pdf")
+        val e = runBlocking { engine.checkEditability(mockContext, uri(src), "own") }!!
+        assertTrue(e.canMarkup); assertTrue(e.canFillForms)
+        assertTrue(run(src, dst, text, pw = "own") is PdfOperationResult.Success)
+        // копія відкривається паролем, яким відкрито джерело (власника); старий user-пароль не діє
         PDDocument.load(dst, "own").close()
+        assertTrue(runCatching { PDDocument.load(dst, "usr") }.isFailure)
+    }
+
+    @Test
+    fun userPasswordFullRightsSavesCopyOpenableWithSourcePassword() {
+        val src = encrypted("full.pdf", 256, true); val dst = tempFolder.newFile("full_out.pdf")
+        assertTrue(run(src, dst, text, pw = "usr") is PdfOperationResult.Success)
+        PDDocument.load(dst, "usr").close()
+        assertTrue(runCatching { PDDocument.load(dst, "own") }.isFailure) // пароль власника не переноситься
+    }
+
+    @Test
+    fun encryptedSourceSameUriIsErrorAndUntouched() {
+        val src = encrypted("same.pdf", 256, true); val before = src.readBytes()
+        val r = run(src, src, text, pw = "usr")
+        assertTrue(r.toString(), r is PdfOperationResult.Error)
+        assertTrue(before.contentEquals(src.readBytes()))
+        // незашифрований у той самий URI лишається дозволеним
+        val p = plain()
+        assertTrue(run(p, p, text) is PdfOperationResult.Success)
+    }
+
+    @Test
+    fun checkEditabilityNullOnWrongPassword() {
+        val src = encrypted("chk.pdf", 256, true)
+        assertEquals(null, runBlocking { engine.checkEditability(mockContext, uri(src), "wrong") })
+        val e = runBlocking { engine.checkEditability(mockContext, uri(plain()), null) }!!
+        assertFalse(e.isEncrypted); assertTrue(e.canMarkup); assertTrue(e.canFillForms)
+    }
+
+    @Test
+    fun formFillForbiddenGivesPermissionErrorViaFormEngine() {
+        val ap = AccessPermission().also { it.setCanFillInForm(false); it.setCanModifyAnnotations(false) }
+        val src = tempFolder.newFile("ff.pdf")
+        PDDocument().use { d ->
+            val p = PDPage(PDRectangle.A4); d.addPage(p)
+            val acro = PDAcroForm(d); d.documentCatalog.acroForm = acro
+            val res = PDResources(); res.put(COSName.getPDFName("Helv"), PDType1Font.HELVETICA)
+            acro.defaultResources = res; acro.defaultAppearance = "/Helv 12 Tf 0 g"
+            val tf = com.tom_roush.pdfbox.pdmodel.interactive.form.PDTextField(acro); tf.partialName = "t1"
+            tf.widgets[0].rectangle = PDRectangle(50f, 700f, 200f, 24f); tf.widgets[0].page = p
+            p.annotations.add(tf.widgets[0]); acro.fields.add(tf)
+            val pol = StandardProtectionPolicy("own", "usr", ap); pol.encryptionKeyLength = 256; d.protect(pol); d.save(src)
+        }
+        val dst = tempFolder.newFile("ff_out.pdf"); dst.writeText("SENTINEL")
+        val r = runBlocking { PdfBoxFormEngine().fillFormFields(mockContext, uri(src), listOf(FormFieldUpdate("t1", "x")), uri(dst), "usr") }
+        assertTrue(r.toString(), r is PdfOperationResult.Error)
+        assertEquals("FILL_FORM", ((r as PdfOperationResult.Error).cause as PdfPermissionException).deniedAction)
+        assertEquals("SENTINEL", dst.readText())
     }
 
     @Test
@@ -146,22 +201,92 @@ class MarkupQaTest : MarkupTestSupport() {
         assertTrue(run(plain(), dst, listOf(PageMarkup.Mark("m", 0, 2f, 100f, MarkKind.CHECK, 40f, blue))) is PdfOperationResult.Success)
     }
 
-    private fun comboForm(): File = saveNew({ doc ->
+    // Форма: нередагований combo, редагований combo, список, два текстові поля (одне з неіснуючим шрифтом у DA)
+    private fun choiceForm(): File = saveNew({ doc ->
         val page = PDPage(PDRectangle.A4); doc.addPage(page)
         val acro = PDAcroForm(doc); doc.documentCatalog.acroForm = acro
         val res = PDResources(); res.put(COSName.getPDFName("Helv"), PDType1Font.HELVETICA)
         acro.defaultResources = res; acro.defaultAppearance = "/Helv 12 Tf 0 g"
-        val cb = PDComboBox(acro); cb.partialName = "cmb"; cb.options = listOf("Ukraine", "Польща"); cb.defaultAppearance = "/Helv 12 Tf 0 g"
-        cb.widgets[0].rectangle = PDRectangle(50f, 700f, 200f, 24f); cb.widgets[0].page = page
-        page.annotations.add(cb.widgets[0]); acro.fields.add(cb)
-    }, "combo.pdf")
+        var y = 700f
+        fun place(f: com.tom_roush.pdfbox.pdmodel.interactive.form.PDVariableText, name: String) {
+            f.partialName = name; f.defaultAppearance = "/Helv 12 Tf 0 g"
+            f.widgets[0].rectangle = PDRectangle(50f, y, 200f, 24f); f.widgets[0].page = page; y -= 40f
+            page.annotations.add(f.widgets[0]); acro.fields.add(f)
+        }
+        val opts = listOf("Ukraine", "Польща", "Україна")
+        place(PDComboBox(acro).also { it.options = opts }, "cmb")
+        place(PDComboBox(acro).also { it.options = opts; it.isEdit = true }, "ecmb")
+        place(com.tom_roush.pdfbox.pdmodel.interactive.form.PDListBox(acro).also { it.options = opts }, "lst")
+        place(com.tom_roush.pdfbox.pdmodel.interactive.form.PDTextField(acro), "t1")
+        place(com.tom_roush.pdfbox.pdmodel.interactive.form.PDTextField(acro), "t2")
+    }, "choices_${System.nanoTime()}.pdf")
 
-    // ДЕФЕКТ: Cyrillic-значення Choice (DA Helvetica) валить увесь applyEdits, а для Text це терпиться
-    @Ignore("QA 1b: Choice з кирилицею → Error 'U+041F is not available in the font Helvetica' (setValueTolerant порівнює valueAsString '[Польща]' з 'Польща')")
+    private fun fv(f: File, name: String): Pair<String?, Any?> = PDDocument.load(f).use { d ->
+        val fld = d.documentCatalog.acroForm.getField(name)
+        Pair(fld.cosObject.getString(COSName.V), fld.cosObject.getDictionaryObject(COSName.I))
+    }
+
     @Test
-    fun cyrillicChoiceValueDoesNotFailWholeCall() {
-        val dst = tempFolder.newFile("combo_out.pdf")
-        val r = run(comboForm(), dst, emptyList(), listOf(FormFieldUpdate("cmb", "Польща")))
+    fun cyrillicChoiceComboAndListSucceedAndStored() {
+        val dst = tempFolder.newFile("c1.pdf")
+        val r = run(choiceForm(), dst, emptyList(), listOf(FormFieldUpdate("cmb", "Польща"), FormFieldUpdate("lst", "Україна")))
         assertTrue(r.toString(), r is PdfOperationResult.Success)
+        assertEquals("Польща", fv(dst, "cmb").first)
+        assertEquals("Україна", fv(dst, "lst").first)
+        assertEquals(2, ((fv(dst, "lst").second) as com.tom_roush.pdfbox.cos.COSArray).getInt(0))
+    }
+
+    @Test
+    fun choiceOutsideOptionsIsErrorAndAtomic() {
+        val src = choiceForm(); val dst = tempFolder.newFile("c2.pdf"); dst.writeText("SENTINEL")
+        val r = run(src, dst, emptyList(), listOf(
+            FormFieldUpdate("t1", "ok"), FormFieldUpdate("cmb", "Польща"), FormFieldUpdate("lst", "Нема")
+        ))
+        assertTrue(r.toString(), r is PdfOperationResult.Error)
+        assertTrue((r as PdfOperationResult.Error).userMessage.contains("lst"))
+        assertEquals("SENTINEL", dst.readText())
+        // той самий виклик через FormEngine
+        val r2 = runBlocking { PdfBoxFormEngine().fillFormFields(mockContext, uri(src), listOf(FormFieldUpdate("cmb", "Нема")), uri(dst), null) }
+        assertTrue(r2 is PdfOperationResult.Error); assertEquals("SENTINEL", dst.readText())
+    }
+
+    @Test
+    fun editableComboAcceptsAnyValue() {
+        val dst = tempFolder.newFile("c3.pdf")
+        assertTrue(run(choiceForm(), dst, emptyList(), listOf(FormFieldUpdate("ecmb", "Щось своє"))) is PdfOperationResult.Success)
+        assertEquals("Щось своє", fv(dst, "ecmb").first)
+    }
+
+    @Test
+    fun textCyrillicStillWorksAndOneFieldAppearanceFailureDoesNotCancelRest() {
+        val dst = tempFolder.newFile("c4.pdf")
+        val r = run(choiceForm(), dst, emptyList(), listOf(
+            FormFieldUpdate("t1", "Привіт"), FormFieldUpdate("t2", "Hello"), FormFieldUpdate("cmb", "Ukraine")
+        ))
+        assertTrue(r.toString(), r is PdfOperationResult.Success)
+        assertEquals("Привіт", fv(dst, "t1").first); assertEquals("Hello", fv(dst, "t2").first)
+        assertEquals("Ukraine", fv(dst, "cmb").first)
+        PDDocument.load(dst).use { assertTrue(it.documentCatalog.acroForm.needAppearances) }
+    }
+
+    @Test
+    fun nonPositiveAndNonFiniteSizesAreErrors() {
+        val bad = mapOf(
+            "font 0" to PageMarkup.Text("t", 0, 50f, 50f, "x", 0f, blue),
+            "font neg" to PageMarkup.Text("t", 0, 50f, 50f, "x", -3f, blue),
+            "font NaN" to PageMarkup.Text("t", 0, 50f, 50f, "x", Float.NaN, blue),
+            "empty text font 0" to PageMarkup.Text("t", 0, 50f, 50f, "", 0f, blue),
+            "mark 0" to PageMarkup.Mark("m", 0, 100f, 100f, MarkKind.CHECK, 0f, blue),
+            "mark neg" to PageMarkup.Mark("m", 0, 100f, 100f, MarkKind.CROSS, -1f, blue),
+            "mark inf" to PageMarkup.Mark("m", 0, 100f, 100f, MarkKind.CROSS, Float.POSITIVE_INFINITY, blue),
+            "ink 0" to PageMarkup.Ink("i", 0, listOf(InkStroke(listOf(pt(10f, 10f), pt(50f, 50f)), blue, 0f))),
+            "ink neg" to PageMarkup.Ink("i", 0, listOf(InkStroke(listOf(pt(10f, 10f), pt(50f, 50f)), blue, -2f))),
+            "ink NaN" to PageMarkup.Ink("i", 0, listOf(InkStroke(listOf(pt(10f, 10f), pt(50f, 50f)), blue, Float.NaN)))
+        )
+        for ((label, m) in bad) {
+            val dst = tempFolder.newFile("s_${System.nanoTime()}.pdf"); dst.writeText("SENTINEL")
+            assertTrue(label, run(plain(), dst, listOf(m)) is PdfOperationResult.Error)
+            assertEquals(label, "SENTINEL", dst.readText())
+        }
     }
 }
