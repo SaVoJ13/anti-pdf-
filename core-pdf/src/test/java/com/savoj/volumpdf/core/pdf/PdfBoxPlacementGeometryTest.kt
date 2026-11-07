@@ -184,36 +184,22 @@ class PdfBoxPlacementGeometryTest {
             )
             assertTrue("${c.name}: $result", result is PdfOperationResult.Success)
             PDDocument.load(out).use { doc ->
-                val ann = doc.getPage(0).annotations.single() as PDAnnotationMarkup
-                assertEquals(PDAnnotationMarkup.SUB_TYPE_INK, ann.subtype)
-                val ink = ann.inkList[0]
-                assertEquals(c.name, pts.size * 2, ink.size)
+                val page = doc.getPage(0)
+                assertEquals("${c.name}: Ink не має бути анотацією", 0, page.annotations.size)
+                val stroke = MarkupProbe.probeStrokes(page).single()
                 val box = effectiveBox(c)
-                var minX = Float.MAX_VALUE; var minY = Float.MAX_VALUE
-                var maxX = -Float.MAX_VALUE; var maxY = -Float.MAX_VALUE
-                pts.forEachIndexed { i, p ->
-                    val (ex, ey) = expectedUser(c.rotate, box, p.x, p.y)
-                    assertEquals("${c.name} ink x[$i]", ex, ink[i * 2], tol)
-                    assertEquals("${c.name} ink y[$i]", ey, ink[i * 2 + 1], tol)
-                    minX = minOf(minX, ex); maxX = maxOf(maxX, ex)
-                    minY = minOf(minY, ey); maxY = maxOf(maxY, ey)
+                // вершини: p0, середини сусідніх точок, остання точка
+                val ev = ArrayList<Pair<Float, Float>>()
+                ev.add(pts[0].x to pts[0].y)
+                for (i in 1 until pts.size - 1) ev.add((pts[i - 1].x + pts[i].x) / 2 to (pts[i - 1].y + pts[i].y) / 2)
+                ev.add(pts.last().x to pts.last().y)
+                assertEquals(c.name, ev.size, stroke.vertices.size)
+                ev.forEachIndexed { i, v ->
+                    val (ex, ey) = expectedUser(c.rotate, box, v.first, v.second)
+                    assertEquals("${c.name} ink x[$i]", ex, stroke.vertices[i].first, tol)
+                    assertEquals("${c.name} ink y[$i]", ey, stroke.vertices[i].second, tol)
                 }
-                // /Rect містить усі точки штриха (з половиною товщини) і не набагато більший
-                val rect = ann.rectangle
-                // (PDFBox при генерації AP сам трохи розширює /Rect, тому: містить + не роздутий)
-                val margin = 10f
-                assertTrue("${c.name} rect llx ${rect.lowerLeftX}", rect.lowerLeftX <= minX - 1.5f + tol && rect.lowerLeftX >= minX - margin)
-                assertTrue("${c.name} rect lly ${rect.lowerLeftY}", rect.lowerLeftY <= minY - 1.5f + tol && rect.lowerLeftY >= minY - margin)
-                assertTrue("${c.name} rect urx ${rect.upperRightX}", rect.upperRightX >= maxX + 1.5f - tol && rect.upperRightX <= maxX + margin)
-                assertTrue("${c.name} rect ury ${rect.upperRightY}", rect.upperRightY >= maxY + 1.5f - tol && rect.upperRightY <= maxY + margin)
-                // appearance stream створено і його BBox збігається з /Rect
-                val normal = ann.appearance?.normalAppearance?.appearanceStream
-                assertNotNull("${c.name}: немає appearance stream /N", normal)
-                val bbox = normal!!.bBox
-                assertEquals("${c.name} bbox llx", rect.lowerLeftX, bbox.lowerLeftX, tol)
-                assertEquals("${c.name} bbox lly", rect.lowerLeftY, bbox.lowerLeftY, tol)
-                assertEquals("${c.name} bbox urx", rect.upperRightX, bbox.upperRightX, tol)
-                assertEquals("${c.name} bbox ury", rect.upperRightY, bbox.upperRightY, tol)
+                assertEquals(c.name, 3f, stroke.lineWidth, 0.001f)
             }
         }
     }
