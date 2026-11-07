@@ -92,6 +92,27 @@ object MarkupLayout {
 6. Альфа-канал `color` (у Ink і Text) застосовується (напівпрозорий маркер) через ExtGState.
 7. Непідтримувані типи полів форми (радіо, кнопки, підпис) `FormEngine` пропускає без помилки.
 
+### 1.5.1 Доповнення за QA етапу 1b (2026-11-07)
+
+```kotlin
+package com.savoj.volumpdf.core.pdf.model
+
+class PdfPermissionException(val deniedAction: String) : Exception() // deniedAction: "MODIFY" | "FILL_FORM"
+data class DocumentEditability(val isEncrypted: Boolean, val canMarkup: Boolean, val canFillForms: Boolean)
+```
+
+```kotlin
+// MarkupEngine: додати
+// null — документ не відкрито (хибний пароль, пошкоджений файл)
+suspend fun checkEditability(context: Context, sourceUri: Uri, password: String? = null): DocumentEditability?
+```
+
+Гарантії (діють і для `FormEngine.fillFormFields`, де застосовні):
+8. Шифрування й права. (а) Хибний або відсутній пароль → Error, вихідний файл не змінюється. (б) Якщо права документа забороняють зміну → Error з cause = `PdfPermissionException`: для Text/Mark/Ink/Signature потрібне canModify, для formUpdates — canFillInForm або canModifyAnnotations; відкриття паролем власника дає всі права. (в) Якщо джерело зашифроване і outputUri == sourceUri → Error (зашифровані документи зберігаються лише як нова копія; порівняння URI, найкраща спроба; UI не пропонує перезапис). (г) Копія шифрується паролем, яким відкрито джерело (user = owner); пароль власника й обмеження прав НЕ переносяться; алгоритм може оновитися (RC4-128 → AES-128; підтверджено QA). AES-128 і AES-256 зберігають свій рівень.
+9. Вхідні значення: fontSizePt, sizePt, strokeWidth ≤ 0 або NaN/Infinity → Error. Порожній текст або лише з пробілів і '\n' пропускається без помилки (нічого не малюється).
+10. Choice: для нередагованого Choice значення має бути серед options, інакше Error з назвою поля, нічого не записується (атомарно); для редагованого combo приймається будь-яке. Значення ставиться напряму в /V (для списку й /I) без регенерації appearance шрифтом DA; збій appearance одного поля не скасовує решту; відображення — через NeedAppearances на боці переглядача.
+11. Нестача пам'яті → Error («файл завеликий для редагування»), не падіння.
+
 ---
 
 ## v0.3 (Затверджено: Етап 2.2 — Інтерактивні форми AcroForm та ергономіка UI, 2026-11-04)
