@@ -2,6 +2,7 @@ package com.savoj.volumpdf.core.pdf
 
 import android.content.Context
 import android.net.Uri
+import com.savoj.volumpdf.core.pdf.model.DocumentEditability
 import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
 import com.savoj.volumpdf.core.pdf.model.PageMarkup
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
@@ -64,8 +65,14 @@ class PdfBoxMarkupEngine(private val fontStream: () -> InputStream) : MarkupEngi
                 }
             }
 
+            validateSizes(markups)
+
             val doc = PdfIo.loadDocument(context, sourceUri, password)
             try {
+                PdfIo.enforcePolicy(
+                    doc, sourceUri, outputUri,
+                    needsModify = markups.isNotEmpty(), needsFillForm = formUpdates.isNotEmpty()
+                )
                 val totalPages = doc.numberOfPages
 
                 // 1. Форми — першими, у тому самому завантаженні
@@ -73,7 +80,7 @@ class PdfBoxMarkupEngine(private val fontStream: () -> InputStream) : MarkupEngi
 
                 // 2. Розмітка — у заданому порядку; усе перевіряється й малюється до збереження
                 val font: PDType0Font? =
-                    if (markups.any { it is PageMarkup.Text && it.text.isNotEmpty() }) {
+                    if (markups.any { it is PageMarkup.Text && !isBlankText(it.text) }) {
                         fontStream().use { PDType0Font.load(doc, it, true) } // підмножина
                     } else null
 
@@ -117,11 +124,46 @@ class PdfBoxMarkupEngine(private val fontStream: () -> InputStream) : MarkupEngi
         }
     }
 
+    override suspend fun checkEditability(
+        context: Context, sourceUri: Uri, password: String?
+    ): DocumentEditability? = withContext(Dispatchers.IO) {
+        try {
+            PdfBoxPageOperationsEngine.init(context)
+            val doc = PdfIo.loadDocument(context, sourceUri, password)
+            try {
+                PdfIo.editability(doc)
+            } finally {
+                doc.close()
+            }
+        } catch (cause: Throwable) {
+            if (cause is CancellationException) throw cause
+            null
+        }
+    }
+
+    /** Текст без видимих символів (лише пробіли й '\n') не малюється й не є помилкою. */
+    private fun isBlankText(text: String): Boolean = text.all { it == ' ' || it == '\n' || it == '\r' || it == '\t' }
+
+    private fun requirePositive(id: String, name: String, v: Float) {
+        if (v.isNaN() || v.isInfinite() || v <= 0f) {
+            throw IllegalArgumentException("Об'єкт «$id»: $name має бути скінченним і більшим за 0 (отримано $v)")
+        }
+    }
+
+    private fun validateSizes(markups: List<PageMarkup>) {
+        for (m in markups) when (m) {
+            is PageMarkup.Text -> requirePositive(m.id, "розмір шрифту", m.fontSizePt)
+            is PageMarkup.Mark -> requirePositive(m.id, "розмір позначки", m.sizePt)
+            is PageMarkup.Ink -> for (s in m.strokes) requirePositive(m.id, "товщина лінії", s.strokeWidth)
+            is PageMarkup.Signature -> Unit
+        }
+    }
+
     /** Охоплювальний прямокутник об'єкта в PageViewPoint; null — об'єкт порожній і пропускається. */
     private fun boundsOf(m: PageMarkup, font: PDType0Font?): MarkupDrawing.ViewRect? {
         val r: MarkupDrawing.ViewRect? = when (m) {
             is PageMarkup.Text -> {
-                if (m.text.isEmpty()) return null
+                if (isBlankText(m.text)) return null
                 val fs = m.fontSizePt
                 val lines = MarkupDrawing.textLines(m.text)
                 val w = lines.maxOf { font!!.getStringWidth(it) / 1000f * fs }

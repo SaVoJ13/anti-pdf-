@@ -5,12 +5,15 @@ import android.net.Uri
 import com.savoj.volumpdf.core.pdf.model.FormField
 import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
+import com.tom_roush.pdfbox.cos.COSArray
+import com.tom_roush.pdfbox.cos.COSInteger
 import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDCheckBox
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDChoice
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDComboBox
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDField
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDTerminalField
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDTextField
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -114,6 +117,7 @@ class PdfBoxFormEngine : FormEngine {
 
             val doc = PdfIo.loadDocument(context, sourceUri, password)
             try {
+                PdfIo.enforcePolicy(doc, sourceUri, outputUri, needsModify = false, needsFillForm = updates.isNotEmpty())
                 val totalPages = doc.numberOfPages
                 FormFiller.apply(doc, updates)
                 PdfIo.keepEncryption(doc, password)
@@ -135,6 +139,8 @@ internal object FormFiller {
     /**
      * Застосовує оновлення до полів Text, CheckBox, Choice; радіо, кнопки, підпис
      * і невідомі імена пропускаються без помилки.
+     * Choice: усі значення перевіряються ДО першого запису (атомарність); значення пишеться напряму
+     * в /V (для списку ще /I) без побудови appearance шрифтом DA; відображення — через NeedAppearances.
      */
     fun apply(doc: PDDocument, updates: List<FormFieldUpdate>) {
         val acroForm = doc.documentCatalog.acroForm
@@ -145,6 +151,13 @@ internal object FormFiller {
             return
         }
 
+        // 1. Валідація Choice до будь-яких змін
+        for (update in updates) {
+            val field = acroForm.getField(update.fullyQualifiedName) as? PDChoice ?: continue
+            validateChoice(field, update)
+        }
+
+        // 2. Запис
         for (update in updates) {
             val field = acroForm.getField(update.fullyQualifiedName) ?: continue
 
@@ -165,7 +178,7 @@ internal object FormFiller {
                         }
                     }
                 }
-                is PDChoice -> setValueTolerant(field, update.value.toString()) { field.setValue(it) }
+                is PDChoice -> writeChoice(field, update.value.toString())
                 else -> Unit // радіо, кнопки, підпис: поза контрактом
             }
         }
@@ -175,18 +188,54 @@ internal object FormFiller {
         } catch (_: Throwable) {
             // Не критично
         }
-        try {
-            acroForm.refreshAppearances()
+        // Appearance — по одному полю: збій одного не скасовує решту. Choice не чіпаємо (DA/Helvetica без кирилиці).
+        val terminals = try {
+            acroForm.fieldTree.filterIsInstance<PDTerminalField>().filter { it !is PDChoice }
         } catch (_: Throwable) {
-            // Якщо не вдалося згенерувати AP через специфічні ресурси середовища
+            emptyList()
+        }
+        for (f in terminals) {
+            try {
+                acroForm.refreshAppearances(listOf<PDField>(f))
+            } catch (_: Throwable) {
+                // Не вдалося згенерувати AP цього поля; решта продовжується
+            }
+        }
+    }
+
+    private fun isFreeEntry(field: PDChoice): Boolean = field is PDComboBox && field.isEdit
+
+    private fun validateChoice(field: PDChoice, update: FormFieldUpdate) {
+        if (isFreeEntry(field)) return
+        val value = update.value.toString()
+        if (value.isEmpty()) return // очищення вибору
+        if (value !in (field.options ?: emptyList())) {
+            throw IllegalArgumentException(
+                "Значення «$value» відсутнє у списку варіантів поля «${update.fullyQualifiedName}»"
+            )
+        }
+    }
+
+    private fun writeChoice(field: PDChoice, value: String) {
+        val dict = field.cosObject
+        if (value.isEmpty() && !isFreeEntry(field)) {
+            dict.removeItem(COSName.V)
+            dict.removeItem(COSName.I)
+            return
+        }
+        dict.setString(COSName.V, value)
+        val index = (field.options ?: emptyList()).indexOf(value)
+        if (field !is PDComboBox && index >= 0) {
+            dict.setItem(COSName.I, COSArray().also { it.add(COSInteger.get(index.toLong())) })
+        } else {
+            dict.removeItem(COSName.I)
         }
     }
 
     /**
      * PDFBox ставить значення, а потім будує appearance шрифтом з DA поля; якщо в тому шрифті немає
      * символа (кирилиця в Helvetica), кидає IllegalArgumentException уже ПІСЛЯ запису значення.
-     * Тоді значення лишається (appearance генерує двигун), а справжні помилки значення (наприклад,
-     * варіант поза списком) передаються далі.
+     * Тоді значення лишається, а справжні помилки значення передаються далі.
      */
     private fun setValueTolerant(field: PDField, value: String, set: (String) -> Unit) {
         try {
