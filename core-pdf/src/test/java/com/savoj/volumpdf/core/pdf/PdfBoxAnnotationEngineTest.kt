@@ -175,26 +175,26 @@ class PdfBoxAnnotationEngineTest {
         val success = result as PdfOperationResult.Success
         assertEquals(1, success.pagesCount)
 
-        // Перевірка наявності анотації типу /Ink у збереженому PDF
+        // Ink — векторний штрих у потоці вмісту (PdfView не показує /Ink-анотацій): анотацій немає
         PDDocument.load(outFile).use { doc ->
             assertEquals(1, doc.numberOfPages)
             val page = doc.getPage(0)
-            val annotations = page.annotations
-            assertEquals(1, annotations.size)
+            assertEquals(0, page.annotations.size)
 
-            val annotation = annotations[0]
-            assertEquals(PDAnnotationMarkup.SUB_TYPE_INK, annotation.subtype)
-            assertTrue(annotation is PDAnnotationMarkup)
-
-            val markup = annotation as PDAnnotationMarkup
-            val inkList = markup.inkList
-            assertNotNull(inkList)
-            assertEquals(1, inkList.size)
-            assertEquals(points.size * 2, inkList[0].size)
-
-            // Перевірка інверсії осі Y: Y_pdf = pageHeightPt - Y_canvas
-            val expectedFirstPdfY = 841.8898f - 100f
-            assertEquals(expectedFirstPdfY, inkList[0][1], 0.01f)
+            val strokes = MarkupProbe.probeStrokes(page)
+            assertEquals(1, strokes.size)
+            val s = strokes[0]
+            assertEquals(3f, s.lineWidth, 0.001f)
+            assertEquals("ROUND", s.lineCap)
+            // PageViewPoint -> простір користувача: y_pdf = ury - y_view; вершини: p0, середина(p0,p1), остання
+            val ury = page.cropBox.upperRightY
+            assertEquals(3, s.vertices.size)
+            assertEquals(50f, s.vertices[0].first, 0.01f)
+            assertEquals(ury - 100f, s.vertices[0].second, 0.01f)
+            assertEquals(75f, s.vertices[1].first, 0.01f)
+            assertEquals(ury - 125f, s.vertices[1].second, 0.01f)
+            assertEquals(150f, s.vertices[2].first, 0.01f)
+            assertEquals(ury - 120f, s.vertices[2].second, 0.01f)
         }
     }
 

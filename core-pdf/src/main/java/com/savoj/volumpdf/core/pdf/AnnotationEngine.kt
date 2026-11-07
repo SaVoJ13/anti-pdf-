@@ -12,9 +12,10 @@ import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
  * Інтерфейс для нанесення анотацій, підписів та тексту на PDF-сторінки.
  * Відповідає CONTRACTS.md v0.2.
  */
+@Deprecated("Замінено на MarkupEngine (CONTRACTS v0.4, §1.5); видалення після переходу UI на MarkupEngine")
 interface AnnotationEngine {
     /**
-     * Запис рукописного малювання (S Pen / палець) на задану сторінку (/Ink анотація ISO 32000-1).
+     * Запис рукописного малювання (S Pen / палець) на задану сторінку. Малюється векторно в потоці вмісту (не /Ink-анотація: PdfView її не показує).
      *
      * @param context Android Context для доступу до ContentResolver
      * @param sourceUri URI вхідного PDF документа

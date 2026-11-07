@@ -32,13 +32,15 @@ import java.io.InputStream
 
 /**
  * Реалізація [AnnotationEngine] на базі бібліотеки PdfBox-Android (Apache-2.0).
- * Забезпечує нанесення векторних рукописних анотацій (/Ink за ISO 32000-1),
+ * Забезпечує нанесення векторного рукописного малювання (у потоці вмісту сторінки),
  * вставку штампів/підписів з прозорістю та нанесення текстових блоків.
  *
  * Координати (x, y, targetRectPt, точки штрихів) — у просторі PageViewPoint (CONTRACTS v0.4 §1.5);
  * у простір користувача PDF їх переводить [PageGeometry] (CropBox + /Rotate). Параметри
  * pageWidthPt/pageHeightPt лишаються в сигнатурі (контракт v0.3), але для координат не використовуються.
  */
+@Deprecated("Замінено на PdfBoxMarkupEngine (CONTRACTS v0.4, §1.5); видалення після переходу UI на MarkupEngine")
+@Suppress("DEPRECATION")
 class PdfBoxAnnotationEngine : AnnotationEngine {
 
     override suspend fun addInkAnnotations(
@@ -63,89 +65,13 @@ class PdfBoxAnnotationEngine : AnnotationEngine {
                         )
                     }
 
-                    if (strokes.isNotEmpty()) {
+                    if (strokes.any { it.points.isNotEmpty() }) {
+                        // Ink малюється векторно в потоці вмісту (PdfView не показує /Ink-анотацій, спайк-2)
                         val page = doc.getPage(pageIndex)
                         val geometry = PageGeometry.of(page)
-                        val existingAnnotations = page.annotations.toMutableList()
-
-                        for (stroke in strokes) {
-                            if (stroke.points.isEmpty()) continue
-
-                            // Для штриха з 1 точки робимо мінімальний відрізок, щоб рендерери відобразили точку
-                            val effectivePoints = if (stroke.points.size == 1) {
-                                val single = stroke.points[0]
-                                listOf(single, PointF(single.x + 0.1f, single.y + 0.1f))
-                            } else {
-                                stroke.points
-                            }
-
-                            val coords = FloatArray(effectivePoints.size * 2)
-                            var minX = Float.MAX_VALUE
-                            var minY = Float.MAX_VALUE
-                            var maxX = -Float.MAX_VALUE
-                            var maxY = -Float.MAX_VALUE
-
-                            for (i in effectivePoints.indices) {
-                                val pt = effectivePoints[i]
-                                // PageViewPoint -> простір користувача PDF (CropBox + /Rotate)
-                                val user = geometry.toUser(pt.x, pt.y)
-                                val pdfX = user.x
-                                val pdfY = user.y
-
-                                coords[i * 2] = pdfX
-                                coords[i * 2 + 1] = pdfY
-
-                                if (pdfX < minX) minX = pdfX
-                                if (pdfX > maxX) maxX = pdfX
-                                if (pdfY < minY) minY = pdfY
-                                if (pdfY > maxY) maxY = pdfY
-                            }
-
-                            val strokeWidth = if (stroke.strokeWidth > 0f) stroke.strokeWidth else 2f
-                            val halfWidth = strokeWidth / 2f
-                            val rectWidth = maxOf(maxX - minX + strokeWidth, 1f)
-                            val rectHeight = maxOf(maxY - minY + strokeWidth, 1f)
-                            val rect = PDRectangle(
-                                minX - halfWidth,
-                                minY - halfWidth,
-                                rectWidth,
-                                rectHeight
-                            )
-
-                            val annotation = PDAnnotationMarkup()
-                            annotation.getCOSObject().setName(COSName.SUBTYPE, PDAnnotationMarkup.SUB_TYPE_INK)
-                            annotation.rectangle = rect
-
-                            // Розбір кольору (ARGB)
-                            val r = ((stroke.color shr 16) and 0xFF) / 255.0f
-                            val g = ((stroke.color shr 8) and 0xFF) / 255.0f
-                            val b = (stroke.color and 0xFF) / 255.0f
-                            val a = ((stroke.color ushr 24) and 0xFF) / 255.0f
-
-                            annotation.color = PDColor(floatArrayOf(r, g, b), PDDeviceRGB.INSTANCE)
-                            if (a < 1.0f) {
-                                annotation.constantOpacity = a
-                            }
-
-                            val borderStyle = PDBorderStyleDictionary()
-                            borderStyle.width = strokeWidth
-                            annotation.borderStyle = borderStyle
-
-                            // Запис списку шляхів InkList
-                            annotation.inkList = arrayOf(coords)
-                            annotation.page = page
-
-                            // Генерація нормального Appearance Stream (/AP) за ISO 32000-1 для відображення в усіх читалках
-                            try {
-                                annotation.constructAppearances(doc)
-                            } catch (_: Throwable) {
-                                // Якщо генерація AP не вдалася у поточному середовищі, PDF зберігає валідні векторні дані
-                            }
-
-                            existingAnnotations.add(annotation)
+                        MarkupDrawing.newStream(doc, page).use { cs ->
+                            MarkupDrawing.drawInk(cs, geometry, strokes)
                         }
-
-                        page.annotations = existingAnnotations
                     }
 
                     saveDocumentSafely(context, doc, outputUri)

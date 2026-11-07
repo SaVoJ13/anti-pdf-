@@ -14,7 +14,7 @@ interface FormEngine {
      * Отримання списку всіх інтерактивних полів документа.
      * Якщо документ не містить AcroForm, повертає порожній список.
      */
-    suspend fun extractFormFields(context: Context, sourceUri: Uri): List<FormField>
+    suspend fun extractFormFields(context: Context, sourceUri: Uri, password: String? = null): List<FormField>
 
     /**
      * Запис оновлених значень у поля форми та збереження в новий або той самий URI.
@@ -23,6 +23,7 @@ interface FormEngine {
         context: Context,
         sourceUri: Uri,
         updates: List<FormFieldUpdate>,
-        outputUri: Uri
+        outputUri: Uri,
+        password: String? = null
     ): PdfOperationResult
 }
