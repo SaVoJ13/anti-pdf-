@@ -1,6 +1,83 @@
 # CONTRACTS — контракти між модулями
 Веде лише Керівник проєкту. Версії v0.N.
 
+## v0.4 (Затверджено: розміщення на сторінці, 2026-11-07)
+
+Зміни відносно v0.3:
+- Додано §1.5 `MarkupEngine` і модель `PageMarkup`. Єдиний виклик: одне завантаження, одне збереження (кнопка «Зберегти»).
+- `AnnotationEngine` (§1.3) — DEPRECATED. Параметри `pageWidthPt/pageHeightPt` більше не використовуються; координати трактуються за §1.5. Видалення — після переходу UI на `MarkupEngine`.
+- `FormEngine` (§1.4): додано `password: String? = null` (зворотно сумісно).
+
+### 1.5 Розміщення на сторінці
+
+**Простір координат `PageViewPoint`:** одиниці — pt; початок — лівий верхній кут видимої області сторінки (CropBox після /Rotate); x вправо, y вниз. Це те, що повертає `PdfView.viewToPdfPoint`. `pageIndex` береться з `PdfPoint.pageNum`, НЕ з `firstVisiblePage`. Перетворення в простір користувача PDF (CropBox, /Rotate 0/90/180/270) виконує лише `core-pdf`; UI про поворот і CropBox не знає.
+
+```kotlin
+package com.savoj.volumpdf.core.pdf.model
+
+enum class MarkKind { CHECK, CROSS }
+
+sealed interface PageMarkup {
+    val id: String
+    val pageIndex: Int // 0-based; збігається з PdfPoint.pageNum (підтверджено спайком: p0, p1, p109, p110 у документі зі 120 сторінок)
+
+    // (x, y) — лівий верхній кут рамки тексту
+    data class Text(
+        override val id: String, override val pageIndex: Int,
+        val x: Float, val y: Float,
+        val text: String, val fontSizePt: Float = 14f, val color: Int
+    ) : PageMarkup
+
+    // (x, y) — центр позначки; малюється векторно, без шрифту
+    data class Mark(
+        override val id: String, override val pageIndex: Int,
+        val x: Float, val y: Float,
+        val kind: MarkKind, val sizePt: Float = 16f, val color: Int
+    ) : PageMarkup
+
+    // точки штрихів — у PageViewPoint-просторі сторінки pageIndex
+    data class Ink(
+        override val id: String, override val pageIndex: Int,
+        val strokes: List<InkStroke>
+    ) : PageMarkup
+
+    // (left, top, width, height) — у PageViewPoint-просторі
+    data class Signature(
+        override val id: String, override val pageIndex: Int,
+        val bitmap: android.graphics.Bitmap,
+        val left: Float, val top: Float, val width: Float, val height: Float
+    ) : PageMarkup
+}
+```
+
+```kotlin
+package com.savoj.volumpdf.core.pdf
+
+interface MarkupEngine {
+    // Повертає символи, яких немає у вбудованому шрифті (порожній рядок = усе підтримується)
+    fun findUnsupportedChars(text: String): String
+
+    // Одне завантаження, одне збереження: спершу formUpdates, потім markups у заданому порядку.
+    suspend fun applyEdits(
+        context: Context,
+        sourceUri: Uri,
+        markups: List<PageMarkup>,
+        formUpdates: List<FormFieldUpdate> = emptyList(),
+        outputUri: Uri,
+        password: String? = null
+    ): PdfOperationResult
+}
+```
+
+Гарантії:
+1. Запис через проміжний файл; оригінал не пошкоджується при збої.
+2. Text/Mark/Signature стають вмістом сторінки (після збереження не редагуються в застосунку); Ink — анотація `/Ink` з appearance stream.
+3. Текст і позначки на сторінках з /Rotate відображаються рівно (матриця повороту).
+4. Текст: вбудована підмножина Roboto Regular (OFL-1.1); символи поза шрифтом UI відсікає через `findUnsupportedChars`.
+5. Об'єкт поза межами видимої сторінки → `PdfOperationResult.Error` з `userMessage`.
+
+---
+
 ## v0.3 (Затверджено: Етап 2.2 — Інтерактивні форми AcroForm та ергономіка UI, 2026-11-04)
 
 ### 1. Модуль `core-pdf` ↔ `app`

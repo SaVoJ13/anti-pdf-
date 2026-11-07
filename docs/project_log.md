@@ -15,6 +15,21 @@
 - Ink: PDFBox при генерації appearance stream сам розширює `/Rect` понад розрахунковий; BBox AP збігається з `/Rect`. Вигляд Ink на повернутих сторінках у реальних переглядачах НЕ ПЕРЕВІРЕНО.
 - Підпис і текст: наявний `RectF`/`FreeTextData` не змінювались (контракт v0.3); поза межами видимої сторінки помилки поки немає (гарантія 5 §1.5 — у 1b).
 
+## 2026-11-07 — Керівник проєкту (документи v0.4: розміщення на сторінці; виконав координатор Claude за дорученням власника)
+**Що зроблено:**
+- За рішенням Архітектора від 2026-11-07 (затверджено власником) оновлено документи. Код не чіпався.
+- `docs/CONTRACTS.md`: додано секцію v0.4 над v0.3 (§1.5 `MarkupEngine`/`PageMarkup`; `AnnotationEngine` DEPRECATED; `password` у `FormEngine`). `pageIndex` 0-based, збігається з `PdfPoint.pageNum` (підтверджено спайком: p0, p1, p109, p110 у документі зі 120 сторінок).
+- `docs/MASTER_SPEC.md`: оновлено «Статус», додано R9–R12, п. 5 у складі MVP, два правила в «Незмінні правила» (`@ExperimentalPdfApi` лише в одному класі; послідовність етапів).
+- `docs/THIRD_PARTY.md`: додано рядок Roboto Regular (OFL-1.1); опис `room-compiler` виправлено на «Java annotation processor (не KSP)» (за `app/build.gradle.kts:55`); додано розділ з розбіжностями зі звіркою `build.gradle`.
+- `docs/research/MARKUP_STAGES.md`: створено (порядок етапів 1a → Етап 0 → 1b → 2 → 3 → 4, гілки з префіксом `feature/`, критерії готовності).
+- `docs/research/ARCHITECT_DECISION_2026-11-07.md`: додано як запис рішення (відповідь Архітектора + доповнення).
+**Що змінено:** `docs/CONTRACTS.md`, `docs/MASTER_SPEC.md`, `docs/THIRD_PARTY.md`, `docs/project_log.md`; нові `docs/research/MARKUP_STAGES.md`, `docs/research/ARCHITECT_DECISION_2026-11-07.md`.
+**Рішення, які ухвалено:** жодних нових; лише фіксація рішень Архітектора й власника.
+**ЗВІРКА `build.gradle` з реєстром (2026-11-07):** `androidx.recyclerview` і `androidx.viewpager2` використовуються в коді `app`, але не оголошені в `build.gradle.kts` і відсутні в реєстрі (імовірно, транзитивно через `material`: НЕ ПЕРЕВІРЕНО). Стовпець «Де використовується» для coroutines і тестових залежностей неповний (також `app`, `core-ads`). Рядки не додавалися.
+**НЕ ПЕРЕВІРЕНО:** назва файлу, URL, коміт і SHA-256 статичного Roboto Regular у `google/fonts` (каталог `ofl/roboto` на GitHub не відкрився: robots_disallowed; API недоступний), ліцензія OFL окремо не перечитувалась (спираємось на прочитане Архітектором); фіксує етап 1b.
+**Що передати далі:** власнику: злити гілку `feature/docs-contracts-v0.4` у `main` (містить також звіт спайку). Далі етап 1a: агент «PDF-ядро», гілка `feature/page-geometry`.
+**Відкриті питання:** чи додати `recyclerview` і `viewpager2` у реєстр; екран ліцензій для OFL/Apache.
+
 ## 2026-11-07 — Android і UI (Спайк: перевірка на пристрої)
 **Що зроблено:**
 - Спайк у `spike/` (поза git): власні PDF (A4, `/Rotate 90`, зсунутий CropBox, 120 стор.) і застосунок з логуванням `viewToPdfPoint`; встановлено й перевірено на Galaxy S24 Ultra (SDK 37); копію в профілі 95 видалено.
