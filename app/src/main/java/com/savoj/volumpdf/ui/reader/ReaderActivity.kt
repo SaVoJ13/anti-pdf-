@@ -2,8 +2,6 @@ package com.savoj.volumpdf.ui.reader
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.Color
-import android.graphics.RectF
 import android.util.Log
 import android.net.Uri
 import android.os.Bundle
@@ -28,14 +26,11 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.savoj.volumpdf.R
-import com.savoj.volumpdf.core.pdf.AnnotationEngine
 import com.savoj.volumpdf.core.pdf.FormEngine
-import com.savoj.volumpdf.core.pdf.PdfBoxAnnotationEngine
 import com.savoj.volumpdf.core.pdf.MarkupEngine
 import com.savoj.volumpdf.core.pdf.MarkupLayout
 import com.savoj.volumpdf.core.pdf.PdfBoxFormEngine
 import com.savoj.volumpdf.core.pdf.PdfBoxMarkupEngine
-import com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine
 import com.savoj.volumpdf.core.pdf.model.FormField
 import com.savoj.volumpdf.core.pdf.model.PageMarkup
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
@@ -45,15 +40,12 @@ import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.util.SafUtils
-import com.tom_roush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileNotFoundException
 import java.util.UUID
 
 class ReaderActivity : AppCompatActivity() {
@@ -65,7 +57,6 @@ class ReaderActivity : AppCompatActivity() {
     private var documentTitle: String? = null
     private var viewerFragment: VolumPdfViewerFragment? = null
 
-    private val annotationEngine: AnnotationEngine = PdfBoxAnnotationEngine()
     private val formEngine: FormEngine = PdfBoxFormEngine()
     private var detectedFormFields: List<FormField> = emptyList()
 
@@ -73,15 +64,6 @@ class ReaderActivity : AppCompatActivity() {
         PdfBoxMarkupEngine({ applicationContext.assets.open(MarkupLayout.FONT_ASSET_PATH) })
     private var enteringPlaceMode = false
     private var savingPlace = false
-
-    private var isDrawingMode = false
-
-    private enum class BrushType {
-        PEN, MARKER, HIGHLIGHTER
-    }
-
-    private var currentBrushType = BrushType.PEN
-    private var baseColor = COLOR_RED
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,7 +95,6 @@ class ReaderActivity : AppCompatActivity() {
         viewModel.initDocument(uri, documentTitle)
 
         setupViewerFragment(uri, savedInstanceState)
-        setupDrawingToolbar()
         setupBottomActionBar()
         setupBackNavigation()
         setupPlaceMode()
@@ -162,21 +143,10 @@ class ReaderActivity : AppCompatActivity() {
         binding.bottomActionBar.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.action_forms -> {
-                    if (isDrawingMode) toggleDrawingMode(false)
                     leavePlaceThen { openFillFormDialog() }
                     false
                 }
-                R.id.action_draw -> {
-                    toggleDrawingMode()
-                    false
-                }
-                R.id.action_signature -> {
-                    if (isDrawingMode) toggleDrawingMode(false)
-                    openSignatureDialog()
-                    false
-                }
                 R.id.action_place -> {
-                    if (isDrawingMode) toggleDrawingMode(false)
                     enterPlaceMode()
                     false
                 }
@@ -225,79 +195,10 @@ class ReaderActivity : AppCompatActivity() {
         dialog.show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
     }
 
-    private fun setupDrawingToolbar() {
-        binding.toggleBrushTypeGroup.check(R.id.btnBrushPen)
-        binding.toggleColorPaletteGroup.check(R.id.btnColorPaletteRed)
-        applyBrushSettings()
-
-        binding.toggleBrushTypeGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                currentBrushType = when (checkedId) {
-                    R.id.btnBrushMarker -> BrushType.MARKER
-                    R.id.btnBrushHighlighter -> BrushType.HIGHLIGHTER
-                    else -> BrushType.PEN
-                }
-                applyBrushSettings()
-            }
-        }
-
-        binding.toggleColorPaletteGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                baseColor = when (checkedId) {
-                    R.id.btnColorPaletteBlack -> COLOR_BLACK
-                    R.id.btnColorPaletteBlue -> COLOR_BLUE
-                    R.id.btnColorPaletteGreen -> COLOR_GREEN
-                    R.id.btnColorPaletteYellow -> COLOR_YELLOW
-                    else -> COLOR_RED
-                }
-                applyBrushSettings()
-            }
-        }
-
-        binding.btnUndoStroke.setOnClickListener {
-            binding.inkCanvasView.undo()
-        }
-
-        binding.btnClearStrokes.setOnClickListener {
-            binding.inkCanvasView.clear()
-        }
-
-        binding.btnCloseDrawing.setOnClickListener {
-            toggleDrawingMode(false)
-        }
-
-        binding.btnSaveDrawing.setOnClickListener {
-            saveDrawingToDocument()
-        }
-    }
-
-    private fun applyBrushSettings() {
-        when (currentBrushType) {
-            BrushType.PEN -> {
-                binding.inkCanvasView.currentColor = baseColor
-                binding.inkCanvasView.currentStrokeWidth = 5f
-            }
-            BrushType.MARKER -> {
-                binding.inkCanvasView.currentColor = baseColor
-                binding.inkCanvasView.currentStrokeWidth = 12f
-            }
-            BrushType.HIGHLIGHTER -> {
-                val r = Color.red(baseColor)
-                val g = Color.green(baseColor)
-                val b = Color.blue(baseColor)
-                val highlighterColor = Color.argb(0x66, r, g, b)
-                binding.inkCanvasView.currentColor = highlighterColor
-                binding.inkCanvasView.currentStrokeWidth = 28f
-            }
-        }
-    }
-
     private fun setupBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (isDrawingMode) {
-                    toggleDrawingMode(false)
-                } else if (viewModel.placeModeActive) {
+                if (viewModel.placeModeActive) {
                     leavePlaceThen { }
                 } else {
                     isEnabled = false
@@ -305,67 +206,6 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
         })
-    }
-
-    private fun toggleDrawingMode(enable: Boolean? = null) {
-        isDrawingMode = enable ?: !isDrawingMode
-        binding.inkCanvasView.visibility = if (isDrawingMode) View.VISIBLE else View.GONE
-        binding.drawingToolbarCard.visibility = if (isDrawingMode) View.VISIBLE else View.GONE
-        binding.bottomActionBar.visibility = if (isDrawingMode) View.GONE else View.VISIBLE
-
-        if (!isDrawingMode) {
-            binding.inkCanvasView.clear()
-        }
-    }
-
-    private fun saveDrawingToDocument() {
-        if (!binding.inkCanvasView.hasStrokes()) {
-            toggleDrawingMode(false)
-            return
-        }
-
-        val uri = documentUri ?: return
-        val pageIndex = viewerFragment?.currentPageIndex ?: 0
-
-        showLoadingOverlay(getString(R.string.saving_annotations))
-
-        lifecycleScope.launch {
-            try {
-                val (pageWidthPt, pageHeightPt) = getPageDimensions(uri, pageIndex)
-                val strokes = binding.inkCanvasView.getScaledStrokes(pageWidthPt, pageHeightPt)
-
-                val result = annotationEngine.addInkAnnotations(
-                    context = applicationContext,
-                    sourceUri = uri,
-                    pageIndex = pageIndex,
-                    strokes = strokes,
-                    pageWidthPt = pageWidthPt,
-                    pageHeightPt = pageHeightPt,
-                    outputUri = uri
-                )
-
-                hideLoadingOverlay()
-
-                when (result) {
-                    is PdfOperationResult.Success -> {
-                        binding.inkCanvasView.clear()
-                        toggleDrawingMode(false)
-                        reloadViewerDocument()
-                        checkForFormFields(uri)
-                        Snackbar.make(binding.root, R.string.drawing_success, Snackbar.LENGTH_SHORT).show()
-                    }
-                    is PdfOperationResult.Error -> {
-                        Snackbar.make(binding.root, result.userMessage, Snackbar.LENGTH_LONG).show()
-                    }
-                    is PdfOperationResult.Progress -> Unit
-                }
-            } catch (e: Throwable) {
-                if (e is CancellationException) throw e
-                hideLoadingOverlay()
-                val msg = e.localizedMessage ?: getString(R.string.error_title)
-                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
-            }
-        }
     }
 
     /** Полотно підпису: результат — лише картинка для розміщення (запису в документ немає). */
@@ -671,7 +511,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.selectionBarCard.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(false)
         binding.placePanelCard.visibility = View.GONE
-        if (!isDrawingMode) binding.bottomActionBar.visibility = View.VISIBLE
+        binding.bottomActionBar.visibility = View.VISIBLE
     }
 
     /**
@@ -978,7 +818,6 @@ class ReaderActivity : AppCompatActivity() {
             WindowInsetsHelper.applyToolbarTopInset(binding.toolbar, e.top)
             binding.bottomActionBar.setPadding(0, 0, 0, e.bottom)
             WindowInsetsHelper.applyMargins(binding.placePanelCard, base, base, base, base + e.bottom)
-            WindowInsetsHelper.applyMargins(binding.drawingToolbarCard, base, base, base, base + e.bottom)
             updatePlacePanelWidth()
             WindowInsetsCompat.CONSUMED
         }
@@ -1031,30 +870,6 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun getPageDimensions(uri: Uri, pageIndex: Int): Pair<Float, Float> = withContext(Dispatchers.IO) {
-        PdfBoxPageOperationsEngine.init(applicationContext)
-        val inStream = if (uri.scheme == "file") {
-            val path = uri.path ?: throw IllegalArgumentException("Некоректний file URI: $uri")
-            FileInputStream(File(path))
-        } else {
-            contentResolver.openInputStream(uri)
-                ?: throw FileNotFoundException("Неможливо відкрити файл для читання розмірів: $uri")
-        }
-
-        inStream.use { stream ->
-            val doc = PDDocument.load(stream)
-            try {
-                val totalPages = doc.numberOfPages
-                val validIndex = pageIndex.coerceIn(0, maxOf(0, totalPages - 1))
-                val page = doc.getPage(validIndex)
-                val box = page.cropBox ?: page.mediaBox
-                Pair(box.width, box.height)
-            } finally {
-                doc.close()
-            }
-        }
-    }
-
     private fun showLoadingOverlay(message: String) {
         binding.savingMessageText.text = message
         binding.savingOverlay.visibility = View.VISIBLE
@@ -1087,15 +902,6 @@ class ReaderActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         documentUri?.let { outState.putString(KEY_SAVED_URI, it.toString()) }
-        outState.putBoolean(KEY_DRAWING_MODE, isDrawingMode)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        val restoredDrawing = savedInstanceState.getBoolean(KEY_DRAWING_MODE, false)
-        if (restoredDrawing) {
-            toggleDrawingMode(true)
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -1114,26 +920,14 @@ class ReaderActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
-                if (isDrawingMode) {
-                    toggleDrawingMode(false)
-                } else if (viewModel.placeModeActive) {
+                if (viewModel.placeModeActive) {
                     leavePlaceThen { finish() }
                 } else {
                     finish()
                 }
                 true
             }
-            R.id.action_draw -> {
-                leavePlaceThen { toggleDrawingMode() }
-                true
-            }
-            R.id.action_signature -> {
-                if (isDrawingMode) toggleDrawingMode(false)
-                leavePlaceThen { openSignatureDialog() }
-                true
-            }
             R.id.action_place -> {
-                if (isDrawingMode) toggleDrawingMode(false)
                 enterPlaceMode()
                 true
             }
@@ -1192,7 +986,6 @@ class ReaderActivity : AppCompatActivity() {
         private const val TEXT_VALIDATE_DEBOUNCE_MS = 120L
         private const val TAG_PDF_VIEWER = "tag_pdf_viewer_fragment"
         private const val KEY_SAVED_URI = "key_saved_reader_uri"
-        private const val KEY_DRAWING_MODE = "key_drawing_mode_active"
 
         private const val COLOR_BLACK = 0xFF000000.toInt()
         private const val COLOR_RED = 0xFFD32F2F.toInt()

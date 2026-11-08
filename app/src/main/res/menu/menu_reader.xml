@@ -15,18 +15,6 @@
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/action_draw"
-        android:icon="@drawable/ic_draw"
-        android:title="@string/action_draw"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_signature"
-        android:icon="@drawable/ic_signature"
-        android:title="@string/action_signature"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/action_place"
         android:icon="@drawable/ic_place"
         android:title="@string/action_place"
