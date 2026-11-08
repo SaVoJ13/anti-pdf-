@@ -227,3 +227,18 @@ object MarkupOverlayMath {
         }
     }
 }
+
+/** Перетворення пікселя PdfView у простір довільної сторінки (без Android-класів, щоб тестувати на JVM). */
+object PageSpaceMath {
+    /**
+     * [originX], [originY] — піксель PdfView, у якому лежить точка (0, 0) сторінки (лівий верхній кут видимої області);
+     * [zoom] — пікселів на pt. Повертає (x, y) у pt; працює й для точок за межами сторінки (від'ємні чи більші за розмір).
+     * null — масштаб не додатний чи вхідні числа не скінченні.
+     */
+    fun toPageSpace(originX: Float, originY: Float, zoom: Float, viewX: Float, viewY: Float): Pair<Float, Float>? {
+        if (!(zoom > 0f) || zoom.isInfinite()) return null
+        val values = floatArrayOf(originX, originY, viewX, viewY)
+        if (values.any { it.isNaN() || it.isInfinite() }) return null
+        return Pair((viewX - originX) / zoom, (viewY - originY) / zoom)
+    }
+}

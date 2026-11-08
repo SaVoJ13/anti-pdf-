@@ -102,6 +102,18 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
     fun viewToPage(x: Float, y: Float): PageViewPoint? =
         pdfView?.viewToPdfPoint(x, y)?.let { PageViewPoint(it.pageNum, it.x, it.y) }
 
+    /**
+     * Піксель PdfView → точка у просторі ВКАЗАНОЇ сторінки (pt), навіть якщо піксель лежить за її межами
+     * (штрих може виходити за край). Початок сторінки береться з pdfToViewPoint(PdfPoint(pageIndex, 0, 0)),
+     * масштаб — [zoom]. null — переглядача немає або сторінка не розкладена.
+     */
+    fun viewToPageSpace(pageIndex: Int, x: Float, y: Float): PageViewPoint? {
+        val v = pdfView ?: return null
+        val origin = v.pdfToViewPoint(PdfPoint(pageIndex, 0f, 0f)) ?: return null
+        val p = PageSpaceMath.toPageSpace(origin.x, origin.y, v.zoom, x, y) ?: return null
+        return PageViewPoint(pageIndex, p.first, p.second)
+    }
+
     // --- режим «поставити» (R14) ----------------------------------------------------------------
 
     private var placeEnabled = false
