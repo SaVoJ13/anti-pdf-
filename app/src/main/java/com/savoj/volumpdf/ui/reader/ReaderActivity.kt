@@ -11,6 +11,8 @@ import android.view.Menu
 import android.view.MenuItem
 import android.content.res.Configuration
 import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.view.WindowManager
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -470,7 +472,7 @@ class ReaderActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.pending.collect { list ->
                     binding.markupOverlay.items = list
-                    binding.btnPlaceSave.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
+                    updatePlaceSaveVisibility(list.isNotEmpty())
                 }
             }
         }
@@ -684,16 +686,74 @@ class ReaderActivity : AppCompatActivity() {
         snackbar.show()
     }
 
-    /** Ландшафт: усі елементи панелі в один рядок (панель прокручується, якщо не вміщується). */
+    private var lastEdges = SystemEdges.NONE
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    /**
+     * Розкладка панелі «Поставити» без горизонтального прокручування (D1): «Зберегти» й усі кнопки завжди
+     * цілком у межах картки. Портрет: 4 рядки (інструменти / колір+скасувати / розмір+готово / зберегти);
+     * ландшафт: 2 рядки у картці ≤ 640 dp. Текст кнопок може йти у 2 рядки, але не обрізається.
+     */
     private fun applyPlacePanelOrientation() {
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        binding.placePanelContent.orientation =
-            if (landscape) android.widget.LinearLayout.HORIZONTAL else android.widget.LinearLayout.VERTICAL
-        val lp = binding.placeRowActions.layoutParams as android.widget.LinearLayout.LayoutParams
-        val gap = (6 * resources.displayMetrics.density).toInt()
-        lp.topMargin = if (landscape) 0 else gap
-        lp.marginStart = if (landscape) gap * 2 else 0
-        binding.placeRowActions.layoutParams = lp
+        val rowA = binding.placeRowA
+        val rowB = binding.placeRowB
+        val rowC = binding.placeRowC
+        val rowD = binding.placeRowD
+        val items = listOf<View>(
+            binding.placeToolGroup, binding.placeSizeBlock, binding.placeColorGroup,
+            binding.btnPlaceUndo, binding.btnPlaceDone, binding.btnPlaceSave
+        )
+        items.forEach { (it.parent as? ViewGroup)?.removeView(it) }
+        listOf(rowA, rowB, rowC, rowD).forEach { it.removeAllViews() }
+        binding.placeStash.visibility = View.GONE
+
+        fun wrap(start: Int = 0) = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { marginStart = start }
+        fun weighted(start: Int = 0) = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            .apply { marginStart = start }
+        val gap = dp(8)
+
+        if (landscape) {
+            rowA.addView(binding.placeToolGroup, wrap())
+            rowA.addView(binding.placeSizeBlock, wrap(gap * 2))
+            rowB.addView(binding.placeColorGroup, wrap())
+            rowB.addView(binding.btnPlaceUndo, wrap(gap))
+            rowB.addView(binding.btnPlaceDone, weighted(gap))
+            rowB.addView(binding.btnPlaceSave, weighted(gap))
+        } else {
+            rowA.addView(binding.placeToolGroup, wrap())
+            rowB.addView(binding.placeColorGroup, wrap())
+            rowB.addView(binding.btnPlaceUndo, wrap(gap))
+            rowC.addView(binding.placeSizeBlock, wrap())
+            rowC.addView(binding.btnPlaceDone, weighted(gap))
+            rowD.addView(
+                binding.btnPlaceSave,
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            )
+        }
+        updatePlaceSaveVisibility(viewModel.pending.value.isNotEmpty())
+        updatePlacePanelWidth()
+    }
+
+    private fun updatePlacePanelWidth() {
+        val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val lp = binding.placePanelCard.layoutParams
+        val available = resources.displayMetrics.widthPixels - 2 * dp(12) - lastEdges.left - lastEdges.right
+        val newWidth = if (landscape) minOf(dp(640), available) else ViewGroup.LayoutParams.MATCH_PARENT
+        if (lp.width != newWidth) {
+            lp.width = newWidth
+            binding.placePanelCard.layoutParams = lp
+        }
+    }
+
+    private fun updatePlaceSaveVisibility(hasPending: Boolean) {
+        binding.btnPlaceSave.visibility = if (hasPending) View.VISIBLE else View.GONE
+        binding.placeRowD.visibility =
+            if (binding.placeRowD.childCount > 0 && hasPending) View.VISIBLE else View.GONE
+        binding.placeRowC.visibility = if (binding.placeRowC.childCount > 0) View.VISIBLE else View.GONE
     }
 
     /**
@@ -704,11 +764,13 @@ class ReaderActivity : AppCompatActivity() {
         val base = (12 * resources.displayMetrics.density).toInt()
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val e = SystemEdges.from(insets)
+            lastEdges = e
             binding.root.setPadding(e.left, 0, e.right, 0)
             WindowInsetsHelper.applyToolbarTopInset(binding.toolbar, e.top)
             binding.bottomActionBar.setPadding(0, 0, 0, e.bottom)
             WindowInsetsHelper.applyMargins(binding.placePanelCard, base, base, base, base + e.bottom)
             WindowInsetsHelper.applyMargins(binding.drawingToolbarCard, base, base, base, base + e.bottom)
+            updatePlacePanelWidth()
             WindowInsetsCompat.CONSUMED
         }
         ViewCompat.requestApplyInsets(binding.root)
