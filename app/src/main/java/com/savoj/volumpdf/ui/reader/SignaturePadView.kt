@@ -14,6 +14,8 @@ import kotlin.math.abs
 
 /**
  * Спеціалізоване полотно для створення підпису (рукописний розпис пальцем або стилусом).
+ * Штрихи зберігаються в нормалізованих координатах (0..1 відносно розмірів полотна) і перемасштабовуються
+ * при зміні розміру (поворот екрана); bitmap генерується за поточним розміром.
  * Надає метод експорту [getTransparentSignatureBitmap] з прозорим фоном та авто-обрізкою країв.
  */
 class SignaturePadView @JvmOverloads constructor(
@@ -22,14 +24,11 @@ class SignaturePadView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    private data class SignatureStroke(
-        val path: Path,
-        val points: List<PointF>
-    )
+    /** Точки штриха в нормалізованих координатах; [path] — кеш у пікселях поточного розміру. */
+    private class SignatureStroke(val norm: MutableList<PointF>, var path: Path = Path())
 
     private val strokes = mutableListOf<SignatureStroke>()
-    private var currentPath = Path()
-    private val currentPoints = mutableListOf<PointF>()
+    private var current: SignatureStroke? = null
     private var lastX = 0f
     private var lastY = 0f
 
@@ -44,18 +43,39 @@ class SignaturePadView @JvmOverloads constructor(
         strokeCap = Paint.Cap.ROUND
     }
 
+    private fun toNormX(x: Float) = if (width > 0) x / width else 0f
+    private fun toNormY(y: Float) = if (height > 0) y / height else 0f
+
+    /** Контур штриха в пікселях за нормалізованими точками й розміром [w]×[h]. */
+    private fun buildPath(norm: List<PointF>, w: Int, h: Int): Path {
+        val path = Path()
+        if (norm.isEmpty()) return path
+        var lx = norm[0].x * w
+        var ly = norm[0].y * h
+        path.moveTo(lx, ly)
+        for (i in 1 until norm.size) {
+            val x = norm[i].x * w
+            val y = norm[i].y * h
+            path.quadTo(lx, ly, (lx + x) / 2f, (ly + y) / 2f)
+            lx = x
+            ly = y
+        }
+        path.lineTo(lx, ly)
+        return path
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        for (s in strokes) s.path = buildPath(s.norm, w, h)
+        current?.let { it.path = buildPath(it.norm, w, h) }
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         paint.color = strokeColor
         paint.strokeWidth = strokeWidthPx
-
-        for (stroke in strokes) {
-            canvas.drawPath(stroke.path, paint)
-        }
-
-        if (!currentPath.isEmpty) {
-            canvas.drawPath(currentPath, paint)
-        }
+        for (stroke in strokes) canvas.drawPath(stroke.path, paint)
+        current?.let { if (!it.path.isEmpty) canvas.drawPath(it.path, paint) }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -66,10 +86,9 @@ class SignaturePadView @JvmOverloads constructor(
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                currentPath.reset()
-                currentPoints.clear()
-                currentPath.moveTo(x, y)
-                currentPoints.add(PointF(x, y))
+                val s = SignatureStroke(mutableListOf(PointF(toNormX(x), toNormY(y))))
+                s.path.moveTo(x, y)
+                current = s
                 lastX = x
                 lastY = y
                 invalidate()
@@ -77,13 +96,12 @@ class SignaturePadView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_MOVE -> {
+                val s = current ?: return true
                 val dx = abs(x - lastX)
                 val dy = abs(y - lastY)
                 if (dx >= 2f || dy >= 2f) {
-                    val midX = (lastX + x) / 2f
-                    val midY = (lastY + y) / 2f
-                    currentPath.quadTo(lastX, lastY, midX, midY)
-                    currentPoints.add(PointF(x, y))
+                    s.path.quadTo(lastX, lastY, (lastX + x) / 2f, (lastY + y) / 2f)
+                    s.norm.add(PointF(toNormX(x), toNormY(y)))
                     lastX = x
                     lastY = y
                     invalidate()
@@ -92,27 +110,17 @@ class SignaturePadView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_UP -> {
-                currentPath.lineTo(x, y)
-                currentPoints.add(PointF(x, y))
-
-                if (currentPoints.isNotEmpty()) {
-                    strokes.add(
-                        SignatureStroke(
-                            path = Path(currentPath),
-                            points = ArrayList(currentPoints)
-                        )
-                    )
-                }
-
-                currentPath.reset()
-                currentPoints.clear()
+                val s = current ?: return true
+                s.path.lineTo(x, y)
+                s.norm.add(PointF(toNormX(x), toNormY(y)))
+                strokes.add(s)
+                current = null
                 invalidate()
                 return true
             }
 
             MotionEvent.ACTION_CANCEL -> {
-                currentPath.reset()
-                currentPoints.clear()
+                current = null
                 invalidate()
                 return true
             }
@@ -121,18 +129,17 @@ class SignaturePadView @JvmOverloads constructor(
         return super.onTouchEvent(event)
     }
 
-    fun isEmpty(): Boolean = strokes.isEmpty() && currentPoints.isEmpty()
+    fun isEmpty(): Boolean = strokes.isEmpty() && current == null
 
     fun clear() {
         strokes.clear()
-        currentPath.reset()
-        currentPoints.clear()
+        current = null
         invalidate()
     }
 
     /**
      * Створює чистий Bitmap підпису на прозорому фоні (ARGB_8888)
-     * із автоматичною обрізкою порожніх полів довкола штрихів.
+     * із автоматичною обрізкою порожніх полів довкола штрихів. Розмір — поточний розмір полотна.
      */
     fun getTransparentSignatureBitmap(paddingPx: Int = 20): Bitmap? {
         if (isEmpty() || width <= 0 || height <= 0) return null
@@ -156,12 +163,14 @@ class SignaturePadView @JvmOverloads constructor(
         var maxY = -Float.MAX_VALUE
 
         for (stroke in strokes) {
-            canvas.drawPath(stroke.path, renderPaint)
-            for (pt in stroke.points) {
-                if (pt.x < minX) minX = pt.x
-                if (pt.x > maxX) maxX = pt.x
-                if (pt.y < minY) minY = pt.y
-                if (pt.y > maxY) maxY = pt.y
+            canvas.drawPath(buildPath(stroke.norm, width, height), renderPaint)
+            for (pt in stroke.norm) {
+                val px = pt.x * width
+                val py = pt.y * height
+                if (px < minX) minX = px
+                if (px > maxX) maxX = px
+                if (py < minY) minY = py
+                if (py > maxY) maxY = py
             }
         }
 
