@@ -49,16 +49,66 @@ internal object PdfIo {
      * не можна зберегти в той самий URI. Викликається одразу після завантаження, до будь-яких змін.
      */
     fun enforcePolicy(
-        doc: PDDocument, sourceUri: Uri, outputUri: Uri, needsModify: Boolean, needsFillForm: Boolean
+        context: Context, doc: PDDocument, sourceUri: Uri, outputUri: Uri, needsModify: Boolean, needsFillForm: Boolean
     ) {
         val e = editability(doc)
         if (needsModify && !e.canMarkup) throw PdfPermissionException("MODIFY")
         if (needsFillForm && !e.canFillForms) throw PdfPermissionException("FILL_FORM")
-        if (e.isEncrypted && (sourceUri == outputUri || sourceUri.toString() == outputUri.toString())) {
+        if (e.isEncrypted && isSameTarget(context, sourceUri, outputUri)) {
             throw IllegalArgumentException(
                 "Зашифрований документ можна зберегти лише як нову копію, а не поверх оригіналу"
             )
         }
+    }
+
+    /**
+     * Найкраща спроба визначити, чи два URI вказують на той самий файл (CONTRACTS §1.5.1 п. 8в).
+     * file:// — canonical path і Files.isSameFile; content:// — authority + documentId
+     * (для tree+document URI — id документа); якщо нормалізація неможлива — порівняння рядків.
+     * Вихідний файл тут НЕ відкривається (відкриття SAF-виходу з truncate знищило б дані).
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun isSameTarget(context: Context, a: Uri, b: Uri): Boolean {
+        if (a == b || a.toString() == b.toString()) return true
+        val sa = a.scheme
+        val sb = b.scheme
+        if (sa == "file" && sb == "file") {
+            val pa = a.path
+            val pb = b.path
+            if (pa != null && pb != null) {
+                try {
+                    val fa = File(pa)
+                    val fb = File(pb)
+                    if (fa.canonicalFile == fb.canonicalFile) return true
+                    if (fa.exists() && fb.exists() &&
+                        java.nio.file.Files.isSameFile(fa.toPath(), fb.toPath())
+                    ) return true
+                    return false
+                } catch (_: Exception) {
+                    // нормалізація неможлива — нижче порівняння рядків
+                }
+            }
+        } else if (sa == "content" && sb == "content") {
+            try {
+                val authA = a.authority?.lowercase()
+                val authB = b.authority?.lowercase()
+                val idA = documentIdOf(a)
+                val idB = documentIdOf(b)
+                if (authA != null && authB != null && idA != null && idB != null) {
+                    return authA == authB && idA == idB
+                }
+            } catch (_: Exception) {
+                // нормалізація неможлива — нижче порівняння рядків
+            }
+        }
+        return a.toString() == b.toString()
+    }
+
+    /** Для tree+document URI повертає id документа (не дерева). */
+    private fun documentIdOf(uri: Uri): String? = try {
+        android.provider.DocumentsContract.getDocumentId(uri)
+    } catch (_: Exception) {
+        null
     }
 
     /**
