@@ -104,7 +104,6 @@
     <!-- Annotations & Editing -->
     <string name="action_draw">Рисовать</string>
     <string name="action_signature">Подпись</string>
-    <string name="action_add_text">Добавить текст</string>
     <string name="action_undo">Отменить</string>
     <string name="action_clear_all">Очистить все</string>
     <string name="action_save">Сохранить</string>
@@ -124,13 +123,8 @@
     <string name="signature_insert">Вставить</string>
     <string name="signature_error_empty">Пожалуйста, распишитесь перед вставкой</string>
     <string name="signature_success">Подпись успешно добавлена</string>
-    <string name="text_dialog_title">Добавить текст</string>
     <string name="text_input_hint">Введите текст аннотации</string>
-    <string name="text_size_label">Размер шрифта:</string>
-    <string name="text_size_format">Размер шрифта: %1$d pt</string>
-    <string name="text_insert">Добавить в документ</string>
     <string name="text_error_empty">Текст не может быть пустым</string>
-    <string name="text_success">Текст успешно добавлен</string>
     <string name="drawing_success">Рисунок успешно сохранен</string>
 
     <!-- Interactive Forms (AcroForm) -->
@@ -142,4 +136,24 @@
     <string name="form_saved_success">Форма успешно сохранена</string>
     <string name="form_read_only_badge">Только чтение</string>
     <string name="form_select_option">Выберите вариант</string>
+
+    <!-- Place on page (stage 3a) -->
+    <string name="action_place">Поставить</string>
+    <string name="place_tool_check">Галочка</string>
+    <string name="place_tool_cross">Крестик</string>
+    <string name="place_tool_text">Текст</string>
+    <string name="place_size_decrease">Меньше</string>
+    <string name="place_size_increase">Больше</string>
+    <string name="place_size_format">%1$d pt</string>
+    <string name="place_done">Готово</string>
+    <string name="place_text_title">Добавить текст</string>
+    <string name="place_text_add">Добавить</string>
+    <string name="place_text_unsupported">Эти символы не поддерживаются: %1$s</string>
+    <string name="place_saved">Сохранено в документ</string>
+    <string name="place_blocked_encrypted">Документы, защищённые паролем, пока нельзя редактировать — это появится позже.</string>
+    <string name="place_blocked_rights">Автор документа запретил изменения.</string>
+    <string name="place_blocked_unreadable">Не удалось открыть документ для редактирования.</string>
+    <string name="place_unsaved_title">Несохранённые изменения</string>
+    <string name="place_unsaved_message">Сохранить добавленное на страницах?</string>
+    <string name="place_discard">Отбросить</string>
 </resources>
