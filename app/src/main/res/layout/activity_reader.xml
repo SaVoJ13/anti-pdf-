@@ -464,6 +464,19 @@
                         android:insetBottom="0dp"
                         app:icon="@drawable/ic_undo" />
 
+                    <!-- «Форми»: шторка значень полів (лише якщо у файлі є поля) -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPlaceForms"
+                        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:contentDescription="@string/action_forms"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:visibility="gone"
+                        app:icon="@drawable/ic_forms" />
+
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPlaceDone"
                         style="@style/Widget.Material3.Button.TextButton"
@@ -531,6 +544,46 @@
         </FrameLayout>
 
     </FrameLayout>
+
+    <!-- Панель «Зберегти / Відкинути»: є незбережені зміни (об'єкти або форми); у режимі «Поставити» ховається -->
+    <LinearLayout
+        android:id="@+id/unsavedBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainerHigh"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/unsavedBarText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/unsaved_bar_text"
+            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUnsavedDiscard"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:text="@string/place_discard" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUnsavedSave"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:text="@string/action_save" />
+    </LinearLayout>
 
     <!-- Нижня панель швидких дій (Bottom Action Bar) під великий палець -->
     <com.google.android.material.bottomnavigation.BottomNavigationView

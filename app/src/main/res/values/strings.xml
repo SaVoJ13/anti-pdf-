@@ -167,4 +167,9 @@
     <string name="place_tool_signature">Signature</string>
     <string name="place_signature_width">Signature width</string>
     <string name="place_signature_tap_hint">Tap the page to place the signature</string>
+    <string name="form_choice_none">Not selected</string>
+    <string name="forms_apply">Apply</string>
+    <string name="forms_reset_all">Reset all form changes</string>
+    <string name="forms_read_only_note">This document does not allow filling in forms, so the fields are view-only.</string>
+    <string name="unsaved_bar_text">You have unsaved changes</string>
 </resources>

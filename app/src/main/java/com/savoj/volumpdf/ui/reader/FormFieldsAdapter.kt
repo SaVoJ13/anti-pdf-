@@ -10,7 +10,6 @@ import android.widget.ArrayAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.savoj.volumpdf.R
 import com.savoj.volumpdf.core.pdf.model.FormField
-import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
 import com.savoj.volumpdf.databinding.ItemFormFieldCheckboxBinding
 import com.savoj.volumpdf.databinding.ItemFormFieldChoiceBinding
 import com.savoj.volumpdf.databinding.ItemFormFieldTextBinding
@@ -20,36 +19,27 @@ class FormFieldsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val items = mutableListOf<FormField>()
     private val valuesMap = mutableMapOf<String, Any>()
 
+    /** false — документ не дозволяє заповнення: усі поля лише для перегляду. */
+    var canFill: Boolean = true
+
+    /**
+     * [initialValues] — значення, які показати (незбережені поверх файла). Без запису в [valuesMap] нічого
+     * не вигадуємо: поле без значення показує значення з файла (Choice без вибору = «не вибрано», тобто "").
+     */
     fun submitList(fields: List<FormField>, initialValues: Map<String, Any>? = null) {
         items.clear()
         items.addAll(fields)
 
         valuesMap.clear()
-        if (initialValues != null) {
-            valuesMap.putAll(initialValues)
-        }
-
         for (field in fields) {
-            if (!valuesMap.containsKey(field.fullyQualifiedName)) {
-                when (field) {
-                    is FormField.Text -> valuesMap[field.fullyQualifiedName] = field.value
-                    is FormField.CheckBox -> valuesMap[field.fullyQualifiedName] = field.isChecked
-                    is FormField.Choice -> valuesMap[field.fullyQualifiedName] = field.selectedValue ?: field.options.firstOrNull() ?: ""
-                }
+            val shown = initialValues?.get(field.fullyQualifiedName)
+            val typedOk = when (field) {
+                is FormField.CheckBox -> shown is Boolean
+                else -> shown is String
             }
+            valuesMap[field.fullyQualifiedName] = if (typedOk) shown!! else FormEditing.fileValue(field)
         }
         notifyDataSetChanged()
-    }
-
-    fun getFormUpdates(): List<FormFieldUpdate> {
-        return items.map { field ->
-            val value = valuesMap[field.fullyQualifiedName] ?: when (field) {
-                is FormField.Text -> field.value
-                is FormField.CheckBox -> field.isChecked
-                is FormField.Choice -> field.selectedValue ?: ""
-            }
-            FormFieldUpdate(field.fullyQualifiedName, value)
-        }
     }
 
     fun getCurrentValues(): Map<String, Any> {
@@ -104,8 +94,9 @@ class FormFieldsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             val label = field.alternateTitle?.takeIf { it.isNotBlank() } ?: field.partialName
             binding.textInputLayout.hint = label
 
-            if (field.isReadOnly) {
-                binding.textInputLayout.helperText = binding.root.context.getString(R.string.form_read_only_badge)
+            if (field.isReadOnly || !canFill) {
+                binding.textInputLayout.helperText =
+                    if (field.isReadOnly) binding.root.context.getString(R.string.form_read_only_badge) else null
                 binding.editText.isEnabled = false
             } else {
                 binding.textInputLayout.helperText = null
@@ -116,12 +107,10 @@ class FormFieldsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                 binding.editText.minLines = 3
                 binding.editText.isSingleLine = false
                 binding.editText.inputType = InputType.TYPE_CLASS_TEXT or
-                        InputType.TYPE_TEXT_FLAG_MULTI_LINE or
-                        InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                        InputType.TYPE_TEXT_FLAG_MULTI_LINE
             } else {
                 binding.editText.isSingleLine = true
-                binding.editText.inputType = InputType.TYPE_CLASS_TEXT or
-                        InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                binding.editText.inputType = InputType.TYPE_CLASS_TEXT
             }
 
             textWatcher?.let { binding.editText.removeTextChangedListener(it) }
@@ -151,9 +140,9 @@ class FormFieldsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             val label = field.alternateTitle?.takeIf { it.isNotBlank() } ?: field.partialName
             binding.checkBox.text = label
 
-            if (field.isReadOnly) {
+            if (field.isReadOnly || !canFill) {
                 binding.checkboxHelperText.text = binding.root.context.getString(R.string.form_read_only_badge)
-                binding.checkboxHelperText.visibility = View.VISIBLE
+                binding.checkboxHelperText.visibility = if (field.isReadOnly) View.VISIBLE else View.GONE
                 binding.checkBox.isEnabled = false
             } else {
                 binding.checkboxHelperText.visibility = View.GONE
@@ -177,33 +166,34 @@ class FormFieldsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         private var comboWatcher: TextWatcher? = null
 
         fun bind(field: FormField.Choice) {
+            val context = binding.root.context
             val label = field.alternateTitle?.takeIf { it.isNotBlank() } ?: field.partialName
             binding.choiceInputLayout.hint = label
 
-            if (field.isReadOnly) {
-                binding.choiceInputLayout.helperText = binding.root.context.getString(R.string.form_read_only_badge)
+            val readOnly = field.isReadOnly || !canFill
+            if (readOnly) {
+                binding.choiceInputLayout.helperText =
+                    if (field.isReadOnly) context.getString(R.string.form_read_only_badge) else null
                 binding.autoCompleteChoice.isEnabled = false
             } else {
                 binding.choiceInputLayout.helperText = null
                 binding.autoCompleteChoice.isEnabled = true
             }
 
-            val context = binding.root.context
-            val adapter = ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, field.options)
+            // Нередагований: лише варіанти зі списку + «не вибрано» (дає ""); редагований combo — вільний ввід.
+            val values = FormEditing.choiceOptionsWithNone(field) // "" означає «не вибрано»
+            val noneLabel = context.getString(R.string.form_choice_none)
+            fun display(v: String) = if (v.isEmpty() && !field.isEditableCombo) noneLabel else v
+            val adapter = ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, values.map { display(it) })
             binding.autoCompleteChoice.setAdapter(adapter)
 
             comboWatcher?.let { binding.autoCompleteChoice.removeTextChangedListener(it) }
 
-            val currentValue = (valuesMap[field.fullyQualifiedName] as? String)
-                ?: field.selectedValue
-                ?: field.options.firstOrNull().orEmpty()
-
-            binding.autoCompleteChoice.setText(currentValue, false)
+            val currentValue = (valuesMap[field.fullyQualifiedName] as? String) ?: FormEditing.fileValue(field) as String
+            binding.autoCompleteChoice.setText(display(currentValue), false)
 
             binding.autoCompleteChoice.setOnItemClickListener { _, _, position, _ ->
-                if (position in field.options.indices) {
-                    valuesMap[field.fullyQualifiedName] = field.options[position]
-                }
+                if (position in values.indices) valuesMap[field.fullyQualifiedName] = values[position]
             }
 
             if (field.isEditableCombo) {
