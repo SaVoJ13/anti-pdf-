@@ -9,6 +9,8 @@ import com.savoj.volumpdf.VolumPdfApp
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.data.db.copy
 import com.savoj.volumpdf.data.repository.DocumentRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +32,7 @@ class ReaderViewModel(
     fun initDocument(uri: Uri, titleHint: String?) {
         val uriString = uri.toString()
         savedStateHandle[KEY_URI] = uriString
+        loadPending(uriString)
 
         viewModelScope.launch {
             val doc = repository.recordDocumentOpened(getApplication(), uri)
@@ -78,18 +81,72 @@ class ReaderViewModel(
     // Об'єкти переживають поворот і завершення процесу (SavedStateHandle). Виділення та історія
     // скасування живуть лише в пам'яті й скидаються після успішного збереження.
 
-    private val _editor = MutableStateFlow(
-        PlaceEditor.initial(PlaceMarkupLogic.deserializeAll(savedStateHandle.get<ArrayList<String>>(KEY_PENDING)))
-    )
+    // Штрихи й підписи завеликі для Bundle (TransactionTooLarge), тому ВЕСЬ стан незбережених об'єктів лежить у
+    // файлі приватного сховища (PendingStore); у SavedStateHandle лишається лише ключ документа й дрібні налаштування.
+    private val store = PendingStore(java.io.File(application.filesDir, "pending"))
+    private var documentKey: String? = null
+
+    private val _editor = MutableStateFlow(PlaceEditor.initial(emptyList()))
     val editor: StateFlow<PlaceEditorState> = _editor.asStateFlow()
 
-    /** Застосовує перехід стану; зберігає список об'єктів, якщо він змінився. */
+    /** true, коли незбережене з файлу прочитано (або його немає). */
+    private val _pendingLoaded = MutableStateFlow(false)
+    val pendingLoaded: StateFlow<Boolean> = _pendingLoaded.asStateFlow()
+
+    private fun loadPending(key: String) {
+        if (documentKey == key) return
+        documentKey = key
+        _pendingLoaded.value = false
+        viewModelScope.launch {
+            val items = withContext(Dispatchers.IO) {
+                val loaded = try { store.load(key) } catch (_: Exception) { null } ?: emptyList()
+                for (p in loaded) {
+                    if (p.tool != PlaceTool.SIGNATURE) continue
+                    val f = store.imageFile(key, p.id)
+                    val bmp = try { android.graphics.BitmapFactory.decodeFile(f.path) } catch (_: Throwable) { null }
+                    if (bmp != null) signatureBitmaps[p.id] = bmp
+                }
+                // Підпис без картинки показати й зберегти не вдасться — такий об'єкт відкидаємо.
+                loaded.filter { it.tool != PlaceTool.SIGNATURE || signatureBitmaps.containsKey(it.id) }
+            }
+            if (_editor.value.items.isEmpty() && items.isNotEmpty()) _editor.value = PlaceEditor.initial(items)
+            _pendingLoaded.value = true
+        }
+    }
+
+    /** Застосовує перехід стану; зберігає список об'єктів у файл, якщо він змінився. */
     fun edit(transform: (PlaceEditorState) -> PlaceEditorState) {
         val old = _editor.value
         val new = transform(old)
         if (new == old) return
         _editor.value = new
-        if (new.items != old.items) savedStateHandle[KEY_PENDING] = PlaceMarkupLogic.serializeAll(new.items)
+        if (new.items != old.items) persist(new.items)
+    }
+
+    private val persistLock = Any()
+    private var latestSnapshot: List<PendingMarkup>? = null
+    private var writer: kotlinx.coroutines.Job? = null
+
+    /** Запис у фоні; кілька швидких змін (слайдер, перетягування) зливаються в останній знімок. */
+    private fun persist(items: List<PendingMarkup>) {
+        val key = documentKey ?: return
+        synchronized(persistLock) {
+            latestSnapshot = items
+            if (writer?.isActive == true) return
+            writer = viewModelScope.launch(Dispatchers.IO) {
+                while (true) {
+                    val snap = synchronized(persistLock) { latestSnapshot.also { latestSnapshot = null } } ?: break
+                    try {
+                        store.save(key, snap) { id, target ->
+                            val bmp = signatureBitmaps[id]
+                            if (bmp != null) target.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+                        }
+                    } catch (_: Exception) {
+                        // Диск повний чи інша помилка: незбережене лишається в пам'яті, застосунок не падає.
+                    }
+                }
+            }
+        }
     }
 
     fun addPending(item: PendingMarkup) = edit { PlaceEditor.add(it, item) }
@@ -145,7 +202,6 @@ class ReaderViewModel(
 
     companion object {
         private const val KEY_URI = "saved_document_uri"
-        private const val KEY_PENDING = "place_pending"
         private const val KEY_PLACE_MODE = "place_mode"
         private const val KEY_TOOL = "place_tool"
         private const val KEY_COLOR = "place_color"

@@ -48,6 +48,7 @@ import com.savoj.volumpdf.util.SafUtils
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -511,9 +512,10 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
-        // Відновлення після завершення процесу: режим і незбережене повертаються з ViewModel.
-        if (viewModel.placeModeActive || viewModel.editor.value.items.isNotEmpty()) {
-            enterPlaceMode()
+        // Відновлення (поворот, завершення процесу, новий запуск): режим і незбережене повертаються з файлу.
+        lifecycleScope.launch {
+            viewModel.pendingLoaded.first { it }
+            if (viewModel.placeModeActive || viewModel.editor.value.items.isNotEmpty()) enterPlaceMode()
         }
     }
 

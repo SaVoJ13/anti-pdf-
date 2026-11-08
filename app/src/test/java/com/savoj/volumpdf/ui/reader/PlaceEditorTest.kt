@@ -257,19 +257,12 @@ class PlaceEditorTest {
         s = PlaceEditor.setColor(s, "t", blue)
         s = PlaceEditor.toggleMarkKind(s, "m")
         s = PlaceEditor.delete(s, "gone")
-        val restored = PlaceMarkupLogic.deserializeAll(PlaceMarkupLogic.serializeAll(s.items))
+        val restored = PendingCodec.decode(PendingCodec.encode("doc", s.items))!!.items
         assertEquals(s.items, restored)
         val initial = PlaceEditor.initial(restored)
         assertEquals(s.items, initial.items)
         assertNull(initial.selectedId)
         assertFalse(initial.canUndo)
-    }
-
-    @Test
-    fun `corrupted serialized rows are skipped`() {
-        val good = PlaceMarkupLogic.serialize(check("a"))
-        val restored = PlaceMarkupLogic.deserializeAll(listOf("garbage", good, "a\tBAD\t1"))
-        assertEquals(listOf("a"), restored.map { it.id })
     }
 
     // --- hit-testing ------------------------------------------------------------------------------------
