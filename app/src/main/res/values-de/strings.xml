@@ -144,7 +144,7 @@
     <string name="place_tool_text">Text</string>
     <string name="place_size_decrease">Kleiner</string>
     <string name="place_size_increase">Größer</string>
-    <string name="place_size_format">%1$d pt</string>
+    <string name="place_size_format">%1$s pt</string>
     <string name="place_done">Fertig</string>
     <string name="place_text_title">Text hinzufügen</string>
     <string name="place_text_add">Hinzufügen</string>
@@ -162,4 +162,9 @@
     <string name="place_change_to_cross">Zu ✗ ändern</string>
     <string name="place_text_apply">Übernehmen</string>
     <string name="place_selected_hint">Ausgewähltes Objekt: verschieben oder unten Größe und Farbe ändern</string>
+    <string name="place_tool_ink">Zeichnen</string>
+    <string name="place_tool_hand">Hand (Scrollen und Zoomen)</string>
+    <string name="place_tool_signature">Unterschrift</string>
+    <string name="place_signature_width">Breite der Unterschrift</string>
+    <string name="place_signature_tap_hint">Tippen Sie auf die Seite, um die Unterschrift zu setzen</string>
 </resources>

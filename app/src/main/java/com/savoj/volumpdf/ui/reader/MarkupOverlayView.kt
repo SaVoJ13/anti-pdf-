@@ -1,6 +1,7 @@
 package com.savoj.volumpdf.ui.reader
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
@@ -14,10 +15,12 @@ import android.view.ViewConfiguration
 import com.savoj.volumpdf.core.pdf.MarkupLayout
 
 /**
- * Малює незбережені ✓/✗ і текст над PdfView (положення — щокадру з моста) і, у режимі редагування, виділяє
- * та переносить їх. Дотик перехоплюється ЛИШЕ коли DOWN потрапив на доданий об'єкт (межі + 24 dp); інакше
- * [onTouchEvent] повертає false, і жест іде у PdfView (скрол, зум, подвійний тап, тап для нового об'єкта).
- * Другий палець під час перетягування ігнорується.
+ * Малює незбережені ✓/✗, текст, штрихи й підписи над PdfView (положення — щокадру з моста) і, у режимі
+ * редагування, виділяє та переносить їх. Дотик перехоплюється ЛИШЕ коли DOWN потрапив на доданий об'єкт
+ * (✓/✗/підпис/текст — межі + 24 dp, штрих — відстань до ламаної ≤ 24 dp); інакше [onTouchEvent] повертає false,
+ * і жест іде у PdfView (скрол, зум, подвійний тап, тап для нового об'єкта). Другий палець під час перетягування
+ * ігнорується. Коли активний інструмент «Малювати» ([drawingEnabled]), оверлей забирає кожен дотик (один палець
+ * чи S Pen = один штрих); прокрутку й зум тоді дає інструмент «Рука».
  */
 class MarkupOverlayView @JvmOverloads constructor(
     context: Context,
@@ -30,6 +33,12 @@ class MarkupOverlayView @JvmOverloads constructor(
 
         /** Перетягування завершено: нова опорна точка в pt (ще без кламп сторінки — їх робить редактор). */
         fun onItemMoved(id: String, x: Float, y: Float)
+
+        /**
+         * Завершено штрих (від дотику до відпускання). [xy] — точки в просторі сторінки [pageIndex] (сторінка
+         * першої точки), pt, плоский масив пар; відсікання надлишку й перевірку «на сторінці» робить виклик.
+         */
+        fun onInkDrawn(pageIndex: Int, xy: FloatArray)
     }
 
     var bridge: PdfViewerBridge? = null
@@ -56,8 +65,26 @@ class MarkupOverlayView @JvmOverloads constructor(
     var editingEnabled: Boolean = false
         set(value) {
             field = value
-            if (!value) cancelGesture()
+            if (!value) {
+                cancelGesture()
+                cancelStroke()
+            }
         }
+
+    /** true — інструмент «Малювати»: кожен дотик малює штрих. */
+    var drawingEnabled: Boolean = false
+        set(value) {
+            if (field && !value) cancelStroke()
+            field = value
+            invalidate()
+        }
+
+    /** Колір (ARGB) і товщина (pt) штриха, що малюється зараз. */
+    var inkColor: Int = 0xFFD32F2F.toInt()
+    var inkWidthPt: Float = PlaceMarkupLogic.DEFAULT_INK_WIDTH_PT
+
+    /** Картинки підписів за id об'єкта. */
+    var signatureBitmaps: ((String) -> Bitmap?)? = null
 
     var editListener: EditListener? = null
 
@@ -71,6 +98,8 @@ class MarkupOverlayView @JvmOverloads constructor(
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
+
+    private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
     // D2: у PDF ширина рядка = сума горизонтальних просувів шрифту при розмірі в pt без кернінгу й
     // без округлення; тому лінійний текст, субпіксельне позиціонування та вимкнений кернінг.
@@ -125,7 +154,7 @@ class MarkupOverlayView @JvmOverloads constructor(
         return { line -> textPaint.measureText(line) }
     }
 
-    /** Межі всіх об'єктів у пікселях: одне джерело для рамки виділення й зони дотику. */
+    /** Межі всіх об'єктів у пікселях: одне джерело для рамки виділення й зони дотику (штрих — ще й ламана). */
     private fun targetsNow(): List<HitTarget> {
         val b = bridge ?: return emptyList()
         val offset = b.offsetTo(this) ?: return emptyList()
@@ -133,7 +162,14 @@ class MarkupOverlayView @JvmOverloads constructor(
         val out = ArrayList<HitTarget>(items.size)
         for (item in items) {
             val o = originPx(item, offset) ?: continue
-            out += HitTarget(item.id, PlaceBounds.boundsPx(item, o.first, o.second, zoom, lineWidthPx(item.sizePt, zoom)))
+            val rect = PlaceBounds.boundsPx(item, o.first, o.second, zoom, lineWidthPx(item.sizePt, zoom))
+            if (item.tool == PlaceTool.INK) {
+                out += HitTarget(
+                    item.id, rect, PlaceBounds.inkPointsPx(item, o.first, o.second, zoom), item.sizePt * zoom / 2f
+                )
+            } else {
+                out += HitTarget(item.id, rect)
+            }
         }
         return out
     }
@@ -151,6 +187,7 @@ class MarkupOverlayView @JvmOverloads constructor(
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!editingEnabled) return false
+        if (drawingEnabled) return onDrawTouch(event)
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 val id = PlaceHitTest.hit(targetsNow(), event.x, event.y, PlaceHitTest.SLOP_DP * density)
@@ -179,10 +216,12 @@ class MarkupOverlayView @JvmOverloads constructor(
                 if (!moved && Math.hypot(dx.toDouble(), dy.toDouble()) > touchSlop) moved = true
                 if (moved) {
                     val item = items.firstOrNull { it.id == dragId }
-                    val page = item?.let { bridge?.pageSizePt(it.pageIndex) }
-                    val c = PlaceMarkupLogic.clampToPage(startX + dx / startZoom, startY + dy / startZoom, page)
-                    dragX = c.first
-                    dragY = c.second
+                    if (item != null) {
+                        val page = bridge?.pageSizePt(item.pageIndex)
+                        val c = PlaceMarkupLogic.clampedAnchor(item, startX + dx / startZoom, startY + dy / startZoom, page)
+                        dragX = c.first
+                        dragY = c.second
+                    }
                     invalidate()
                 }
                 return true
@@ -244,6 +283,92 @@ class MarkupOverlayView @JvmOverloads constructor(
         invalidate()
     }
 
+    // --- малювання штриха пальцем / S Pen ---------------------------------------------------------
+
+    private var liveXy = FloatArray(256)
+    private var liveCount = 0
+    private var drawPointerId = -1
+
+    private fun addLivePoint(x: Float, y: Float) {
+        if (liveCount > 0) {
+            val dx = x - liveXy[(liveCount - 1) * 2]
+            val dy = y - liveXy[(liveCount - 1) * 2 + 1]
+            if (dx * dx + dy * dy < MIN_LIVE_STEP_PX * MIN_LIVE_STEP_PX) return
+        }
+        if ((liveCount + 1) * 2 > liveXy.size) liveXy = liveXy.copyOf(liveXy.size * 2)
+        liveXy[liveCount * 2] = x
+        liveXy[liveCount * 2 + 1] = y
+        liveCount++
+    }
+
+    private fun onDrawTouch(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                if (event.getToolType(0) == MotionEvent.TOOL_TYPE_ERASER) return false
+                liveCount = 0
+                drawPointerId = event.getPointerId(0)
+                addLivePoint(event.x, event.y)
+                parent?.requestDisallowInterceptTouchEvent(true)
+                invalidate()
+                return true
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (drawPointerId < 0) return false
+                val idx = event.findPointerIndex(drawPointerId)
+                if (idx < 0) return true
+                for (h in 0 until event.historySize) addLivePoint(event.getHistoricalX(idx, h), event.getHistoricalY(idx, h))
+                addLivePoint(event.getX(idx), event.getY(idx))
+                invalidate()
+                return true
+            }
+            MotionEvent.ACTION_POINTER_DOWN -> return drawPointerId >= 0 // другий палець ігноруємо
+            MotionEvent.ACTION_POINTER_UP -> {
+                if (drawPointerId >= 0 && event.getPointerId(event.actionIndex) == drawPointerId) {
+                    val idx = event.actionIndex
+                    addLivePoint(event.getX(idx), event.getY(idx))
+                    finishStroke()
+                }
+                return true
+            }
+            MotionEvent.ACTION_UP -> {
+                if (drawPointerId < 0) return false
+                val idx = event.findPointerIndex(drawPointerId)
+                if (idx >= 0) addLivePoint(event.getX(idx), event.getY(idx))
+                finishStroke()
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                if (drawPointerId < 0) return false
+                cancelStroke()
+                return true
+            }
+        }
+        return drawPointerId >= 0
+    }
+
+    private fun cancelStroke() {
+        liveCount = 0
+        drawPointerId = -1
+        invalidate()
+    }
+
+    /** Перетворює зібрані точки на простір сторінки першої точки й віддає слухачу. */
+    private fun finishStroke() {
+        val count = liveCount
+        val xy = liveXy.copyOf(count * 2)
+        liveCount = 0
+        drawPointerId = -1
+        invalidate()
+        val b = bridge ?: return
+        if (count == 0) return
+        val offset = b.offsetTo(this) ?: return
+        // Координати PdfView = координати оверлея мінус зсув початку PdfView відносно оверлея.
+        val viewXy = FloatArray(xy.size) { i -> xy[i] - offset[i % 2] }
+        val first = b.viewToPage(viewXy[0], viewXy[1]) ?: return // перша точка не на сторінці: штрих не додається
+        val pageXy = b.viewToPageSpace(first.pageIndex, viewXy) ?: return
+        editListener?.onInkDrawn(first.pageIndex, pageXy)
+    }
+
     override fun onDetachedFromWindow() {
         bridge?.removeViewportListener(viewportListener)
         super.onDetachedFromWindow()
@@ -259,7 +384,8 @@ class MarkupOverlayView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         val b = bridge ?: return
         val list = items
-        if (list.isEmpty()) return
+        val live = liveCount > 0
+        if (list.isEmpty() && !live) return
         val offset = b.offsetTo(this) ?: return
         val zoom = b.zoom
         for (item in list) {
@@ -267,8 +393,12 @@ class MarkupOverlayView @JvmOverloads constructor(
             when (item.tool) {
                 PlaceTool.CHECK, PlaceTool.CROSS -> drawMark(canvas, item, o.first, o.second, zoom)
                 PlaceTool.TEXT -> drawText(canvas, item, o.first, o.second, zoom)
+                PlaceTool.INK -> drawInk(canvas, item, o.first, o.second, zoom)
+                PlaceTool.SIGNATURE -> drawSignature(canvas, item, o.first, o.second, zoom)
+                PlaceTool.HAND -> Unit
             }
         }
+        if (live) drawLiveStroke(canvas, zoom)
         val sel = selectedId?.let { id -> list.firstOrNull { it.id == id } }
         if (sel != null) {
             val o = originPx(sel, offset)
@@ -306,7 +436,60 @@ class MarkupOverlayView @JvmOverloads constructor(
         }
     }
 
+    private fun drawInk(canvas: Canvas, item: PendingMarkup, ox: Float, oy: Float, zoom: Float) {
+        val pts = PlaceBounds.inkPointsPx(item, ox, oy, zoom)
+        if (pts.size < 2) return
+        buildInkPath(pts, zoom)
+        strokePaint.color = item.color
+        strokePaint.strokeWidth = item.sizePt * zoom
+        canvas.drawPath(path, strokePaint)
+    }
+
+    /**
+     * Контур штриха — той самий, що малює двигун (MarkupDrawing.tracePath): moveTo(p0); для кожної наступної точки
+     * квадратична крива з контролем у попередній точці до середини відрізка; наприкінці lineTo(остання).
+     * Одна точка — відрізок 0,1 pt (з круглими кінцями це крапка).
+     */
+    private fun buildInkPath(pts: FloatArray, zoom: Float) {
+        path.rewind()
+        val n = pts.size / 2
+        if (n == 0) return
+        if (n == 1) {
+            path.moveTo(pts[0], pts[1])
+            path.lineTo(pts[0] + 0.1f * zoom, pts[1] + 0.1f * zoom)
+            return
+        }
+        path.moveTo(pts[0], pts[1])
+        var prevX = pts[0]
+        var prevY = pts[1]
+        for (i in 1 until n - 1) {
+            val cx = pts[i * 2]
+            val cy = pts[i * 2 + 1]
+            path.quadTo(prevX, prevY, (prevX + cx) / 2f, (prevY + cy) / 2f)
+            prevX = cx
+            prevY = cy
+        }
+        path.lineTo(pts[(n - 1) * 2], pts[(n - 1) * 2 + 1])
+    }
+
+    private fun drawLiveStroke(canvas: Canvas, zoom: Float) {
+        buildInkPath(liveXy.copyOf(liveCount * 2), zoom)
+        strokePaint.color = inkColor
+        strokePaint.strokeWidth = inkWidthPt * zoom
+        canvas.drawPath(path, strokePaint)
+    }
+
+    private fun drawSignature(canvas: Canvas, item: PendingMarkup, x: Float, y: Float, zoom: Float) {
+        val bitmap = signatureBitmaps?.invoke(item.id) ?: return
+        val w = item.sizePt * zoom
+        val h = item.sizePt * item.aspect * zoom
+        rectF.set(x, y, x + w, y + h)
+        canvas.drawBitmap(bitmap, null, rectF, bitmapPaint)
+    }
+
     private companion object {
         const val FRAME_COLOR = 0xFF1565C0.toInt()
+        /** Дотики ближчі за це (px) до попередньої точки живого штриха пропускаємо. */
+        const val MIN_LIVE_STEP_PX = 0.5f
     }
 }

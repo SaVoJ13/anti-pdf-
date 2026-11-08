@@ -100,28 +100,6 @@ class PlaceMarkupLogicTest {
         assertEquals(PlaceMarkupLogic.Gate.UNREADABLE, PlaceMarkupLogic.gate(null, null))
     }
 
-    // --- серіалізація ----------------------------------------------------------------------------
-
-    @Test
-    fun `serialization round trip keeps every field, including awkward text`() {
-        val tricky = "рядок 1\nрядок\t2 \\ кінець\r\n✓?"
-        val items = listOf(
-            PendingMarkup("id-1", PlaceTool.TEXT, 119, 12.345f, -3.5f, tricky, 14f, red),
-            PendingMarkup("id-2", PlaceTool.CROSS, 0, 0f, 0f, "", 96f, 0xFF000000.toInt())
-        )
-        val back = PlaceMarkupLogic.deserializeAll(PlaceMarkupLogic.serializeAll(items))
-        assertEquals(items, back)
-    }
-
-    @Test
-    fun `corrupted records are skipped`() {
-        val good = PlaceMarkupLogic.serialize(PendingMarkup("a", PlaceTool.CHECK, 1, 1f, 2f, "", 16f, red))
-        val back = PlaceMarkupLogic.deserializeAll(listOf("garbage", good, "a\tNOPE\t1\t1\t1\t\t1\t1"))
-        assertEquals(1, back.size)
-        assertNull(PlaceMarkupLogic.deserialize(""))
-        assertTrue(PlaceMarkupLogic.deserializeAll(null).isEmpty())
-    }
-
     // --- pt → px ---------------------------------------------------------------------------------
 
     @Test

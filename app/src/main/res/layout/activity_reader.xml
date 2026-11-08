@@ -98,7 +98,9 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Плаваюча панель режиму «Поставити». Рядки перекладаються кодом (портрет: 4 рядки, ландшафт: 2). -->
+        <!-- Плаваюча панель режиму «Поставити»: смуга інструментів і смуга параметрів прокручуються по горизонталі,
+             «Скасувати», «Готово» і «Зберегти» (placeActionsRow) завжди видимі. У ландшафті placeActionsRow кодом
+             переноситься в кінець placeTopRow. -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/placePanelCard"
             android:layout_width="match_parent"
@@ -119,213 +121,338 @@
                 android:padding="8dp">
 
                 <LinearLayout
-                    android:id="@+id/placeRowA"
+                    android:id="@+id/placeTopRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical|center_horizontal"
-                    android:orientation="horizontal" />
-
-                <LinearLayout
-                    android:id="@+id/placeRowB"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:gravity="center_vertical|center_horizontal"
-                    android:orientation="horizontal" />
-
-                <LinearLayout
-                    android:id="@+id/placeRowC"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:gravity="center_vertical|center_horizontal"
-                    android:orientation="horizontal" />
-
-                <LinearLayout
-                    android:id="@+id/placeRowD"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:gravity="center_vertical|center_horizontal"
-                    android:orientation="horizontal" />
-
-                <!-- Елементи нижче живуть тут до першого розкладання кодом (placeRow*). -->
-                <LinearLayout
-                    android:id="@+id/placeStash"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/placeToolGroup"
-                        android:layout_width="wrap_content"
+                    <HorizontalScrollView
+                        android:id="@+id/placeToolScroll"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        app:selectionRequired="true"
-                        app:singleSelection="true">
+                        android:layout_weight="1"
+                        android:scrollbars="none">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnToolCheck"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="48dp"
-                            android:minWidth="48dp"
-                            android:contentDescription="@string/place_tool_check"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:paddingHorizontal="12dp"
-                            app:icon="@drawable/ic_check"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnToolCross"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="48dp"
-                            android:minWidth="48dp"
-                            android:contentDescription="@string/place_tool_cross"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:paddingHorizontal="12dp"
-                            app:icon="@drawable/ic_close"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnToolText"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/placeToolGroup"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:minHeight="48dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:maxLines="1"
-                            android:paddingHorizontal="12dp"
-                            android:text="@string/place_tool_text"
-                            android:textSize="13sp"
-                            app:icon="@drawable/ic_text_fields"
-                            app:iconPadding="6dp" />
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
 
-                    <!-- Розмір: − значення + -->
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnToolCheck"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="48dp"
+                                android:minWidth="48dp"
+                                android:contentDescription="@string/place_tool_check"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingHorizontal="12dp"
+                                app:icon="@drawable/ic_check"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnToolCross"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="48dp"
+                                android:minWidth="48dp"
+                                android:contentDescription="@string/place_tool_cross"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingHorizontal="12dp"
+                                app:icon="@drawable/ic_close"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnToolText"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:minHeight="48dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:maxLines="1"
+                                android:paddingHorizontal="12dp"
+                                android:text="@string/place_tool_text"
+                                android:textSize="13sp"
+                                app:icon="@drawable/ic_text_fields"
+                                app:iconPadding="6dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnToolInk"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="48dp"
+                                android:minWidth="48dp"
+                                android:contentDescription="@string/place_tool_ink"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingHorizontal="12dp"
+                                app:icon="@drawable/ic_draw"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnToolSignature"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="48dp"
+                                android:minWidth="48dp"
+                                android:contentDescription="@string/place_tool_signature"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingHorizontal="12dp"
+                                app:icon="@drawable/ic_signature"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnToolHand"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="48dp"
+                                android:minWidth="48dp"
+                                android:contentDescription="@string/place_tool_hand"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingHorizontal="12dp"
+                                app:icon="@drawable/ic_pan_tool"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+                    </HorizontalScrollView>
+                </LinearLayout>
+
+                <HorizontalScrollView
+                    android:id="@+id/placeOptionsScroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:scrollbars="none">
+
                     <LinearLayout
-                        android:id="@+id/placeSizeBlock"
+                        android:id="@+id/placeOptions"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSizeMinus"
-                            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="@string/place_size_decrease"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:padding="0dp"
-                            android:text="−"
-                            android:textSize="20sp" />
-
-                        <TextView
-                            android:id="@+id/tvPlaceSize"
-                            android:layout_width="64dp"
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/placeColorGroup"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSizePlus"
-                            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="@string/place_size_increase"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:padding="0dp"
-                            android:text="+"
-                            android:textSize="20sp" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPlaceColorRed"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:contentDescription="@string/color_red"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:padding="0dp"
+                                app:icon="@drawable/ic_check"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp"
+                                app:iconTint="#D32F2F" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPlaceColorBlack"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:contentDescription="@string/color_black"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:padding="0dp"
+                                app:icon="@drawable/ic_check"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp"
+                                app:iconTint="#000000" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPlaceColorBlue"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:contentDescription="@string/color_blue"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:padding="0dp"
+                                app:icon="@drawable/ic_check"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp"
+                                app:iconTint="#1976D2" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPlaceColorGreen"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:contentDescription="@string/color_green"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:padding="0dp"
+                                app:icon="@drawable/ic_check"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp"
+                                app:iconTint="#388E3C" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPlaceColorYellow"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:contentDescription="@string/color_yellow"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:padding="0dp"
+                                app:icon="@drawable/ic_check"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp"
+                                app:iconTint="#FBC02D" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                        <!-- Пресети пензля (лише для інструмента «Малювати» і виділеного штриха) -->
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/placeInkPresetGroup"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:visibility="gone"
+                            app:selectionRequired="false"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnInkPen"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:minWidth="48dp"
+                                android:minHeight="48dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:maxLines="1"
+                                android:paddingHorizontal="10dp"
+                                android:text="@string/brush_pen"
+                                android:textSize="13sp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnInkMarker"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:minWidth="48dp"
+                                android:minHeight="48dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:maxLines="1"
+                                android:paddingHorizontal="10dp"
+                                android:text="@string/brush_marker"
+                                android:textSize="13sp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnInkHighlighter"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:minWidth="48dp"
+                                android:minHeight="48dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:maxLines="1"
+                                android:paddingHorizontal="10dp"
+                                android:text="@string/brush_highlighter"
+                                android:textSize="13sp" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                        <!-- Розмір: − значення + (розмір ✓/✗, кегль, товщина штриха) -->
+                        <LinearLayout
+                            android:id="@+id/placeSizeBlock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSizeMinus"
+                                style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:contentDescription="@string/place_size_decrease"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:padding="0dp"
+                                android:text="−"
+                                android:textSize="20sp" />
+
+                            <TextView
+                                android:id="@+id/tvPlaceSize"
+                                android:layout_width="64dp"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSizePlus"
+                                style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:contentDescription="@string/place_size_increase"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:padding="0dp"
+                                android:text="+"
+                                android:textSize="20sp" />
+                        </LinearLayout>
+
+                        <!-- Ширина виділеного підпису: 30–400 pt, пропорції зберігаються -->
+                        <LinearLayout
+                            android:id="@+id/placeSignatureBlock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:id="@+id/tvSignatureWidth"
+                                android:layout_width="72dp"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                            <com.google.android.material.slider.Slider
+                                android:id="@+id/placeSignatureSlider"
+                                android:layout_width="240dp"
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/place_signature_width"
+                                android:stepSize="1"
+                                android:value="120"
+                                android:valueFrom="30"
+                                android:valueTo="400" />
+                        </LinearLayout>
                     </LinearLayout>
+                </HorizontalScrollView>
 
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/placeColorGroup"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        app:selectionRequired="true"
-                        app:singleSelection="true">
+                <!-- Завжди видимі дії: «Скасувати», «Готово», «Зберегти» -->
+                <LinearLayout
+                    android:id="@+id/placeActionsRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical|center_horizontal"
+                    android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnPlaceColorRed"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="@string/color_red"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:padding="0dp"
-                            app:icon="@drawable/ic_check"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp"
-                            app:iconTint="#D32F2F" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnPlaceColorBlack"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="@string/color_black"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:padding="0dp"
-                            app:icon="@drawable/ic_check"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp"
-                            app:iconTint="#000000" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnPlaceColorBlue"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="@string/color_blue"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:padding="0dp"
-                            app:icon="@drawable/ic_check"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp"
-                            app:iconTint="#1976D2" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnPlaceColorGreen"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="@string/color_green"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:padding="0dp"
-                            app:icon="@drawable/ic_check"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp"
-                            app:iconTint="#388E3C" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnPlaceColorYellow"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:contentDescription="@string/color_yellow"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:padding="0dp"
-                            app:icon="@drawable/ic_check"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp"
-                            app:iconTint="#FBC02D" />
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                    <!-- Скасувати останню дію (undo) -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPlaceUndo"
                         style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
@@ -340,8 +467,10 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPlaceDone"
                         style="@style/Widget.Material3.Button.TextButton"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:minWidth="48dp"
@@ -352,8 +481,10 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPlaceSave"
                         style="@style/Widget.Material3.Button"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:minWidth="48dp"
@@ -362,208 +493,6 @@
                         android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Прозоре інтерактивне полотно малювання -->
-        <com.savoj.volumpdf.ui.reader.InkCanvasView
-            android:id="@+id/inkCanvasView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone" />
-
-        <!-- Плаваюча панель інструментів малювання -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/drawingToolbarCard"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_margin="12dp"
-            android:visibility="gone"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerHighest"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="8dp"
-            app:strokeWidth="0dp">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="8dp">
-
-                <!-- Рядок 1: Вибір товщини пензля та кольору -->
-                <HorizontalScrollView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:scrollbars="none">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <!-- Вибір пензля: Тонка ручка, Маркер, Хайлайтер -->
-                        <com.google.android.material.button.MaterialButtonToggleGroup
-                            android:id="@+id/toggleBrushTypeGroup"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:singleSelection="true"
-                            app:selectionRequired="true">
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnBrushPen"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="wrap_content"
-                                android:layout_height="40dp"
-                                android:text="@string/brush_pen"
-                                android:textSize="12sp"
-                                android:paddingHorizontal="10dp" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnBrushMarker"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="wrap_content"
-                                android:layout_height="40dp"
-                                android:text="@string/brush_marker"
-                                android:textSize="12sp"
-                                android:paddingHorizontal="10dp" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnBrushHighlighter"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="wrap_content"
-                                android:layout_height="40dp"
-                                android:text="@string/brush_highlighter"
-                                android:textSize="12sp"
-                                android:paddingHorizontal="10dp" />
-
-                        </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                        <View
-                            android:layout_width="1dp"
-                            android:layout_height="28dp"
-                            android:layout_marginHorizontal="8dp"
-                            android:background="?attr/colorOutlineVariant" />
-
-                        <!-- Вибір кольору: Червоний, Чорний, Синій, Зелений, Жовтий -->
-                        <com.google.android.material.button.MaterialButtonToggleGroup
-                            android:id="@+id/toggleColorPaletteGroup"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:singleSelection="true"
-                            app:selectionRequired="true">
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnColorPaletteRed"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                android:padding="0dp"
-                                app:icon="@drawable/ic_check"
-                                app:iconGravity="textStart"
-                                app:iconPadding="0dp"
-                                app:iconTint="#D32F2F" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnColorPaletteBlack"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                android:padding="0dp"
-                                app:icon="@drawable/ic_check"
-                                app:iconGravity="textStart"
-                                app:iconPadding="0dp"
-                                app:iconTint="#000000" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnColorPaletteBlue"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                android:padding="0dp"
-                                app:icon="@drawable/ic_check"
-                                app:iconGravity="textStart"
-                                app:iconPadding="0dp"
-                                app:iconTint="#1976D2" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnColorPaletteGreen"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                android:padding="0dp"
-                                app:icon="@drawable/ic_check"
-                                app:iconGravity="textStart"
-                                app:iconPadding="0dp"
-                                app:iconTint="#388E3C" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnColorPaletteYellow"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                android:padding="0dp"
-                                app:icon="@drawable/ic_check"
-                                app:iconGravity="textStart"
-                                app:iconPadding="0dp"
-                                app:iconTint="#FBC02D" />
-
-                        </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                    </LinearLayout>
-                </HorizontalScrollView>
-
-                <!-- Рядок 2: Кнопки дій: Undo, Очистити, Скасувати/Закрити, Зберегти -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnUndoStroke"
-                        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        app:icon="@drawable/ic_undo"
-                        android:contentDescription="@string/action_undo" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnClearStrokes"
-                        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="4dp"
-                        app:icon="@drawable/ic_clear_all"
-                        android:contentDescription="@string/action_clear_all" />
-
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCloseDrawing"
-                        style="@style/Widget.Material3.Button.TextButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="@string/action_cancel"
-                        android:textColor="?attr/colorError" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSaveDrawing"
-                        style="@style/Widget.Material3.Button"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/action_save"
-                        app:icon="@drawable/ic_check" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Прогрес індикатор при збереженні анотацій -->

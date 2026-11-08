@@ -2,8 +2,6 @@ package com.savoj.volumpdf.ui.reader
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.Color
-import android.graphics.RectF
 import android.util.Log
 import android.net.Uri
 import android.os.Bundle
@@ -13,8 +11,10 @@ import android.content.res.Configuration
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.view.WindowManager
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
@@ -26,14 +26,11 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.savoj.volumpdf.R
-import com.savoj.volumpdf.core.pdf.AnnotationEngine
 import com.savoj.volumpdf.core.pdf.FormEngine
-import com.savoj.volumpdf.core.pdf.PdfBoxAnnotationEngine
 import com.savoj.volumpdf.core.pdf.MarkupEngine
 import com.savoj.volumpdf.core.pdf.MarkupLayout
 import com.savoj.volumpdf.core.pdf.PdfBoxFormEngine
 import com.savoj.volumpdf.core.pdf.PdfBoxMarkupEngine
-import com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine
 import com.savoj.volumpdf.core.pdf.model.FormField
 import com.savoj.volumpdf.core.pdf.model.PageMarkup
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
@@ -43,14 +40,12 @@ import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.util.SafUtils
-import com.tom_roush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileNotFoundException
 import java.util.UUID
 
 class ReaderActivity : AppCompatActivity() {
@@ -62,7 +57,6 @@ class ReaderActivity : AppCompatActivity() {
     private var documentTitle: String? = null
     private var viewerFragment: VolumPdfViewerFragment? = null
 
-    private val annotationEngine: AnnotationEngine = PdfBoxAnnotationEngine()
     private val formEngine: FormEngine = PdfBoxFormEngine()
     private var detectedFormFields: List<FormField> = emptyList()
 
@@ -70,15 +64,6 @@ class ReaderActivity : AppCompatActivity() {
         PdfBoxMarkupEngine({ applicationContext.assets.open(MarkupLayout.FONT_ASSET_PATH) })
     private var enteringPlaceMode = false
     private var savingPlace = false
-
-    private var isDrawingMode = false
-
-    private enum class BrushType {
-        PEN, MARKER, HIGHLIGHTER
-    }
-
-    private var currentBrushType = BrushType.PEN
-    private var baseColor = COLOR_RED
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,7 +95,6 @@ class ReaderActivity : AppCompatActivity() {
         viewModel.initDocument(uri, documentTitle)
 
         setupViewerFragment(uri, savedInstanceState)
-        setupDrawingToolbar()
         setupBottomActionBar()
         setupBackNavigation()
         setupPlaceMode()
@@ -159,21 +143,10 @@ class ReaderActivity : AppCompatActivity() {
         binding.bottomActionBar.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.action_forms -> {
-                    if (isDrawingMode) toggleDrawingMode(false)
                     leavePlaceThen { openFillFormDialog() }
                     false
                 }
-                R.id.action_draw -> {
-                    toggleDrawingMode()
-                    false
-                }
-                R.id.action_signature -> {
-                    if (isDrawingMode) toggleDrawingMode(false)
-                    openSignatureDialog()
-                    false
-                }
                 R.id.action_place -> {
-                    if (isDrawingMode) toggleDrawingMode(false)
                     enterPlaceMode()
                     false
                 }
@@ -222,79 +195,10 @@ class ReaderActivity : AppCompatActivity() {
         dialog.show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
     }
 
-    private fun setupDrawingToolbar() {
-        binding.toggleBrushTypeGroup.check(R.id.btnBrushPen)
-        binding.toggleColorPaletteGroup.check(R.id.btnColorPaletteRed)
-        applyBrushSettings()
-
-        binding.toggleBrushTypeGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                currentBrushType = when (checkedId) {
-                    R.id.btnBrushMarker -> BrushType.MARKER
-                    R.id.btnBrushHighlighter -> BrushType.HIGHLIGHTER
-                    else -> BrushType.PEN
-                }
-                applyBrushSettings()
-            }
-        }
-
-        binding.toggleColorPaletteGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                baseColor = when (checkedId) {
-                    R.id.btnColorPaletteBlack -> COLOR_BLACK
-                    R.id.btnColorPaletteBlue -> COLOR_BLUE
-                    R.id.btnColorPaletteGreen -> COLOR_GREEN
-                    R.id.btnColorPaletteYellow -> COLOR_YELLOW
-                    else -> COLOR_RED
-                }
-                applyBrushSettings()
-            }
-        }
-
-        binding.btnUndoStroke.setOnClickListener {
-            binding.inkCanvasView.undo()
-        }
-
-        binding.btnClearStrokes.setOnClickListener {
-            binding.inkCanvasView.clear()
-        }
-
-        binding.btnCloseDrawing.setOnClickListener {
-            toggleDrawingMode(false)
-        }
-
-        binding.btnSaveDrawing.setOnClickListener {
-            saveDrawingToDocument()
-        }
-    }
-
-    private fun applyBrushSettings() {
-        when (currentBrushType) {
-            BrushType.PEN -> {
-                binding.inkCanvasView.currentColor = baseColor
-                binding.inkCanvasView.currentStrokeWidth = 5f
-            }
-            BrushType.MARKER -> {
-                binding.inkCanvasView.currentColor = baseColor
-                binding.inkCanvasView.currentStrokeWidth = 12f
-            }
-            BrushType.HIGHLIGHTER -> {
-                val r = Color.red(baseColor)
-                val g = Color.green(baseColor)
-                val b = Color.blue(baseColor)
-                val highlighterColor = Color.argb(0x66, r, g, b)
-                binding.inkCanvasView.currentColor = highlighterColor
-                binding.inkCanvasView.currentStrokeWidth = 28f
-            }
-        }
-    }
-
     private fun setupBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (isDrawingMode) {
-                    toggleDrawingMode(false)
-                } else if (viewModel.placeModeActive) {
+                if (viewModel.placeModeActive) {
                     leavePlaceThen { }
                 } else {
                     isEnabled = false
@@ -304,123 +208,34 @@ class ReaderActivity : AppCompatActivity() {
         })
     }
 
-    private fun toggleDrawingMode(enable: Boolean? = null) {
-        isDrawingMode = enable ?: !isDrawingMode
-        binding.inkCanvasView.visibility = if (isDrawingMode) View.VISIBLE else View.GONE
-        binding.drawingToolbarCard.visibility = if (isDrawingMode) View.VISIBLE else View.GONE
-        binding.bottomActionBar.visibility = if (isDrawingMode) View.GONE else View.VISIBLE
-
-        if (!isDrawingMode) {
-            binding.inkCanvasView.clear()
-        }
-    }
-
-    private fun saveDrawingToDocument() {
-        if (!binding.inkCanvasView.hasStrokes()) {
-            toggleDrawingMode(false)
-            return
-        }
-
-        val uri = documentUri ?: return
-        val pageIndex = viewerFragment?.currentPageIndex ?: 0
-
-        showLoadingOverlay(getString(R.string.saving_annotations))
-
-        lifecycleScope.launch {
-            try {
-                val (pageWidthPt, pageHeightPt) = getPageDimensions(uri, pageIndex)
-                val strokes = binding.inkCanvasView.getScaledStrokes(pageWidthPt, pageHeightPt)
-
-                val result = annotationEngine.addInkAnnotations(
-                    context = applicationContext,
-                    sourceUri = uri,
-                    pageIndex = pageIndex,
-                    strokes = strokes,
-                    pageWidthPt = pageWidthPt,
-                    pageHeightPt = pageHeightPt,
-                    outputUri = uri
-                )
-
-                hideLoadingOverlay()
-
-                when (result) {
-                    is PdfOperationResult.Success -> {
-                        binding.inkCanvasView.clear()
-                        toggleDrawingMode(false)
-                        reloadViewerDocument()
-                        checkForFormFields(uri)
-                        Snackbar.make(binding.root, R.string.drawing_success, Snackbar.LENGTH_SHORT).show()
-                    }
-                    is PdfOperationResult.Error -> {
-                        Snackbar.make(binding.root, result.userMessage, Snackbar.LENGTH_LONG).show()
-                    }
-                    is PdfOperationResult.Progress -> Unit
-                }
-            } catch (e: Throwable) {
-                if (e is CancellationException) throw e
-                hideLoadingOverlay()
-                val msg = e.localizedMessage ?: getString(R.string.error_title)
-                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
-            }
-        }
-    }
-
+    /** Полотно підпису: результат — лише картинка для розміщення (запису в документ немає). */
     private fun openSignatureDialog() {
-        val dialog = SignatureBottomSheetDialogFragment.newInstance()
-        dialog.onSignatureConfirmed = { signatureBitmap ->
-            insertSignatureToDocument(signatureBitmap)
+        val dialog = (supportFragmentManager.findFragmentByTag(SignatureBottomSheetDialogFragment.TAG)
+            as? SignatureBottomSheetDialogFragment) ?: SignatureBottomSheetDialogFragment.newInstance().also {
+            it.show(supportFragmentManager, SignatureBottomSheetDialogFragment.TAG)
         }
-        dialog.show(supportFragmentManager, SignatureBottomSheetDialogFragment.TAG)
+        dialog.onSignatureConfirmed = { bitmap -> armSignature(bitmap) }
     }
 
-    private fun insertSignatureToDocument(bitmap: Bitmap) {
-        val uri = documentUri ?: return
-        val pageIndex = viewerFragment?.currentPageIndex ?: 0
-
-        showLoadingOverlay(getString(R.string.saving_annotations))
-
-        lifecycleScope.launch {
-            try {
-                val (pageWidthPt, pageHeightPt) = getPageDimensions(uri, pageIndex)
-
-                // Розміщення підпису у правій нижній частині сторінки
-                val stampWidthPt = minOf(160f, pageWidthPt * 0.35f)
-                val stampHeightPt = stampWidthPt * (bitmap.height.toFloat() / maxOf(1, bitmap.width).toFloat())
-                val left = pageWidthPt - stampWidthPt - 40f
-                val top = pageHeightPt - stampHeightPt - 60f
-                val targetRectPt = RectF(left, top, left + stampWidthPt, top + stampHeightPt)
-
-                val result = annotationEngine.addSignatureStamp(
-                    context = applicationContext,
-                    sourceUri = uri,
-                    pageIndex = pageIndex,
-                    signatureBitmap = bitmap,
-                    targetRectPt = targetRectPt,
-                    pageWidthPt = pageWidthPt,
-                    pageHeightPt = pageHeightPt,
-                    outputUri = uri
-                )
-
-                hideLoadingOverlay()
-
-                when (result) {
-                    is PdfOperationResult.Success -> {
-                        reloadViewerDocument()
-                        checkForFormFields(uri)
-                        Snackbar.make(binding.root, R.string.signature_success, Snackbar.LENGTH_SHORT).show()
-                    }
-                    is PdfOperationResult.Error -> {
-                        Snackbar.make(binding.root, result.userMessage, Snackbar.LENGTH_LONG).show()
-                    }
-                    is PdfOperationResult.Progress -> Unit
-                }
-            } catch (e: Throwable) {
-                if (e is CancellationException) throw e
-                hideLoadingOverlay()
-                val msg = e.localizedMessage ?: getString(R.string.error_title)
-                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
-            }
+    private fun armSignature(bitmap: Bitmap) {
+        viewModel.armedSignature = bitmap
+        viewModel.placeTool = PlaceTool.SIGNATURE
+        if (viewModel.placeModeActive) {
+            selectToolButton(PlaceTool.SIGNATURE)
+            showMessage(getString(R.string.place_signature_tap_hint), long = false)
+        } else {
+            enterPlaceMode()
         }
+    }
+
+    private fun selectToolButton(tool: PlaceTool) {
+        syncingPanel = true
+        try {
+            binding.placeToolGroup.check(toolButtons.getValue(tool))
+        } finally {
+            syncingPanel = false
+        }
+        renderEditor(viewModel.editor.value)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -431,7 +246,10 @@ class ReaderActivity : AppCompatActivity() {
         mapOf(
             PlaceTool.CHECK to R.id.btnToolCheck,
             PlaceTool.CROSS to R.id.btnToolCross,
-            PlaceTool.TEXT to R.id.btnToolText
+            PlaceTool.TEXT to R.id.btnToolText,
+            PlaceTool.INK to R.id.btnToolInk,
+            PlaceTool.SIGNATURE to R.id.btnToolSignature,
+            PlaceTool.HAND to R.id.btnToolHand
         )
     }
 
@@ -459,6 +277,16 @@ class ReaderActivity : AppCompatActivity() {
                 val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
                 viewModel.edit { PlaceEditor.move(PlaceEditor.select(it, id), id, x, y, page) }
             }
+
+            override fun onInkDrawn(pageIndex: Int, xy: FloatArray) {
+                if (savingPlace || viewerFragment?.bridge?.isRestoring == true) return
+                val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
+                val stroke = PlaceMarkupLogic.inkFromStroke(
+                    UUID.randomUUID().toString(), pageIndex, xy,
+                    viewModel.placeSize(PlaceTool.INK), viewModel.newInkColor(), page
+                ) ?: return // усі точки поза сторінкою або штрих порожній
+                viewModel.addPending(stroke)
+            }
         }
 
         binding.placeToolGroup.check(toolButtons.getValue(viewModel.placeTool))
@@ -469,8 +297,36 @@ class ReaderActivity : AppCompatActivity() {
 
         binding.placeToolGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked && !syncingPanel) {
-                toolButtons.entries.firstOrNull { it.value == checkedId }?.key?.let { viewModel.placeTool = it }
-                updateSizeLabel()
+                val tool = toolButtons.entries.firstOrNull { it.value == checkedId }?.key ?: return@addOnButtonCheckedListener
+                viewModel.placeTool = tool
+                // Поки малюємо, виділення не потрібне: кожен дотик — штрих.
+                if (tool == PlaceTool.INK) viewModel.edit { PlaceEditor.select(it, null) }
+                renderEditor(viewModel.editor.value)
+            }
+        }
+        binding.btnToolSignature.setOnClickListener {
+            if (viewModel.armedSignature == null) openSignatureDialog()
+        }
+        binding.placeSignatureSlider.addOnChangeListener { _, value, fromUser ->
+            if (!fromUser || syncingPanel) return@addOnChangeListener
+            val sel = viewModel.editor.value.selected ?: return@addOnChangeListener
+            if (sel.tool == PlaceTool.SIGNATURE) viewModel.edit { PlaceEditor.setSize(it, sel.id, value) }
+        }
+        binding.markupOverlay.signatureBitmaps = { id -> viewModel.signatureBitmaps[id] }
+        binding.placeInkPresetGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked || syncingPanel) return@addOnButtonCheckedListener
+            val preset = when (checkedId) {
+                R.id.btnInkMarker -> InkPreset.MARKER
+                R.id.btnInkHighlighter -> InkPreset.HIGHLIGHTER
+                else -> InkPreset.PEN
+            }
+            val selected = viewModel.editor.value.selected
+            if (selected != null && selected.tool == PlaceTool.INK) {
+                viewModel.edit { PlaceEditor.setInkStyle(it, selected.id, preset.widthPt, preset.alpha) }
+            } else {
+                viewModel.inkPreset = preset
+                viewModel.setPlaceSize(PlaceTool.INK, preset.widthPt)
+                renderEditor(viewModel.editor.value)
             }
         }
         binding.placeColorGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -496,39 +352,79 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
-        // Відновлення після завершення процесу: режим і незбережене повертаються з ViewModel.
-        if (viewModel.placeModeActive || viewModel.editor.value.items.isNotEmpty()) {
-            enterPlaceMode()
+        // Відновлення (поворот, завершення процесу, новий запуск): режим і незбережене повертаються з файлу.
+        lifecycleScope.launch {
+            viewModel.pendingLoaded.first { it }
+            if (viewModel.placeModeActive || viewModel.editor.value.items.isNotEmpty()) enterPlaceMode()
         }
     }
 
-    /** Малює стан редактора: оверлей, кнопки «Зберегти»/«Скасувати», панель дій виділеного, значення розміру й кольору. */
+    /** Малює стан редактора: оверлей, кнопки «Зберегти»/«Скасувати», панель дій виділеного, параметри за типом цілі. */
     private fun renderEditor(state: PlaceEditorState) {
         binding.markupOverlay.items = state.items
         binding.markupOverlay.selectedId = state.selectedId
-        updatePlaceSaveVisibility(state.items.isNotEmpty())
+        binding.btnPlaceSave.visibility = if (state.items.isNotEmpty()) View.VISIBLE else View.GONE
         binding.btnPlaceUndo.isEnabled = state.canUndo
 
         val sel = state.selected
+        val tool = viewModel.placeTool
+        binding.markupOverlay.drawingEnabled = viewModel.placeModeActive && tool == PlaceTool.INK
+        binding.markupOverlay.inkColor = viewModel.newInkColor()
+        binding.markupOverlay.inkWidthPt = viewModel.placeSize(PlaceTool.INK)
+
         binding.selectionBarCard.visibility =
             if (sel != null && viewModel.placeModeActive) View.VISIBLE else View.GONE
         if (sel != null) {
-            binding.btnSelEdit.setText(
-                when (sel.tool) {
-                    PlaceTool.TEXT -> R.string.place_edit_text
-                    PlaceTool.CHECK -> R.string.place_change_to_cross
-                    PlaceTool.CROSS -> R.string.place_change_to_check
-                }
-            )
+            val editLabel = when (sel.tool) {
+                PlaceTool.TEXT -> R.string.place_edit_text
+                PlaceTool.CHECK -> R.string.place_change_to_cross
+                PlaceTool.CROSS -> R.string.place_change_to_check
+                else -> null
+            }
+            binding.btnSelEdit.visibility = if (editLabel == null) View.GONE else View.VISIBLE
+            if (editLabel != null) binding.btnSelEdit.setText(editLabel)
         }
+
+        // Параметри залежать від цілі: виділений об'єкт, інакше поточний інструмент.
+        val target = sel?.tool ?: tool
+        val hasColor = target == PlaceTool.CHECK || target == PlaceTool.CROSS || target == PlaceTool.TEXT || target == PlaceTool.INK
+        binding.placeColorGroup.visibility = if (hasColor) View.VISIBLE else View.GONE
+        binding.placeSizeBlock.visibility = if (hasColor) View.VISIBLE else View.GONE
+        binding.placeInkPresetGroup.visibility = if (target == PlaceTool.INK) View.VISIBLE else View.GONE
+        val hasSignature = sel?.tool == PlaceTool.SIGNATURE
+        binding.placeSignatureBlock.visibility = if (hasSignature) View.VISIBLE else View.GONE
+        binding.placeOptionsScroll.visibility = if (hasColor || hasSignature) View.VISIBLE else View.GONE
+
         syncingPanel = true
         try {
-            val color = sel?.color ?: viewModel.placeColor
+            val color = (sel?.color ?: viewModel.placeColor) or PlaceMarkupLogic.ALPHA_MASK
             colorButtons.entries.firstOrNull { it.value == color }?.key?.let { binding.placeColorGroup.check(it) }
+            val preset = if (sel?.tool == PlaceTool.INK) presetOf(sel) else viewModel.inkPreset
+            binding.placeInkPresetGroup.clearChecked()
+            when (preset) {
+                InkPreset.PEN -> binding.placeInkPresetGroup.check(R.id.btnInkPen)
+                InkPreset.MARKER -> binding.placeInkPresetGroup.check(R.id.btnInkMarker)
+                InkPreset.HIGHLIGHTER -> binding.placeInkPresetGroup.check(R.id.btnInkHighlighter)
+                null -> Unit
+            }
             updateSizeLabel()
+            if (sel != null && sel.tool == PlaceTool.SIGNATURE) {
+                binding.placeSignatureSlider.value = sel.sizePt.coerceIn(
+                    PlaceMarkupLogic.MIN_SIGNATURE_WIDTH_PT, PlaceMarkupLogic.MAX_SIGNATURE_WIDTH_PT
+                )
+                binding.tvSignatureWidth.text = getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(sel.sizePt))
+            }
         } finally {
             syncingPanel = false
         }
+    }
+
+    /** Пресет, якому відповідає виділений штрих (за альфою й товщиною); null — власна товщина. */
+    private fun presetOf(stroke: PendingMarkup): InkPreset? = when {
+        (stroke.color ushr 24) < 0xFF -> InkPreset.HIGHLIGHTER
+        stroke.sizePt == InkPreset.PEN.widthPt -> InkPreset.PEN
+        stroke.sizePt == InkPreset.MARKER.widthPt -> InkPreset.MARKER
+        else -> null
     }
 
     /** «Змінити»: текст — повторне введення, ✓/✗ — перемикання виду. */
@@ -539,6 +435,7 @@ class ReaderActivity : AppCompatActivity() {
                 initial = sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply
             ) { raw -> viewModel.edit { PlaceEditor.setText(it, sel.id, raw) } }
             PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.edit { PlaceEditor.toggleMarkKind(it, sel.id) }
+            else -> Unit
         }
     }
 
@@ -556,7 +453,7 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun updateSizeLabel() {
         val size = viewModel.editor.value.selected?.sizePt ?: viewModel.placeSize(viewModel.placeTool)
-        binding.tvPlaceSize.text = getString(R.string.place_size_format, size.toInt())
+        binding.tvPlaceSize.text = getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(size))
     }
 
     /** Перевірка прав → показ панелі й увімкнення тапу в мості. Для захищених/заборонених — лише пояснення. */
@@ -614,7 +511,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.selectionBarCard.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(false)
         binding.placePanelCard.visibility = View.GONE
-        if (!isDrawingMode) binding.bottomActionBar.visibility = View.VISIBLE
+        binding.bottomActionBar.visibility = View.VISIBLE
     }
 
     /**
@@ -663,7 +560,30 @@ class ReaderActivity : AppCompatActivity() {
                 )
             )
             PlaceTool.TEXT -> showTextInputDialog(point)
+            PlaceTool.SIGNATURE -> placeArmedSignature(point)
+            PlaceTool.INK, PlaceTool.HAND -> Unit // штрих малює оверлей; «рука» нічого не ставить
         }
+    }
+
+    /** Тап із готовим підписом: лівий верхній кут у точці тапу, ширина 120 pt, пропорції збережено. */
+    private fun placeArmedSignature(point: PageViewPoint) {
+        val bitmap = viewModel.armedSignature
+        if (bitmap == null) {
+            openSignatureDialog()
+            return
+        }
+        val page = viewerFragment?.bridge?.pageSizePt(point.pageIndex)
+        val item = PlaceMarkupLogic.signatureFromTap(
+            UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
+            bitmap.width, bitmap.height, PlaceMarkupLogic.DEFAULT_SIGNATURE_WIDTH_PT, page
+        ) ?: return
+        viewModel.signatureBitmaps[item.id] = bitmap
+        viewModel.armedSignature = null
+        viewModel.addPending(item)
+        // Далі підпис можна рухати й міняти: «рука» + виділення.
+        viewModel.placeTool = PlaceTool.HAND
+        viewModel.edit { PlaceEditor.select(it, item.id) }
+        selectToolButton(PlaceTool.HAND)
     }
 
     private fun showTextInputDialog(point: PageViewPoint) {
@@ -703,6 +623,21 @@ class ReaderActivity : AppCompatActivity() {
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         lateinit var validate: Runnable
 
+        // Z2: у ландшафті з клавіатурою видима частина діалогу низька (≈65 dp) — заголовок прибираємо, а
+        // після появи помилки прокручуємо вміст так, щоб поле разом із рядком помилки було видно.
+        val scroll = dialogBinding.root as ScrollView
+        val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        if (landscape) {
+            dialogBinding.placeTextTitle.visibility = View.GONE
+            scroll.setPadding(scroll.paddingLeft, 0, scroll.paddingRight, 0)
+        }
+        fun revealError() {
+            scroll.post {
+                val content = scroll.getChildAt(0) ?: return@post
+                scroll.scrollTo(0, (content.height - scroll.height).coerceAtLeast(0))
+            }
+        }
+
         fun render(raw: String): Boolean {
             val unsupported = safeUnsupported(raw)
             if (unsupported == null) {
@@ -717,6 +652,7 @@ class ReaderActivity : AppCompatActivity() {
                 is TextVerdict.Unsupported -> getString(R.string.place_text_unsupported, verdict.chars)
             }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = verdict == TextVerdict.Ok
+            if (verdict != TextVerdict.Ok && dialogBinding.placeTextInputLayout.error != null) revealError()
             return verdict == TextVerdict.Ok
         }
 
@@ -741,6 +677,12 @@ class ReaderActivity : AppCompatActivity() {
             val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
             listOf(confirm, cancel).forEach { it.minHeight = min; it.minimumHeight = min; it.minWidth = min; it.minimumWidth = min }
             render(dialogBinding.placeTextInput.text?.toString().orEmpty())
+            // Z1: SOFT_INPUT_STATE_VISIBLE сам клавіатуру не показує (Gboard на S24 Ultra): фокус + явний показ IME.
+            val input = dialogBinding.placeTextInput
+            input.requestFocus()
+            input.post {
+                dialog.window?.let { w -> WindowCompat.getInsetsController(w, input).show(WindowInsetsCompat.Type.ime()) }
+            }
             confirm.setOnClickListener {
                 handler.removeCallbacks(validate)
                 val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
@@ -784,7 +726,7 @@ class ReaderActivity : AppCompatActivity() {
                     showMessage(gateMessage(gate), long = true)
                     return@launch
                 }
-                val markups: List<PageMarkup> = items.map(PlaceMarkupLogic::toPageMarkup)
+                val markups: List<PageMarkup> = items.map { PlaceMarkupLogic.toPageMarkup(it) { id -> viewModel.signatureBitmaps[id] } }
                 when (val result = markupEngine.applyEdits(
                     context = applicationContext,
                     sourceUri = uri,
@@ -824,50 +766,31 @@ class ReaderActivity : AppCompatActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     /**
-     * Розкладка панелі «Поставити» без горизонтального прокручування (D1): «Зберегти» й усі кнопки завжди
-     * цілком у межах картки. Портрет: 4 рядки (інструменти / колір+скасувати / розмір+готово / зберегти);
-     * ландшафт: 2 рядки у картці ≤ 640 dp. Текст кнопок може йти у 2 рядки, але не обрізається.
+     * Розкладка панелі «Поставити»: смуга інструментів і смуга параметрів прокручуються по горизонталі, а рядок
+     * «Скасувати / Готово / Зберегти» завжди видимий. Портрет: рядок дій — окремий рядок знизу; ландшафт: він
+     * переноситься в кінець верхнього рядка (картка ≤ 640 dp, щоб не займати пів екрана по висоті).
      */
     private fun applyPlacePanelOrientation() {
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val rowA = binding.placeRowA
-        val rowB = binding.placeRowB
-        val rowC = binding.placeRowC
-        val rowD = binding.placeRowD
-        val items = listOf<View>(
-            binding.placeToolGroup, binding.placeSizeBlock, binding.placeColorGroup,
-            binding.btnPlaceUndo, binding.btnPlaceDone, binding.btnPlaceSave
-        )
-        items.forEach { (it.parent as? ViewGroup)?.removeView(it) }
-        listOf(rowA, rowB, rowC, rowD).forEach { it.removeAllViews() }
-        binding.placeStash.visibility = View.GONE
-
-        fun wrap(start: Int = 0) = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { marginStart = start }
-        fun weighted(start: Int = 0) = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            .apply { marginStart = start }
-        val gap = dp(8)
-
-        if (landscape) {
-            rowA.addView(binding.placeToolGroup, wrap())
-            rowA.addView(binding.placeSizeBlock, wrap(gap * 2))
-            rowB.addView(binding.placeColorGroup, wrap())
-            rowB.addView(binding.btnPlaceUndo, wrap(gap))
-            rowB.addView(binding.btnPlaceDone, weighted(gap))
-            rowB.addView(binding.btnPlaceSave, weighted(gap))
-        } else {
-            rowA.addView(binding.placeToolGroup, wrap())
-            rowB.addView(binding.placeColorGroup, wrap())
-            rowB.addView(binding.btnPlaceUndo, wrap(gap))
-            rowC.addView(binding.placeSizeBlock, wrap())
-            rowC.addView(binding.btnPlaceDone, weighted(gap))
-            rowD.addView(
-                binding.btnPlaceSave,
-                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        val actions = binding.placeActionsRow
+        val target: ViewGroup = if (landscape) binding.placeTopRow else binding.placePanelContent
+        if (actions.parent !== target) {
+            (actions.parent as? ViewGroup)?.removeView(actions)
+            target.addView(
+                actions,
+                if (landscape) LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { marginStart = dp(8) }
+                else LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { topMargin = dp(4) }
             )
         }
-        updatePlaceSaveVisibility(viewModel.editor.value.items.isNotEmpty())
+        // У ландшафті рядок дій має природну ширину, у портреті «Готово» й «Зберегти» ділять рядок порівну.
+        listOf(binding.btnPlaceDone, binding.btnPlaceSave).forEach { b ->
+            val lp = b.layoutParams as LinearLayout.LayoutParams
+            lp.width = if (landscape) ViewGroup.LayoutParams.WRAP_CONTENT else 0
+            lp.weight = if (landscape) 0f else 1f
+            b.layoutParams = lp
+        }
         updatePlacePanelWidth()
     }
 
@@ -880,13 +803,6 @@ class ReaderActivity : AppCompatActivity() {
             lp.width = newWidth
             binding.placePanelCard.layoutParams = lp
         }
-    }
-
-    private fun updatePlaceSaveVisibility(hasPending: Boolean) {
-        binding.btnPlaceSave.visibility = if (hasPending) View.VISIBLE else View.GONE
-        binding.placeRowD.visibility =
-            if (binding.placeRowD.childCount > 0 && hasPending) View.VISIBLE else View.GONE
-        binding.placeRowC.visibility = if (binding.placeRowC.childCount > 0) View.VISIBLE else View.GONE
     }
 
     /**
@@ -902,7 +818,6 @@ class ReaderActivity : AppCompatActivity() {
             WindowInsetsHelper.applyToolbarTopInset(binding.toolbar, e.top)
             binding.bottomActionBar.setPadding(0, 0, 0, e.bottom)
             WindowInsetsHelper.applyMargins(binding.placePanelCard, base, base, base, base + e.bottom)
-            WindowInsetsHelper.applyMargins(binding.drawingToolbarCard, base, base, base, base + e.bottom)
             updatePlacePanelWidth()
             WindowInsetsCompat.CONSUMED
         }
@@ -955,30 +870,6 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun getPageDimensions(uri: Uri, pageIndex: Int): Pair<Float, Float> = withContext(Dispatchers.IO) {
-        PdfBoxPageOperationsEngine.init(applicationContext)
-        val inStream = if (uri.scheme == "file") {
-            val path = uri.path ?: throw IllegalArgumentException("Некоректний file URI: $uri")
-            FileInputStream(File(path))
-        } else {
-            contentResolver.openInputStream(uri)
-                ?: throw FileNotFoundException("Неможливо відкрити файл для читання розмірів: $uri")
-        }
-
-        inStream.use { stream ->
-            val doc = PDDocument.load(stream)
-            try {
-                val totalPages = doc.numberOfPages
-                val validIndex = pageIndex.coerceIn(0, maxOf(0, totalPages - 1))
-                val page = doc.getPage(validIndex)
-                val box = page.cropBox ?: page.mediaBox
-                Pair(box.width, box.height)
-            } finally {
-                doc.close()
-            }
-        }
-    }
-
     private fun showLoadingOverlay(message: String) {
         binding.savingMessageText.text = message
         binding.savingOverlay.visibility = View.VISIBLE
@@ -1011,15 +902,6 @@ class ReaderActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         documentUri?.let { outState.putString(KEY_SAVED_URI, it.toString()) }
-        outState.putBoolean(KEY_DRAWING_MODE, isDrawingMode)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        val restoredDrawing = savedInstanceState.getBoolean(KEY_DRAWING_MODE, false)
-        if (restoredDrawing) {
-            toggleDrawingMode(true)
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -1038,26 +920,14 @@ class ReaderActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
-                if (isDrawingMode) {
-                    toggleDrawingMode(false)
-                } else if (viewModel.placeModeActive) {
+                if (viewModel.placeModeActive) {
                     leavePlaceThen { finish() }
                 } else {
                     finish()
                 }
                 true
             }
-            R.id.action_draw -> {
-                leavePlaceThen { toggleDrawingMode() }
-                true
-            }
-            R.id.action_signature -> {
-                if (isDrawingMode) toggleDrawingMode(false)
-                leavePlaceThen { openSignatureDialog() }
-                true
-            }
             R.id.action_place -> {
-                if (isDrawingMode) toggleDrawingMode(false)
                 enterPlaceMode()
                 true
             }
@@ -1116,7 +986,6 @@ class ReaderActivity : AppCompatActivity() {
         private const val TEXT_VALIDATE_DEBOUNCE_MS = 120L
         private const val TAG_PDF_VIEWER = "tag_pdf_viewer_fragment"
         private const val KEY_SAVED_URI = "key_saved_reader_uri"
-        private const val KEY_DRAWING_MODE = "key_drawing_mode_active"
 
         private const val COLOR_BLACK = 0xFF000000.toInt()
         private const val COLOR_RED = 0xFFD32F2F.toInt()

@@ -144,7 +144,7 @@
     <string name="place_tool_text">Text</string>
     <string name="place_size_decrease">Smaller</string>
     <string name="place_size_increase">Larger</string>
-    <string name="place_size_format">%1$d pt</string>
+    <string name="place_size_format">%1$s pt</string>
     <string name="place_done">Done</string>
     <string name="place_text_title">Add text</string>
     <string name="place_text_add">Add</string>
@@ -162,4 +162,9 @@
     <string name="place_change_to_cross">Change to ✗</string>
     <string name="place_text_apply">Apply</string>
     <string name="place_selected_hint">Selected object: move it, or change size and colour below</string>
+    <string name="place_tool_ink">Draw</string>
+    <string name="place_tool_hand">Hand (scroll and zoom)</string>
+    <string name="place_tool_signature">Signature</string>
+    <string name="place_signature_width">Signature width</string>
+    <string name="place_signature_tap_hint">Tap the page to place the signature</string>
 </resources>

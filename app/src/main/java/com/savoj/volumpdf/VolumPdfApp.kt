@@ -21,6 +21,15 @@ class VolumPdfApp : Application() {
         instance = this
         // Ініціалізація ресурсів PDFBox
         PdfBoxPageOperationsEngine.init(this)
+        // Незбережене старше 7 днів прибираємо (фоновий потік, без блокування запуску).
+        val pendingRoot = java.io.File(filesDir, "pending")
+        Thread {
+            try {
+                com.savoj.volumpdf.ui.reader.PendingStore(pendingRoot)
+                    .purgeOlderThan(System.currentTimeMillis(), com.savoj.volumpdf.ui.reader.PendingStore.MAX_AGE_MS)
+            } catch (_: Exception) {
+            }
+        }.start()
     }
 
     companion object {
