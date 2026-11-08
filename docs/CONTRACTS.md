@@ -75,7 +75,7 @@ object MarkupLayout {
     const val TEXT_ASCENT_RATIO = 0.93f      // базова лінія 1-го рядка = y + ratio × fontSizePt
     const val TEXT_LINE_HEIGHT_RATIO = 1.2f  // крок між рядками; розрив рядка лише за '\n', автопереносу немає
     const val MARK_STROKE_RATIO = 0.12f      // товщина лінії ✓/✗ = ratio × sizePt; кінці й стики округлені
-    const val FONT_ASSET_PATH = "fonts/Roboto-Regular.ttf" // точну назву файлу уточнює етап 1b
+    const val FONT_ASSET_PATH = "fonts/Roboto-Regular.ttf" // файл core-pdf/src/main/assets/fonts/Roboto-Regular.ttf
     // Ламані ✓/✗ у квадраті 0..1, початок зверху-ліворуч; позначка центрується в (x, y) і має розмір sizePt
     fun markPolylines(kind: MarkKind): List<List<PointF>>
     // CHECK: [(0.15,0.55),(0.40,0.80),(0.85,0.20)]
@@ -108,10 +108,11 @@ suspend fun checkEditability(context: Context, sourceUri: Uri, password: String?
 ```
 
 Гарантії (діють і для `FormEngine.fillFormFields`, де застосовні):
-8. Шифрування й права. (а) Хибний або відсутній пароль → Error, вихідний файл не змінюється. (б) Якщо права документа забороняють зміну → Error з cause = `PdfPermissionException`: для Text/Mark/Ink/Signature потрібне canModify, для formUpdates — canFillInForm або canModifyAnnotations; відкриття паролем власника дає всі права. (в) Якщо джерело зашифроване і outputUri == sourceUri → Error (зашифровані документи зберігаються лише як нова копія; порівняння URI, найкраща спроба; UI не пропонує перезапис). (г) Копія шифрується паролем, яким відкрито джерело (user = owner); пароль власника й обмеження прав НЕ переносяться; алгоритм може оновитися (RC4-128 → AES-128; підтверджено QA). AES-128 і AES-256 зберігають свій рівень.
+8. Шифрування й права. (а) Хибний або відсутній пароль → Error, вихідний файл не змінюється. (б) Якщо права документа забороняють зміну → Error з cause = `PdfPermissionException`: для Text/Mark/Ink/Signature потрібне canModify, для formUpdates — canFillInForm або canModifyAnnotations; відкриття паролем власника дає всі права. (в) Якщо джерело зашифроване і outputUri ідентичний sourceUri → Error. Ідентичність визначається найкращою спробою після нормалізації: file:// — canonical path (Files.isSameFile); content:// — authority + documentId (для tree+document URI — id документа); якщо нормалізація неможлива — порівняння рядків. Гарантію дає UI: для зашифрованих документів пропонується лише CreateDocument. (г) Копія шифрується паролем, яким відкрито джерело (user = owner); пароль власника й обмеження прав НЕ переносяться; алгоритм може оновитися (RC4-128 → AES-128; підтверджено QA). AES-128 і AES-256 зберігають свій рівень. RC4-40 не підвищується (лишається RC4-40); UI про це не попереджає (рішення 2026-11-08).
 9. Вхідні значення: fontSizePt, sizePt, strokeWidth ≤ 0 або NaN/Infinity → Error. Порожній текст або лише з пробілів і '\n' пропускається без помилки (нічого не малюється).
-10. Choice: для нередагованого Choice значення має бути серед options, інакше Error з назвою поля, нічого не записується (атомарно); для редагованого combo приймається будь-яке. Значення ставиться напряму в /V (для списку й /I) без регенерації appearance шрифтом DA; збій appearance одного поля не скасовує решту; відображення — через NeedAppearances на боці переглядача.
+10. Choice: для нередагованого Choice значення має бути серед options, інакше Error з назвою поля, нічого не записується (атомарно); для редагованого combo приймається будь-яке. Значення ставиться напряму в /V (для списку й /I) без регенерації appearance шрифтом DA; збій appearance одного поля не скасовує решту; відображення — через NeedAppearances на боці переглядача. Порожнє значення "" для нередагованого Choice = зняти вибір (видаляються /V і /I); для редагованого combo "" записується як порожній /V. FormEngine.extractFormFields: selectedValue = null, якщо значення відсутнє або порожнє (включно з порожнім списком); для multi-select (поза MVP) повертається перший вибраний елемент.
 11. Нестача пам'яті → Error («файл завеликий для редагування»), не падіння.
+12. fontSizePt, sizePt, strokeWidth > 0 двигун приймає як є; мінімальний розмір шрифту (4 pt) задає UI.
 
 ---
 
