@@ -4,6 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/readerRoot"
     android:orientation="vertical"
     android:background="?android:attr/colorBackground">
 
@@ -523,6 +524,7 @@
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface"
         app:elevation="8dp"
+        app:paddingBottomSystemWindowInsets="false"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/menu_reader_bottom" />
 

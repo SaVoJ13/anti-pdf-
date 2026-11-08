@@ -12,7 +12,6 @@ import android.view.MenuItem
 import android.content.res.Configuration
 import android.view.View
 import android.view.WindowManager
-import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
@@ -38,6 +37,8 @@ import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.databinding.ActivityReaderBinding
 import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
+import com.savoj.volumpdf.ui.common.SystemEdges
+import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.util.SafUtils
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.CancellationException
@@ -83,6 +84,7 @@ class ReaderActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        applyWindowInsets()
 
         val uri = intent.data ?: savedInstanceState?.getString(KEY_SAVED_URI)?.let { Uri.parse(it) }
         if (uri == null) {
@@ -449,7 +451,6 @@ class ReaderActivity : AppCompatActivity() {
         binding.placeColorGroup.check(colorId)
         updateSizeLabel()
         applyPlacePanelOrientation()
-        applyPlacePanelInsets()
 
         binding.placeToolGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
@@ -533,7 +534,6 @@ class ReaderActivity : AppCompatActivity() {
         viewModel.placeModeActive = true
         binding.placePanelCard.visibility = View.VISIBLE
         binding.bottomActionBar.visibility = View.GONE
-        ViewCompat.requestApplyInsets(binding.placePanelCard)
         viewerFragment?.bridge?.setPlaceMode(true) { point -> onPageTapped(point) }
     }
 
@@ -696,17 +696,22 @@ class ReaderActivity : AppCompatActivity() {
         binding.placeRowActions.layoutParams = lp
     }
 
-    /** Панель не заходить під системні панелі (жести й три кнопки) та виріз. */
-    private fun applyPlacePanelInsets() {
-        val card = binding.placePanelCard
+    /**
+     * Edge-to-edge (targetSdk 36): тулбар, нижні панелі й плаваючі картки не заходять під рядок стану,
+     * виріз, навігаційні панелі та клавіатуру. Одне джерело істини — слухач на корені.
+     */
+    private fun applyWindowInsets() {
         val base = (12 * resources.displayMetrics.density).toInt()
-        ViewCompat.setOnApplyWindowInsetsListener(card) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
-            val lp = v.layoutParams as FrameLayout.LayoutParams
-            lp.setMargins(base + bars.left, base, base + bars.right, base + bars.bottom)
-            v.layoutParams = lp
-            insets
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val e = SystemEdges.from(insets)
+            binding.root.setPadding(e.left, 0, e.right, 0)
+            WindowInsetsHelper.applyToolbarTopInset(binding.toolbar, e.top)
+            binding.bottomActionBar.setPadding(0, 0, 0, e.bottom)
+            WindowInsetsHelper.applyMargins(binding.placePanelCard, base, base, base, base + e.bottom)
+            WindowInsetsHelper.applyMargins(binding.drawingToolbarCard, base, base, base, base + e.bottom)
+            WindowInsetsCompat.CONSUMED
         }
+        ViewCompat.requestApplyInsets(binding.root)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
