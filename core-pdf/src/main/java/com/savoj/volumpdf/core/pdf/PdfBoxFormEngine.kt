@@ -82,7 +82,9 @@ class PdfBoxFormEngine : FormEngine {
                         )
                     }
                     is PDChoice -> {
-                        val selected = field.value?.firstOrNull() ?: field.valueAsString?.takeIf { it.isNotEmpty() }
+                        // Значення — зі списку field.value (valueAsString для порожнього списку дав би "[]");
+                        // порожнє/відсутнє → null; для multi-select (поза MVP) — перший елемент.
+                        val selected = field.value?.firstOrNull()?.takeIf { it.isNotEmpty() }
                         val isEditableCombo = field is PDComboBox && field.isEdit
                         fieldsList.add(
                             FormField.Choice(
@@ -117,7 +119,7 @@ class PdfBoxFormEngine : FormEngine {
 
             val doc = PdfIo.loadDocument(context, sourceUri, password)
             try {
-                PdfIo.enforcePolicy(doc, sourceUri, outputUri, needsModify = false, needsFillForm = updates.isNotEmpty())
+                PdfIo.enforcePolicy(context, doc, sourceUri, outputUri, needsModify = false, needsFillForm = updates.isNotEmpty())
                 val totalPages = doc.numberOfPages
                 FormFiller.apply(doc, updates)
                 PdfIo.keepEncryption(doc, password)

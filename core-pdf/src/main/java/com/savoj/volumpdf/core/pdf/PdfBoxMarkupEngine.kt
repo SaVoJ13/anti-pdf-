@@ -70,7 +70,7 @@ class PdfBoxMarkupEngine(private val fontStream: () -> InputStream) : MarkupEngi
             val doc = PdfIo.loadDocument(context, sourceUri, password)
             try {
                 PdfIo.enforcePolicy(
-                    doc, sourceUri, outputUri,
+                    context, doc, sourceUri, outputUri,
                     needsModify = markups.isNotEmpty(), needsFillForm = formUpdates.isNotEmpty()
                 )
                 val totalPages = doc.numberOfPages
