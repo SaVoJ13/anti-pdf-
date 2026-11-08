@@ -167,4 +167,9 @@
     <string name="place_tool_signature">Unterschrift</string>
     <string name="place_signature_width">Breite der Unterschrift</string>
     <string name="place_signature_tap_hint">Tippen Sie auf die Seite, um die Unterschrift zu setzen</string>
+    <string name="form_choice_none">Nicht ausgewählt</string>
+    <string name="forms_apply">Übernehmen</string>
+    <string name="forms_reset_all">Alle Formularänderungen zurücksetzen</string>
+    <string name="forms_read_only_note">Dieses Dokument erlaubt kein Ausfüllen von Formularen, daher sind die Felder nur lesbar.</string>
+    <string name="unsaved_bar_text">Nicht gespeicherte Änderungen</string>
 </resources>

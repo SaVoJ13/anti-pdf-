@@ -49,8 +49,8 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCloseSheet"
             style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             app:icon="@drawable/ic_close"
             android:contentDescription="@string/action_cancel" />
 
@@ -70,7 +70,17 @@
         android:clipToPadding="false"
         android:scrollbars="vertical" />
 
-    <!-- Прогрес збереження -->
+    <!-- Пояснення, коли заповнення заборонене правами документа -->
+    <TextView
+        android:id="@+id/formReadOnlyNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/forms_read_only_note"
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        android:visibility="gone" />
+
+    <!-- Прогрес читання полів -->
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/saveProgressBar"
         android:layout_width="match_parent"
@@ -79,11 +89,20 @@
         android:indeterminate="true"
         android:visibility="gone" />
 
-    <!-- Нижні кнопки дій -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnResetForms"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:minHeight="48dp"
+        android:text="@string/forms_reset_all" />
+
+    <!-- Нижні кнопки дій: форма лише змінює незбережене, файл пише єдине «Зберегти» -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="4dp"
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
@@ -92,6 +111,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:minHeight="48dp"
             android:text="@string/action_cancel" />
 
         <Space
@@ -99,13 +119,13 @@
             android:layout_height="wrap_content" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSaveForm"
+            android:id="@+id/btnApplyForm"
             style="@style/Widget.Material3.Button"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/action_save_form"
-            app:icon="@drawable/ic_check" />
+            android:minHeight="48dp"
+            android:text="@string/forms_apply" />
 
     </LinearLayout>
 

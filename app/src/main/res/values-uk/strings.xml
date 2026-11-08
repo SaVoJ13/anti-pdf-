@@ -167,4 +167,9 @@
     <string name="place_tool_signature">Підпис</string>
     <string name="place_signature_width">Ширина підпису</string>
     <string name="place_signature_tap_hint">Торкніться сторінки, щоб поставити підпис</string>
+    <string name="form_choice_none">Не вибрано</string>
+    <string name="forms_apply">Застосувати</string>
+    <string name="forms_reset_all">Скинути всі зміни форм</string>
+    <string name="forms_read_only_note">Цей документ не дозволяє заповнювати форми, тому поля доступні лише для перегляду.</string>
+    <string name="unsaved_bar_text">Є незбережені зміни</string>
 </resources>

@@ -58,7 +58,6 @@ class ReaderActivity : AppCompatActivity() {
     private var viewerFragment: VolumPdfViewerFragment? = null
 
     private val formEngine: FormEngine = PdfBoxFormEngine()
-    private var detectedFormFields: List<FormField> = emptyList()
 
     private val markupEngine: MarkupEngine =
         PdfBoxMarkupEngine({ applicationContext.assets.open(MarkupLayout.FONT_ASSET_PATH) })
@@ -143,7 +142,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.bottomActionBar.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.action_forms -> {
-                    leavePlaceThen { openFillFormDialog() }
+                    openFillFormDialog()
                     false
                 }
                 R.id.action_place -> {
@@ -165,12 +164,13 @@ class ReaderActivity : AppCompatActivity() {
                     emptyList()
                 }
             }
-            detectedFormFields = fields
+            viewModel.setFormFields(fields)
             updateFormsActionButton(fields.size)
         }
     }
 
     private fun updateFormsActionButton(count: Int) {
+        binding.btnPlaceForms.visibility = if (count > 0) View.VISIBLE else View.GONE
         val formsItem = binding.bottomActionBar.menu.findItem(R.id.action_forms) ?: return
         if (count > 0) {
             formsItem.isVisible = true
@@ -183,16 +183,29 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Шторка «Форми» лише редагує незбережені значення. Перед відкриттям — checkEditability: захищені документи
+     * (до 3e) — нейтральне повідомлення; canFillForms = false — поля лише для читання з поясненням у шторці.
+     */
     private fun openFillFormDialog() {
         val uri = documentUri ?: return
-        val dialog = FillFormBottomSheetDialogFragment.newInstance(uri, detectedFormFields)
-        dialog.onFormSavedListener = { savedUri ->
-            documentUri = savedUri
-            reloadViewerDocument()
-            checkForFormFields(savedUri)
-            Snackbar.make(binding.root, R.string.form_saved_success, Snackbar.LENGTH_SHORT).show()
+        if (supportFragmentManager.findFragmentByTag(FillFormBottomSheetDialogFragment.TAG) != null) return
+        lifecycleScope.launch {
+            val editability = withContext(Dispatchers.IO) {
+                try {
+                    markupEngine.checkEditability(applicationContext, uri, null)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    null
+                }
+            }
+            when {
+                editability == null -> showMessage(getString(R.string.place_blocked_unreadable), long = true)
+                editability.isEncrypted -> showMessage(getString(R.string.place_blocked_encrypted), long = true)
+                else -> FillFormBottomSheetDialogFragment.newInstance(editability.canFillForms)
+                    .show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
+            }
         }
-        dialog.show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
     }
 
     private fun setupBackNavigation() {
@@ -200,6 +213,11 @@ class ReaderActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 if (viewModel.placeModeActive) {
                     leavePlaceThen { }
+                } else if (viewModel.hasUnsaved.value) {
+                    showUnsavedDialog {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
                 } else {
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
@@ -342,6 +360,9 @@ class ReaderActivity : AppCompatActivity() {
         binding.btnSizePlus.setOnClickListener { changePlaceSize(+1) }
         binding.btnPlaceDone.setOnClickListener { leavePlaceThen { } }
         binding.btnPlaceSave.setOnClickListener { savePending() }
+        binding.btnPlaceForms.setOnClickListener { openFillFormDialog() }
+        binding.btnUnsavedSave.setOnClickListener { savePending() }
+        binding.btnUnsavedDiscard.setOnClickListener { viewModel.clearAllPending() }
         binding.btnPlaceUndo.setOnClickListener { viewModel.edit { PlaceEditor.undo(it) } }
         binding.btnSelDelete.setOnClickListener {
             viewModel.editor.value.selectedId?.let { id -> viewModel.edit { PlaceEditor.delete(it, id) } }
@@ -353,6 +374,11 @@ class ReaderActivity : AppCompatActivity() {
                 viewModel.editor.collect { state -> renderEditor(state) }
             }
         }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.hasUnsaved.collect { renderUnsavedUi() }
+            }
+        }
 
         // Відновлення (поворот, завершення процесу, новий запуск): режим і незбережене повертаються з файлу.
         lifecycleScope.launch {
@@ -361,11 +387,18 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
+    /** «Зберегти» у панелі режиму і панель «Зберегти / Відкинути» поза режимом: показуються при будь-яких незбережених змінах. */
+    private fun renderUnsavedUi() {
+        val unsaved = viewModel.hasUnsaved.value
+        binding.btnPlaceSave.visibility = if (unsaved) View.VISIBLE else View.GONE
+        binding.unsavedBar.visibility = if (unsaved && !viewModel.placeModeActive) View.VISIBLE else View.GONE
+    }
+
     /** Малює стан редактора: оверлей, кнопки «Зберегти»/«Скасувати», панель дій виділеного, параметри за типом цілі. */
     private fun renderEditor(state: PlaceEditorState) {
         binding.markupOverlay.items = state.items
         binding.markupOverlay.selectedId = state.selectedId
-        binding.btnPlaceSave.visibility = if (state.items.isNotEmpty()) View.VISIBLE else View.GONE
+        renderUnsavedUi()
         binding.btnPlaceUndo.isEnabled = state.canUndo
 
         val sel = state.selected
@@ -501,6 +534,7 @@ class ReaderActivity : AppCompatActivity() {
         Thread { safeUnsupported("a") }.start() // прогрів кешу шрифту: перша перевірка тексту без затримки
         binding.placePanelCard.visibility = View.VISIBLE
         binding.bottomActionBar.visibility = View.GONE
+        binding.unsavedBar.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(true) { point -> onPageTapped(point) }
         binding.markupOverlay.editingEnabled = !savingPlace
         renderEditor(viewModel.editor.value)
@@ -515,11 +549,13 @@ class ReaderActivity : AppCompatActivity() {
         viewerFragment?.bridge?.setPlaceMode(false)
         binding.placePanelCard.visibility = View.GONE
         binding.bottomActionBar.visibility = View.VISIBLE
+        renderUnsavedUi()
     }
 
     /**
-     * Виходить із режиму й виконує [action]. Якщо є незбережене — діалог «Зберегти / Відкинути / Скасувати».
-     * Якщо режим не активний — просто [action].
+     * Виходить із режиму «Поставити» й виконує [action]. Якщо в режимі є незбережені об'єкти — діалог
+     * «Зберегти / Відкинути / Скасувати» (він враховує й зміни форм). Лише зміни форм виходу з режиму не блокують:
+     * вони лишаються в незбереженому і видимі на панелі «Зберегти / Відкинути».
      */
     private fun leavePlaceThen(action: () -> Unit) {
         if (!viewModel.placeModeActive) {
@@ -531,18 +567,32 @@ class ReaderActivity : AppCompatActivity() {
             action()
             return
         }
+        showUnsavedDialog(action)
+    }
+
+    /** Вихід із читача (кнопка «назад» у тулбарі): будь-які незбережені зміни — об'єкти чи форми — запитують. */
+    private fun exitReaderThen(action: () -> Unit) {
+        if (viewModel.hasUnsaved.value) {
+            showUnsavedDialog(action)
+        } else {
+            if (viewModel.placeModeActive) hidePlaceUi()
+            action()
+        }
+    }
+
+    private fun showUnsavedDialog(action: () -> Unit) {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.place_unsaved_title)
             .setMessage(R.string.place_unsaved_message)
             .setPositiveButton(R.string.action_save) { _, _ ->
                 savePending(onSuccess = {
-                    hidePlaceUi()
+                    if (viewModel.placeModeActive) hidePlaceUi()
                     action()
                 })
             }
             .setNegativeButton(R.string.place_discard) { _, _ ->
-                viewModel.clearPending()
-                hidePlaceUi()
+                viewModel.clearAllPending()
+                if (viewModel.placeModeActive) hidePlaceUi()
                 action()
             }
             .setNeutralButton(R.string.action_cancel, null)
@@ -701,14 +751,21 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * Єдине збереження: checkEditability → applyEdits (той самий URI) → reload. Після успіху незбережене
-     * очищується; при Error лишається. Реклама в читачі не показується (R4).
+     * Єдине збереження: checkEditability → ОДИН applyEdits (той самий URI; formUpdates зі змін форм) → reload.
+     * Після успіху незбережене (об'єкти, форми, файл у pending) очищується, поля читаються знову; при Error усе
+     * лишається, повідомлення містить userMessage (для Choice — назву поля). Реклама в читачі не показується (R4).
      */
     private fun savePending(onSuccess: () -> Unit = {}) {
         if (savingPlace) return
         val uri = documentUri ?: return
         val items = viewModel.editor.value.items
-        if (items.isEmpty()) {
+        val request = SaveLogic.request(
+            items.map { PlaceMarkupLogic.toPageMarkup(it) { id -> viewModel.signatureBitmaps[id] } },
+            viewModel.formFields.value, viewModel.formEdits.value
+        )
+        if (request.markups.isEmpty() && request.formUpdates.isEmpty()) {
+            // Лише записи без поля у файлі (застарілі) — зберігати нічого.
+            if (viewModel.hasUnsaved.value) viewModel.clearAllPending()
             onSuccess()
             return
         }
@@ -725,28 +782,34 @@ class ReaderActivity : AppCompatActivity() {
                         null
                     }
                 }
-                val gate = PlaceMarkupLogic.gate(editability?.isEncrypted, editability?.canMarkup)
+                val gate = SaveLogic.gate(
+                    editability?.isEncrypted, editability?.canMarkup, editability?.canFillForms,
+                    hasItems = request.markups.isNotEmpty(), hasForms = request.formUpdates.isNotEmpty()
+                )
                 if (gate != PlaceMarkupLogic.Gate.ALLOWED) {
                     showMessage(gateMessage(gate), long = true)
                     return@launch
                 }
-                val markups: List<PageMarkup> = items.map { PlaceMarkupLogic.toPageMarkup(it) { id -> viewModel.signatureBitmaps[id] } }
-                when (val result = markupEngine.applyEdits(
-                    context = applicationContext,
-                    sourceUri = uri,
-                    markups = markups,
-                    outputUri = uri,
-                    password = null
-                )) {
-                    is PdfOperationResult.Success -> {
+                val outcome = SaveLogic.run(request) { markups, formUpdates ->
+                    markupEngine.applyEdits(
+                        context = applicationContext,
+                        sourceUri = uri,
+                        markups = markups,
+                        formUpdates = formUpdates,
+                        outputUri = uri,
+                        password = null
+                    )
+                }
+                when (outcome) {
+                    SaveOutcome.Saved -> {
                         reloadViewerDocument()
-                        viewModel.clearPending()
-                        checkForFormFields(uri)
+                        viewModel.clearAllPending()
+                        checkForFormFields(uri) // поля читаємо знову, бейдж оновлюється
                         showMessage(getString(R.string.place_saved), long = false)
                         onSuccess()
                     }
-                    is PdfOperationResult.Error -> showMessage(result.userMessage, long = true)
-                    is PdfOperationResult.Progress -> Unit
+                    is SaveOutcome.Failed -> showMessage(outcome.message.ifBlank { getString(R.string.error_title) }, long = true)
+                    SaveOutcome.NothingToSave -> onSuccess()
                 }
             } catch (e: Throwable) {
                 if (e is CancellationException) throw e
@@ -933,7 +996,7 @@ class ReaderActivity : AppCompatActivity() {
         return when (item.itemId) {
             android.R.id.home -> {
                 if (viewModel.placeModeActive) {
-                    leavePlaceThen { finish() }
+                    exitReaderThen { finish() }
                 } else {
                     finish()
                 }

@@ -167,4 +167,9 @@
     <string name="place_tool_signature">Подпись</string>
     <string name="place_signature_width">Ширина подписи</string>
     <string name="place_signature_tap_hint">Коснитесь страницы, чтобы поставить подпись</string>
+    <string name="form_choice_none">Не выбрано</string>
+    <string name="forms_apply">Применить</string>
+    <string name="forms_reset_all">Сбросить все изменения форм</string>
+    <string name="forms_read_only_note">Этот документ не разрешает заполнять формы, поэтому поля доступны только для просмотра.</string>
+    <string name="unsaved_bar_text">Есть несохранённые изменения</string>
 </resources>

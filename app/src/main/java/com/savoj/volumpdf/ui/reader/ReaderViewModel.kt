@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.savoj.volumpdf.VolumPdfApp
+import com.savoj.volumpdf.core.pdf.model.FormField
+import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.data.db.copy
 import com.savoj.volumpdf.data.repository.DocumentRepository
@@ -13,7 +15,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ReaderViewModel(
@@ -89,6 +94,52 @@ class ReaderViewModel(
     private val _editor = MutableStateFlow(PlaceEditor.initial(emptyList()))
     val editor: StateFlow<PlaceEditorState> = _editor.asStateFlow()
 
+    /**
+     * Незбережені значення полів форми (ім'я → String/Boolean): лише відмінні від файла; частина того самого
+     * незбереженого стану, що й об'єкти (переживає поворот і am kill), але НЕ входить в історію undo.
+     */
+    private val _formEdits = MutableStateFlow<Map<String, Any>>(emptyMap())
+    val formEdits: StateFlow<Map<String, Any>> = _formEdits.asStateFlow()
+
+    /** Поля форми з файла (extractFormFields); порожній список — немає форми або ще не прочитано. */
+    private val _formFields = MutableStateFlow<List<FormField>>(emptyList())
+    val formFields: StateFlow<List<FormField>> = _formFields.asStateFlow()
+
+    /** Є що зберігати: об'єкти АБО форми. */
+    val hasUnsaved: StateFlow<Boolean> = combine(_editor, _formEdits) { e, f ->
+        FormEditing.hasUnsaved(e.items.size, f)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Нові поля з файла; записи, що збіглися з файлом, прибираються. */
+    fun setFormFields(fields: List<FormField>) {
+        _formFields.value = fields
+        if (fields.isNotEmpty()) {
+            val pruned = FormEditing.prune(fields, _formEdits.value)
+            if (pruned != _formEdits.value) { _formEdits.value = pruned; persistNow() }
+        }
+    }
+
+    /** Шторка «Застосувати»: [entered] — усі значення зі шторки; у незбережене потрапляє лише відмінне від файла. */
+    fun applyFormEntered(entered: Map<String, Any>) {
+        val next = FormEditing.applyEntered(_formFields.value, _formEdits.value, entered)
+        if (next == _formEdits.value) return
+        _formEdits.value = next
+        persistNow()
+    }
+
+    fun resetFormEdits() {
+        if (_formEdits.value.isEmpty()) return
+        _formEdits.value = emptyMap()
+        persistNow()
+    }
+
+    /** Усе незбережене: об'єкти, виділення, історія й форми (після збереження чи «Відкинути»). */
+    fun clearAllPending() {
+        _formEdits.value = emptyMap()
+        clearPending()
+        persistNow()
+    }
+
     /** true, коли незбережене з файлу прочитано (або його немає). */
     private val _pendingLoaded = MutableStateFlow(false)
     val pendingLoaded: StateFlow<Boolean> = _pendingLoaded.asStateFlow()
@@ -98,8 +149,11 @@ class ReaderViewModel(
         documentKey = key
         _pendingLoaded.value = false
         viewModelScope.launch {
+            var restoredForms: List<FormFieldUpdate> = emptyList()
             val items = withContext(Dispatchers.IO) {
-                val loaded = try { store.load(key) } catch (_: Exception) { null } ?: emptyList()
+                val state = try { store.loadState(key) } catch (_: Exception) { null }
+                val loaded = state?.items ?: emptyList()
+                restoredForms = state?.forms ?: emptyList()
                 for (p in loaded) {
                     if (p.tool != PlaceTool.SIGNATURE) continue
                     val f = store.imageFile(key, p.id)
@@ -110,6 +164,11 @@ class ReaderViewModel(
                 loaded.filter { it.tool != PlaceTool.SIGNATURE || signatureBitmaps.containsKey(it.id) }
             }
             if (_editor.value.items.isEmpty() && items.isNotEmpty()) _editor.value = PlaceEditor.initial(items)
+            if (_formEdits.value.isEmpty() && restoredForms.isNotEmpty()) {
+                // Типи значень збережено у файлі; відновлені записи без поля у файлі відкинемо в setFormFields.
+                _formEdits.value = FormEditing.toMap(restoredForms)
+                if (_formFields.value.isNotEmpty()) _formEdits.value = FormEditing.prune(_formFields.value, _formEdits.value)
+            }
             _pendingLoaded.value = true
         }
     }
@@ -120,24 +179,25 @@ class ReaderViewModel(
         val new = transform(old)
         if (new == old) return
         _editor.value = new
-        if (new.items != old.items) persist(new.items)
+        if (new.items != old.items) persistNow()
     }
 
     private val persistLock = Any()
-    private var latestSnapshot: List<PendingMarkup>? = null
+    private class Snapshot(val items: List<PendingMarkup>, val forms: List<FormFieldUpdate>)
+    private var latestSnapshot: Snapshot? = null
     private var writer: kotlinx.coroutines.Job? = null
 
     /** Запис у фоні; кілька швидких змін (слайдер, перетягування) зливаються в останній знімок. */
-    private fun persist(items: List<PendingMarkup>) {
+    private fun persistNow() {
         val key = documentKey ?: return
         synchronized(persistLock) {
-            latestSnapshot = items
+            latestSnapshot = Snapshot(_editor.value.items, FormEditing.toList(_formEdits.value))
             if (writer?.isActive == true) return
             writer = viewModelScope.launch(Dispatchers.IO) {
                 while (true) {
                     val snap = synchronized(persistLock) { latestSnapshot.also { latestSnapshot = null } } ?: break
                     try {
-                        store.save(key, snap) { id, target ->
+                        store.save(key, snap.items, snap.forms) { id, target ->
                             val bmp = signatureBitmaps[id]
                             if (bmp != null) target.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
                         }
