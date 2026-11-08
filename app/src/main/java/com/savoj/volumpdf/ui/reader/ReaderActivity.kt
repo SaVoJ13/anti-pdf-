@@ -11,12 +11,14 @@ import android.view.Menu
 import android.view.MenuItem
 import android.content.res.Configuration
 import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.view.WindowManager
-import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -38,6 +40,8 @@ import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.databinding.ActivityReaderBinding
 import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
+import com.savoj.volumpdf.ui.common.SystemEdges
+import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.util.SafUtils
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.CancellationException
@@ -83,6 +87,7 @@ class ReaderActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        applyWindowInsets()
 
         val uri = intent.data ?: savedInstanceState?.getString(KEY_SAVED_URI)?.let { Uri.parse(it) }
         if (uri == null) {
@@ -440,54 +445,117 @@ class ReaderActivity : AppCompatActivity() {
         )
     }
 
+    /** true, поки панель синхронізується з виділеним об'єктом програмно (слухачі кнопок мовчать). */
+    private var syncingPanel = false
+
     private fun setupPlaceMode() {
         val fragment = viewerFragment
         binding.markupOverlay.bridge = fragment?.bridge
+        binding.markupOverlay.editListener = object : MarkupOverlayView.EditListener {
+            override fun onItemTapped(id: String) = viewModel.edit { PlaceEditor.select(it, id) }
+
+            override fun onItemMoved(id: String, x: Float, y: Float) {
+                val pageIndex = viewModel.editor.value.items.firstOrNull { it.id == id }?.pageIndex ?: return
+                val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
+                viewModel.edit { PlaceEditor.move(PlaceEditor.select(it, id), id, x, y, page) }
+            }
+        }
 
         binding.placeToolGroup.check(toolButtons.getValue(viewModel.placeTool))
         val colorId = colorButtons.entries.firstOrNull { it.value == viewModel.placeColor }?.key ?: R.id.btnPlaceColorRed
         binding.placeColorGroup.check(colorId)
         updateSizeLabel()
         applyPlacePanelOrientation()
-        applyPlacePanelInsets()
 
         binding.placeToolGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
+            if (isChecked && !syncingPanel) {
                 toolButtons.entries.firstOrNull { it.value == checkedId }?.key?.let { viewModel.placeTool = it }
                 updateSizeLabel()
             }
         }
         binding.placeColorGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) colorButtons[checkedId]?.let { viewModel.placeColor = it }
+            if (!isChecked || syncingPanel) return@addOnButtonCheckedListener
+            val color = colorButtons[checkedId] ?: return@addOnButtonCheckedListener
+            val selectedId = viewModel.editor.value.selectedId
+            if (selectedId != null) viewModel.edit { PlaceEditor.setColor(it, selectedId, color) }
+            else viewModel.placeColor = color
         }
         binding.btnSizeMinus.setOnClickListener { changePlaceSize(-1) }
         binding.btnSizePlus.setOnClickListener { changePlaceSize(+1) }
         binding.btnPlaceDone.setOnClickListener { leavePlaceThen { } }
         binding.btnPlaceSave.setOnClickListener { savePending() }
+        binding.btnPlaceUndo.setOnClickListener { viewModel.edit { PlaceEditor.undo(it) } }
+        binding.btnSelDelete.setOnClickListener {
+            viewModel.editor.value.selectedId?.let { id -> viewModel.edit { PlaceEditor.delete(it, id) } }
+        }
+        binding.btnSelEdit.setOnClickListener { editSelected() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.pending.collect { list ->
-                    binding.markupOverlay.items = list
-                    binding.btnPlaceSave.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
-                }
+                viewModel.editor.collect { state -> renderEditor(state) }
             }
         }
 
         // Відновлення після завершення процесу: режим і незбережене повертаються з ViewModel.
-        if (viewModel.placeModeActive || viewModel.pending.value.isNotEmpty()) {
+        if (viewModel.placeModeActive || viewModel.editor.value.items.isNotEmpty()) {
             enterPlaceMode()
         }
     }
 
+    /** Малює стан редактора: оверлей, кнопки «Зберегти»/«Скасувати», панель дій виділеного, значення розміру й кольору. */
+    private fun renderEditor(state: PlaceEditorState) {
+        binding.markupOverlay.items = state.items
+        binding.markupOverlay.selectedId = state.selectedId
+        updatePlaceSaveVisibility(state.items.isNotEmpty())
+        binding.btnPlaceUndo.isEnabled = state.canUndo
+
+        val sel = state.selected
+        binding.selectionBarCard.visibility =
+            if (sel != null && viewModel.placeModeActive) View.VISIBLE else View.GONE
+        if (sel != null) {
+            binding.btnSelEdit.setText(
+                when (sel.tool) {
+                    PlaceTool.TEXT -> R.string.place_edit_text
+                    PlaceTool.CHECK -> R.string.place_change_to_cross
+                    PlaceTool.CROSS -> R.string.place_change_to_check
+                }
+            )
+        }
+        syncingPanel = true
+        try {
+            val color = sel?.color ?: viewModel.placeColor
+            colorButtons.entries.firstOrNull { it.value == color }?.key?.let { binding.placeColorGroup.check(it) }
+            updateSizeLabel()
+        } finally {
+            syncingPanel = false
+        }
+    }
+
+    /** «Змінити»: текст — повторне введення, ✓/✗ — перемикання виду. */
+    private fun editSelected() {
+        val sel = viewModel.editor.value.selected ?: return
+        when (sel.tool) {
+            PlaceTool.TEXT -> showTextDialog(
+                initial = sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply
+            ) { raw -> viewModel.edit { PlaceEditor.setText(it, sel.id, raw) } }
+            PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.edit { PlaceEditor.toggleMarkKind(it, sel.id) }
+        }
+    }
+
     private fun changePlaceSize(direction: Int) {
+        val sel = viewModel.editor.value.selected
+        if (sel != null) {
+            val next = PlaceMarkupLogic.stepSize(sel.tool, sel.sizePt, direction)
+            viewModel.edit { PlaceEditor.setSize(it, sel.id, next) }
+            return
+        }
         val tool = viewModel.placeTool
         viewModel.setPlaceSize(tool, PlaceMarkupLogic.stepSize(tool, viewModel.placeSize(tool), direction))
         updateSizeLabel()
     }
 
     private fun updateSizeLabel() {
-        val size = viewModel.placeSize(viewModel.placeTool)
+        val size = viewModel.editor.value.selected?.sizePt ?: viewModel.placeSize(viewModel.placeTool)
         binding.tvPlaceSize.text = getString(R.string.place_size_format, size.toInt())
     }
 
@@ -531,14 +599,19 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showPlaceUi() {
         viewModel.placeModeActive = true
+        Thread { safeUnsupported("a") }.start() // прогрів кешу шрифту: перша перевірка тексту без затримки
         binding.placePanelCard.visibility = View.VISIBLE
         binding.bottomActionBar.visibility = View.GONE
-        ViewCompat.requestApplyInsets(binding.placePanelCard)
         viewerFragment?.bridge?.setPlaceMode(true) { point -> onPageTapped(point) }
+        binding.markupOverlay.editingEnabled = !savingPlace
+        renderEditor(viewModel.editor.value)
     }
 
     private fun hidePlaceUi() {
         viewModel.placeModeActive = false
+        binding.markupOverlay.editingEnabled = false
+        viewModel.clearPending() // виділення й історія скасування не переживають вихід із режиму
+        binding.selectionBarCard.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(false)
         binding.placePanelCard.visibility = View.GONE
         if (!isDrawingMode) binding.bottomActionBar.visibility = View.VISIBLE
@@ -553,7 +626,7 @@ class ReaderActivity : AppCompatActivity() {
             action()
             return
         }
-        if (viewModel.pending.value.isEmpty()) {
+        if (viewModel.editor.value.items.isEmpty()) {
             hidePlaceUi()
             action()
             return
@@ -578,6 +651,10 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun onPageTapped(point: PageViewPoint) {
         if (savingPlace || viewerFragment?.bridge?.isRestoring == true) return
+        if (viewModel.editor.value.selectedId != null) { // тап повз об'єкт знімає виділення, нового об'єкта не ставить
+            viewModel.edit { PlaceEditor.select(it, null) }
+            return
+        }
         when (val tool = viewModel.placeTool) {
             PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.addPending(
                 PlaceMarkupLogic.markFromTap(
@@ -590,34 +667,90 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun showTextInputDialog(point: PageViewPoint) {
+        showTextDialog(initial = "", titleRes = R.string.place_text_title, confirmRes = R.string.place_text_add) { raw ->
+            val check = PlaceMarkupLogic.textFromTap(
+                UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
+                raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, safeUnsupported(raw) ?: ""
+            )
+            if (check is TextCheck.Ok) viewModel.addPending(check.markup)
+        }
+    }
+
+    /** Непідтримувані символи; null — перевірку виконати не вдалося (шрифт недоступний). */
+    private fun safeUnsupported(raw: String): String? = try {
+        markupEngine.findUnsupportedChars(raw)
+    } catch (e: Throwable) {
+        null
+    }
+
+    /**
+     * Діалог введення тексту (додавання й повторне введення). Перевірка символів — при кожній зміні тексту
+     * (TextWatcher, debounce [TEXT_VALIDATE_DEBOUNCE_MS]); «Додати» вимкнена, поки текст порожній або містить
+     * непідтримувані символи. Шрифт розбирається один раз (кеш у двигуні) і прогрівається при вході в режим.
+     * Кнопки діалогу лежать поза прокруткою й завжди ≥ 48 dp.
+     */
+    private fun showTextDialog(initial: String, titleRes: Int, confirmRes: Int, onAccept: (String) -> Unit) {
         val dialogBinding = DialogPlaceTextBinding.inflate(layoutInflater)
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogBinding.root).create()
+        dialogBinding.placeTextTitle.setText(titleRes)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogBinding.root)
+            .setPositiveButton(confirmRes, null)
+            .setNegativeButton(R.string.action_cancel, null)
+            .create()
         dialog.window?.setSoftInputMode(
             WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
         )
-        dialogBinding.placeTextCancel.setOnClickListener { dialog.dismiss() }
-        dialogBinding.placeTextConfirm.setOnClickListener {
-            val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
-            val unsupported = try {
-                markupEngine.findUnsupportedChars(raw)
-            } catch (e: Throwable) {
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        lateinit var validate: Runnable
+
+        fun render(raw: String): Boolean {
+            val unsupported = safeUnsupported(raw)
+            if (unsupported == null) {
                 dialogBinding.placeTextInputLayout.error = getString(R.string.error_title)
-                return@setOnClickListener
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = false
+                return false
             }
-            val check = PlaceMarkupLogic.textFromTap(
-                UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
-                raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, unsupported
-            )
-            when (check) {
-                is TextCheck.Ok -> {
-                    viewModel.addPending(check.markup)
+            val verdict = PlaceMarkupLogic.checkText(raw, unsupported)
+            dialogBinding.placeTextInputLayout.error = when (verdict) {
+                TextVerdict.Ok -> null
+                TextVerdict.Empty -> if (raw.isEmpty()) null else getString(R.string.text_error_empty)
+                is TextVerdict.Unsupported -> getString(R.string.place_text_unsupported, verdict.chars)
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = verdict == TextVerdict.Ok
+            return verdict == TextVerdict.Ok
+        }
+
+        validate = Runnable { render(dialogBinding.placeTextInput.text?.toString().orEmpty()) }
+        dialogBinding.placeTextInput.setText(initial)
+        dialogBinding.placeTextInput.setSelection(initial.length)
+        dialogBinding.placeTextInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: android.text.Editable?) {
+                handler.removeCallbacks(validate)
+                if (s.isNullOrBlank()) {
+                    validate.run() // порожнє: без затримки вимикаємо «Додати»
+                } else {
+                    handler.postDelayed(validate, TEXT_VALIDATE_DEBOUNCE_MS)
+                }
+            }
+        })
+        dialog.setOnShowListener {
+            val min = dp(48)
+            val confirm = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+            listOf(confirm, cancel).forEach { it.minHeight = min; it.minimumHeight = min; it.minWidth = min; it.minimumWidth = min }
+            render(dialogBinding.placeTextInput.text?.toString().orEmpty())
+            confirm.setOnClickListener {
+                handler.removeCallbacks(validate)
+                val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
+                if (render(raw)) { // остаточна перевірка без затримки
+                    onAccept(raw)
                     dialog.dismiss()
                 }
-                TextCheck.Empty -> dialogBinding.placeTextInputLayout.error = getString(R.string.text_error_empty)
-                is TextCheck.Unsupported ->
-                    dialogBinding.placeTextInputLayout.error = getString(R.string.place_text_unsupported, check.chars)
             }
         }
+        dialog.setOnDismissListener { handler.removeCallbacks(validate) }
         dialog.show()
     }
 
@@ -628,12 +761,13 @@ class ReaderActivity : AppCompatActivity() {
     private fun savePending(onSuccess: () -> Unit = {}) {
         if (savingPlace) return
         val uri = documentUri ?: return
-        val items = viewModel.pending.value
+        val items = viewModel.editor.value.items
         if (items.isEmpty()) {
             onSuccess()
             return
         }
         savingPlace = true
+        binding.markupOverlay.editingEnabled = false
         showLoadingOverlay(getString(R.string.saving_annotations))
         lifecycleScope.launch {
             try {
@@ -674,6 +808,7 @@ class ReaderActivity : AppCompatActivity() {
             } finally {
                 hideLoadingOverlay()
                 savingPlace = false
+                binding.markupOverlay.editingEnabled = viewModel.placeModeActive
             }
         }
     }
@@ -684,29 +819,94 @@ class ReaderActivity : AppCompatActivity() {
         snackbar.show()
     }
 
-    /** Ландшафт: усі елементи панелі в один рядок (панель прокручується, якщо не вміщується). */
+    private var lastEdges = SystemEdges.NONE
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    /**
+     * Розкладка панелі «Поставити» без горизонтального прокручування (D1): «Зберегти» й усі кнопки завжди
+     * цілком у межах картки. Портрет: 4 рядки (інструменти / колір+скасувати / розмір+готово / зберегти);
+     * ландшафт: 2 рядки у картці ≤ 640 dp. Текст кнопок може йти у 2 рядки, але не обрізається.
+     */
     private fun applyPlacePanelOrientation() {
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        binding.placePanelContent.orientation =
-            if (landscape) android.widget.LinearLayout.HORIZONTAL else android.widget.LinearLayout.VERTICAL
-        val lp = binding.placeRowActions.layoutParams as android.widget.LinearLayout.LayoutParams
-        val gap = (6 * resources.displayMetrics.density).toInt()
-        lp.topMargin = if (landscape) 0 else gap
-        lp.marginStart = if (landscape) gap * 2 else 0
-        binding.placeRowActions.layoutParams = lp
+        val rowA = binding.placeRowA
+        val rowB = binding.placeRowB
+        val rowC = binding.placeRowC
+        val rowD = binding.placeRowD
+        val items = listOf<View>(
+            binding.placeToolGroup, binding.placeSizeBlock, binding.placeColorGroup,
+            binding.btnPlaceUndo, binding.btnPlaceDone, binding.btnPlaceSave
+        )
+        items.forEach { (it.parent as? ViewGroup)?.removeView(it) }
+        listOf(rowA, rowB, rowC, rowD).forEach { it.removeAllViews() }
+        binding.placeStash.visibility = View.GONE
+
+        fun wrap(start: Int = 0) = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { marginStart = start }
+        fun weighted(start: Int = 0) = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            .apply { marginStart = start }
+        val gap = dp(8)
+
+        if (landscape) {
+            rowA.addView(binding.placeToolGroup, wrap())
+            rowA.addView(binding.placeSizeBlock, wrap(gap * 2))
+            rowB.addView(binding.placeColorGroup, wrap())
+            rowB.addView(binding.btnPlaceUndo, wrap(gap))
+            rowB.addView(binding.btnPlaceDone, weighted(gap))
+            rowB.addView(binding.btnPlaceSave, weighted(gap))
+        } else {
+            rowA.addView(binding.placeToolGroup, wrap())
+            rowB.addView(binding.placeColorGroup, wrap())
+            rowB.addView(binding.btnPlaceUndo, wrap(gap))
+            rowC.addView(binding.placeSizeBlock, wrap())
+            rowC.addView(binding.btnPlaceDone, weighted(gap))
+            rowD.addView(
+                binding.btnPlaceSave,
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            )
+        }
+        updatePlaceSaveVisibility(viewModel.editor.value.items.isNotEmpty())
+        updatePlacePanelWidth()
     }
 
-    /** Панель не заходить під системні панелі (жести й три кнопки) та виріз. */
-    private fun applyPlacePanelInsets() {
-        val card = binding.placePanelCard
-        val base = (12 * resources.displayMetrics.density).toInt()
-        ViewCompat.setOnApplyWindowInsetsListener(card) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
-            val lp = v.layoutParams as FrameLayout.LayoutParams
-            lp.setMargins(base + bars.left, base, base + bars.right, base + bars.bottom)
-            v.layoutParams = lp
-            insets
+    private fun updatePlacePanelWidth() {
+        val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val lp = binding.placePanelCard.layoutParams
+        val available = resources.displayMetrics.widthPixels - 2 * dp(12) - lastEdges.left - lastEdges.right
+        val newWidth = if (landscape) minOf(dp(640), available) else ViewGroup.LayoutParams.MATCH_PARENT
+        if (lp.width != newWidth) {
+            lp.width = newWidth
+            binding.placePanelCard.layoutParams = lp
         }
+    }
+
+    private fun updatePlaceSaveVisibility(hasPending: Boolean) {
+        binding.btnPlaceSave.visibility = if (hasPending) View.VISIBLE else View.GONE
+        binding.placeRowD.visibility =
+            if (binding.placeRowD.childCount > 0 && hasPending) View.VISIBLE else View.GONE
+        binding.placeRowC.visibility = if (binding.placeRowC.childCount > 0) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * Edge-to-edge (targetSdk 36): тулбар, нижні панелі й плаваючі картки не заходять під рядок стану,
+     * виріз, навігаційні панелі та клавіатуру. Одне джерело істини — слухач на корені.
+     */
+    private fun applyWindowInsets() {
+        val base = (12 * resources.displayMetrics.density).toInt()
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val e = SystemEdges.from(insets)
+            lastEdges = e
+            binding.root.setPadding(e.left, 0, e.right, 0)
+            WindowInsetsHelper.applyToolbarTopInset(binding.toolbar, e.top)
+            binding.bottomActionBar.setPadding(0, 0, 0, e.bottom)
+            WindowInsetsHelper.applyMargins(binding.placePanelCard, base, base, base, base + e.bottom)
+            WindowInsetsHelper.applyMargins(binding.drawingToolbarCard, base, base, base, base + e.bottom)
+            updatePlacePanelWidth()
+            WindowInsetsCompat.CONSUMED
+        }
+        ViewCompat.requestApplyInsets(binding.root)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -913,6 +1113,7 @@ class ReaderActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_DOCUMENT_TITLE = "extra_document_title"
         private const val TAG = "ReaderActivity"
+        private const val TEXT_VALIDATE_DEBOUNCE_MS = 120L
         private const val TAG_PDF_VIEWER = "tag_pdf_viewer_fragment"
         private const val KEY_SAVED_URI = "key_saved_reader_uri"
         private const val KEY_DRAWING_MODE = "key_drawing_mode_active"

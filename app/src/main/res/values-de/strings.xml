@@ -150,10 +150,16 @@
     <string name="place_text_add">Hinzufügen</string>
     <string name="place_text_unsupported">Diese Zeichen werden nicht unterstützt: %1$s</string>
     <string name="place_saved">Im Dokument gespeichert</string>
-    <string name="place_blocked_encrypted">Passwortgeschützte Dokumente können noch nicht bearbeitet werden – das kommt später.</string>
-    <string name="place_blocked_rights">Der Autor des Dokuments hat Änderungen nicht erlaubt.</string>
+    <string name="place_blocked_encrypted">Das Bearbeiten geschützter Dokumente wird später hinzugefügt.</string>
+    <string name="place_blocked_rights">Das Bearbeiten geschützter Dokumente wird später hinzugefügt.</string>
     <string name="place_blocked_unreadable">Das Dokument konnte nicht zur Bearbeitung geöffnet werden.</string>
     <string name="place_unsaved_title">Nicht gespeicherte Änderungen</string>
     <string name="place_unsaved_message">Auf den Seiten Platziertes speichern?</string>
     <string name="place_discard">Verwerfen</string>
+    <string name="place_delete">Löschen</string>
+    <string name="place_edit_text">Text ändern</string>
+    <string name="place_change_to_check">Zu ✓ ändern</string>
+    <string name="place_change_to_cross">Zu ✗ ändern</string>
+    <string name="place_text_apply">Übernehmen</string>
+    <string name="place_selected_hint">Ausgewähltes Objekt: verschieben oder unten Größe und Farbe ändern</string>
 </resources>

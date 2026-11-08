@@ -19,6 +19,8 @@ import com.savoj.volumpdf.core.ads.AdMobAdsManager
 import com.savoj.volumpdf.core.ads.AdsManager
 import com.savoj.volumpdf.data.model.SortOrder
 import com.savoj.volumpdf.databinding.ActivityMainBinding
+import com.savoj.volumpdf.ui.common.SystemEdges
+import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.ui.reader.ReaderActivity
 
 class MainActivity : AppCompatActivity() {
@@ -43,12 +45,35 @@ class MainActivity : AppCompatActivity() {
         adsManager = AdMobAdsManager.getInstance(this)
 
         setSupportActionBar(binding.toolbar)
+        applyWindowInsets()
 
         setupViewPagerAndTabs()
         setupFab()
         setupAds()
 
         handleIntent(intent)
+    }
+
+    private var bottomInsetPx = 0
+
+    /** Edge-to-edge: тулбар під рядком стану, вміст і FAB над навігаційною панеллю, без заходу під виріз. */
+    private fun applyWindowInsets() {
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val e = SystemEdges.from(insets)
+            bottomInsetPx = e.bottom
+            binding.mainContent.setPadding(e.left, 0, e.right, e.bottom)
+            WindowInsetsHelper.applyAppBarTopInset(binding.appBarLayout, e.top)
+            val fab = binding.fabOpenPdf.layoutParams as? CoordinatorLayout.LayoutParams
+            if (fab != null) {
+                val base = (76 * resources.displayMetrics.density).toInt()
+                val banner = if (binding.bannerContainer.visibility == View.VISIBLE) binding.bannerContainer.height else 0
+                fab.bottomMargin = base + banner + e.bottom
+                fab.rightMargin = (20 * resources.displayMetrics.density).toInt() + e.right
+                binding.fabOpenPdf.layoutParams = fab
+            }
+            androidx.core.view.WindowInsetsCompat.CONSUMED
+        }
+        androidx.core.view.ViewCompat.requestApplyInsets(binding.root)
     }
 
     private fun setupAds() {
@@ -63,7 +88,7 @@ class MainActivity : AppCompatActivity() {
             val isBannerVisible = binding.bannerContainer.visibility == View.VISIBLE
             val params = binding.fabOpenPdf.layoutParams as? CoordinatorLayout.LayoutParams
             if (params != null) {
-                val baseMargin = (76 * resources.displayMetrics.density).toInt()
+                val baseMargin = (76 * resources.displayMetrics.density).toInt() + bottomInsetPx
                 val targetMargin = if (isBannerVisible) baseMargin + bannerHeight else baseMargin
                 if (params.bottomMargin != targetMargin) {
                     params.bottomMargin = targetMargin

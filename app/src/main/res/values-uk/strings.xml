@@ -150,10 +150,16 @@
     <string name="place_text_add">Додати</string>
     <string name="place_text_unsupported">Ці символи не підтримуються: %1$s</string>
     <string name="place_saved">Збережено в документ</string>
-    <string name="place_blocked_encrypted">Документи, захищені паролем, поки не можна редагувати — це з’явиться пізніше.</string>
-    <string name="place_blocked_rights">Автор документа заборонив зміни.</string>
+    <string name="place_blocked_encrypted">Редагування захищених документів буде додано пізніше.</string>
+    <string name="place_blocked_rights">Редагування захищених документів буде додано пізніше.</string>
     <string name="place_blocked_unreadable">Не вдалося відкрити документ для редагування.</string>
     <string name="place_unsaved_title">Незбережені зміни</string>
     <string name="place_unsaved_message">Зберегти додане на сторінках?</string>
     <string name="place_discard">Відкинути</string>
+    <string name="place_delete">Видалити</string>
+    <string name="place_edit_text">Змінити текст</string>
+    <string name="place_change_to_check">Змінити на ✓</string>
+    <string name="place_change_to_cross">Змінити на ✗</string>
+    <string name="place_text_apply">Застосувати</string>
+    <string name="place_selected_hint">Вибраний об’єкт: перетягніть його або змініть розмір і колір нижче</string>
 </resources>

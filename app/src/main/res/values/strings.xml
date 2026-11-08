@@ -150,10 +150,16 @@
     <string name="place_text_add">Add</string>
     <string name="place_text_unsupported">These characters are not supported: %1$s</string>
     <string name="place_saved">Saved to the document</string>
-    <string name="place_blocked_encrypted">Password-protected documents can\'t be edited yet — this will come later.</string>
-    <string name="place_blocked_rights">The document\'s author has not allowed changes.</string>
+    <string name="place_blocked_encrypted">Editing protected documents will be added later.</string>
+    <string name="place_blocked_rights">Editing protected documents will be added later.</string>
     <string name="place_blocked_unreadable">Couldn\'t open the document for editing.</string>
     <string name="place_unsaved_title">Unsaved changes</string>
     <string name="place_unsaved_message">Save what you\'ve placed on the pages?</string>
     <string name="place_discard">Discard</string>
+    <string name="place_delete">Delete</string>
+    <string name="place_edit_text">Edit text</string>
+    <string name="place_change_to_check">Change to ✓</string>
+    <string name="place_change_to_cross">Change to ✗</string>
+    <string name="place_text_apply">Apply</string>
+    <string name="place_selected_hint">Selected object: move it, or change size and colour below</string>
 </resources>

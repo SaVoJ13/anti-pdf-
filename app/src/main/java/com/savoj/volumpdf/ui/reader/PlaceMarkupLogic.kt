@@ -22,6 +22,13 @@ data class PendingMarkup(
     val color: Int
 )
 
+/** Підсумок перевірки введеного тексту (без створення об'єкта). */
+sealed interface TextVerdict {
+    object Ok : TextVerdict
+    object Empty : TextVerdict
+    data class Unsupported(val chars: String) : TextVerdict
+}
+
 /** Результат спроби створити текстовий об'єкт. */
 sealed interface TextCheck {
     data class Ok(val markup: PendingMarkup) : TextCheck
@@ -34,9 +41,11 @@ object PlaceMarkupLogic {
     const val DEFAULT_MARK_SIZE_PT = 16f
     const val DEFAULT_TEXT_SIZE_PT = 14f
     const val MIN_SIZE_PT = 4f
-    const val MAX_MARK_SIZE_PT = 96f
-    const val MAX_TEXT_SIZE_PT = 72f
-    const val SIZE_STEP_PT = 2f
+    const val MAX_MARK_SIZE_PT = 144f
+    const val MAX_TEXT_SIZE_PT = 144f
+
+    /** Опорна точка об'єкта не ближче цього до правого/нижнього краю видимої сторінки (двигун відхиляє об'єкт, що цілком поза сторінкою). */
+    const val PAGE_EDGE_MARGIN_PT = 2f
 
     fun defaultSize(tool: PlaceTool): Float =
         if (tool == PlaceTool.TEXT) DEFAULT_TEXT_SIZE_PT else DEFAULT_MARK_SIZE_PT
@@ -48,8 +57,39 @@ object PlaceMarkupLogic {
         return value.coerceIn(MIN_SIZE_PT, max)
     }
 
-    fun stepSize(tool: PlaceTool, current: Float, direction: Int): Float =
-        clampSize(tool, current + direction * SIZE_STEP_PT)
+    /**
+     * Крок розміру росте з розміром: 1 pt до 20, 2 pt до 48, 4 pt до 96, далі 8 pt (від 4 до 144 pt — 48 натискань).
+     * Крок «−» — обернений до «+»: від значення на межі діапазону береться крок нижчого діапазону.
+     */
+    private fun stepAt(size: Float): Float = when {
+        size < 20f -> 1f
+        size < 48f -> 2f
+        size < 96f -> 4f
+        else -> 8f
+    }
+
+    fun stepSize(tool: PlaceTool, current: Float, direction: Int): Float {
+        if (current.isNaN() || current.isInfinite()) return defaultSize(tool)
+        val delta = if (direction >= 0) stepAt(current) else -stepAt(current - 0.01f)
+        return clampSize(tool, current + delta)
+    }
+
+    /** Опорна точка в межах видимої сторінки; [page] == null (розмір невідомий) — лише не менше 0. */
+    fun clampToPage(x: Float, y: Float, page: PageSizePt?): Pair<Float, Float> {
+        val sx = if (x.isNaN()) 0f else x
+        val sy = if (y.isNaN()) 0f else y
+        if (page == null) return Pair(sx.coerceAtLeast(0f), sy.coerceAtLeast(0f))
+        val maxX = (page.widthPt - PAGE_EDGE_MARGIN_PT).coerceAtLeast(0f)
+        val maxY = (page.heightPt - PAGE_EDGE_MARGIN_PT).coerceAtLeast(0f)
+        return Pair(sx.coerceIn(0f, maxX), sy.coerceIn(0f, maxY))
+    }
+
+    /** Порожній (лише пробіли й розриви) — Empty; символи, яких немає у шрифті, — Unsupported. */
+    fun checkText(rawText: String, unsupported: String): TextVerdict = when {
+        rawText.isBlank() -> TextVerdict.Empty
+        unsupported.isNotEmpty() -> TextVerdict.Unsupported(unsupported)
+        else -> TextVerdict.Ok
+    }
 
     /** ✓/✗: центр позначки — у точці тапу. */
     fun markFromTap(id: String, tool: PlaceTool, pageIndex: Int, x: Float, y: Float, sizePt: Float, color: Int): PendingMarkup {
@@ -65,8 +105,11 @@ object PlaceMarkupLogic {
         id: String, pageIndex: Int, x: Float, y: Float,
         rawText: String, sizePt: Float, color: Int, unsupported: String
     ): TextCheck {
-        if (rawText.isBlank()) return TextCheck.Empty
-        if (unsupported.isNotEmpty()) return TextCheck.Unsupported(unsupported)
+        when (val v = checkText(rawText, unsupported)) {
+            TextVerdict.Empty -> return TextCheck.Empty
+            is TextVerdict.Unsupported -> return TextCheck.Unsupported(v.chars)
+            TextVerdict.Ok -> Unit
+        }
         return TextCheck.Ok(PendingMarkup(id, PlaceTool.TEXT, pageIndex, x, y, rawText, clampSize(PlaceTool.TEXT, sizePt), color))
     }
 

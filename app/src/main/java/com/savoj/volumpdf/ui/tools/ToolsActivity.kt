@@ -19,6 +19,8 @@ import com.savoj.volumpdf.R
 import com.savoj.volumpdf.core.ads.AdMobAdsManager
 import com.savoj.volumpdf.core.ads.AdsManager
 import com.savoj.volumpdf.databinding.ActivityToolsBinding
+import com.savoj.volumpdf.ui.common.SystemEdges
+import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.ui.reader.ReaderActivity
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.launch
@@ -75,6 +77,19 @@ class ToolsActivity : AppCompatActivity() {
         }
     }
 
+    /** Edge-to-edge: тулбар під рядком стану, нижня панель дій над навігаційною панеллю/клавіатурою. */
+    private fun applyWindowInsets() {
+        val barPad = (16 * resources.displayMetrics.density).toInt()
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.toolsRoot) { _, insets ->
+            val e = SystemEdges.from(insets)
+            binding.toolsRoot.setPadding(e.left, 0, e.right, 0)
+            WindowInsetsHelper.applyToolbarTopInset(binding.toolbar, e.top)
+            binding.bottomSaveBar.setPadding(barPad, barPad, barPad, barPad + e.bottom)
+            androidx.core.view.WindowInsetsCompat.CONSUMED
+        }
+        androidx.core.view.ViewCompat.requestApplyInsets(binding.toolsRoot)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityToolsBinding.inflate(layoutInflater)
@@ -91,6 +106,7 @@ class ToolsActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        applyWindowInsets()
 
         setupToolUi()
         setupRecyclerView()
