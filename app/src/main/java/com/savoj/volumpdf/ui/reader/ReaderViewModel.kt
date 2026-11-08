@@ -47,7 +47,15 @@ class ReaderViewModel(
         }
     }
 
+    /**
+     * Поки переглядач відновлює положення після збереження, він на мить показує сторінку 0;
+     * такий стан не можна записувати як «остання прочитана сторінка».
+     */
+    @Volatile
+    var progressSuppressed: Boolean = false
+
     fun updatePageProgress(page: Int) {
+        if (progressSuppressed) return
         val currentDoc = _document.value ?: return
         viewModelScope.launch {
             repository.updateReadingProgress(currentDoc.uri, page)
