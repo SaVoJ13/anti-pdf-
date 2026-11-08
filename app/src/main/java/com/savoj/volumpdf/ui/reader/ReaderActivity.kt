@@ -18,6 +18,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -593,31 +594,41 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showTextInputDialog(point: PageViewPoint) {
         val dialogBinding = DialogPlaceTextBinding.inflate(layoutInflater)
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogBinding.root).create()
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogBinding.root)
+            .setPositiveButton(R.string.place_text_add, null)
+            .setNegativeButton(R.string.action_cancel, null)
+            .create()
         dialog.window?.setSoftInputMode(
             WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
         )
-        dialogBinding.placeTextCancel.setOnClickListener { dialog.dismiss() }
-        dialogBinding.placeTextConfirm.setOnClickListener {
-            val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
-            val unsupported = try {
-                markupEngine.findUnsupportedChars(raw)
-            } catch (e: Throwable) {
-                dialogBinding.placeTextInputLayout.error = getString(R.string.error_title)
-                return@setOnClickListener
-            }
-            val check = PlaceMarkupLogic.textFromTap(
-                UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
-                raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, unsupported
-            )
-            when (check) {
-                is TextCheck.Ok -> {
-                    viewModel.addPending(check.markup)
-                    dialog.dismiss()
+        dialog.setOnShowListener {
+            // Кнопки діалогу лежать поза прокруткою й завжди ≥ 48 dp; «Додати» не закриває діалог сама.
+            val min = dp(48)
+            val confirm = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+            listOf(confirm, cancel).forEach { it.minHeight = min; it.minimumHeight = min; it.minWidth = min; it.minimumWidth = min }
+            confirm.setOnClickListener {
+                val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
+                val unsupported = try {
+                    markupEngine.findUnsupportedChars(raw)
+                } catch (e: Throwable) {
+                    dialogBinding.placeTextInputLayout.error = getString(R.string.error_title)
+                    return@setOnClickListener
                 }
-                TextCheck.Empty -> dialogBinding.placeTextInputLayout.error = getString(R.string.text_error_empty)
-                is TextCheck.Unsupported ->
-                    dialogBinding.placeTextInputLayout.error = getString(R.string.place_text_unsupported, check.chars)
+                val check = PlaceMarkupLogic.textFromTap(
+                    UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
+                    raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, unsupported
+                )
+                when (check) {
+                    is TextCheck.Ok -> {
+                        viewModel.addPending(check.markup)
+                        dialog.dismiss()
+                    }
+                    TextCheck.Empty -> dialogBinding.placeTextInputLayout.error = getString(R.string.text_error_empty)
+                    is TextCheck.Unsupported ->
+                        dialogBinding.placeTextInputLayout.error = getString(R.string.place_text_unsupported, check.chars)
+                }
             }
         }
         dialog.show()

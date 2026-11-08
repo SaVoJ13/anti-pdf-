@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Вміст шторки введення тексту. Кнопки «Додати»/«Скасувати» — кнопки самого діалогу (поза прокруткою),
+     тому з клавіатурою (зокрема в ландшафті) лишаються видимими; вміст прокручується. -->
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:fillViewport="false">
+    android:fillViewport="false"
+    android:scrollbars="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,6 +18,7 @@
         android:paddingBottom="8dp">
 
         <TextView
+            android:id="@+id/placeTextTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/place_text_title"
@@ -36,32 +40,5 @@
                 android:inputType="textMultiLine|textCapSentences"
                 android:maxLines="4" />
         </com.google.android.material.textfield.TextInputLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="end|center_vertical"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/placeTextCancel"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
-                android:text="@string/action_cancel" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/placeTextConfirm"
-                style="@style/Widget.Material3.Button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
-                android:text="@string/place_text_add" />
-        </LinearLayout>
     </LinearLayout>
 </ScrollView>
