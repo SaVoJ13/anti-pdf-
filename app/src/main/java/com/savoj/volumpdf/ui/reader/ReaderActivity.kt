@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.RectF
+import android.util.Log
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
@@ -74,6 +75,13 @@ class ReaderActivity : AppCompatActivity() {
             return
         }
 
+        if (savedInstanceState == null) {
+            // Новий запуск читача: копій від попередніх сеансів (зокрема після аварійного завершення) не лишаємо.
+            // Поворот і відновлення після завершення процесу (savedInstanceState != null) копію зберігають.
+            val cache = cacheDir
+            Thread { ViewerCopyCache.purge(cache) }.start()
+        }
+
         documentUri = uri
         documentTitle = intent.getStringExtra(EXTRA_DOCUMENT_TITLE)
             ?: SafUtils.queryDisplayName(this, uri)
@@ -117,7 +125,11 @@ class ReaderActivity : AppCompatActivity() {
             Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
         }
 
-        if (fragment.documentUri == null) {
+        val shown = fragment.documentUri
+        if (shown == null) {
+            fragment.documentUri = uri
+        } else if (ViewerCopyCache.isViewCopy(cacheDir, shown) && !File(shown.path.orEmpty()).exists()) {
+            // Система прибрала кеш, поки застосунок був вивантажений: повертаємося до оригіналу.
             fragment.documentUri = uri
         }
     }
@@ -446,11 +458,44 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Єдине місце оновлення переглядача після збереження (R12): копія результату в cacheDir/view
+     * з унікальним іменем → завантаження через Uri.fromFile → відновлення сторінки/zoom/скролу.
+     * Якщо копія не вдалася, переглядач лишається зі старим вмістом, користувач бачить повідомлення.
+     */
     private fun reloadViewerDocument() {
-        val uri = documentUri ?: return
-        viewerFragment?.let { fragment ->
-            fragment.documentUri = null
-            fragment.documentUri = uri
+        val source = documentUri ?: return
+        val fragment = viewerFragment ?: return
+        // Не записувати «сторінку 0» в Room, поки йде відновлення.
+        viewModel.progressSuppressed = true
+        lifecycleScope.launch {
+            val copy = try {
+                withContext(Dispatchers.IO) {
+                    ViewerCopyCache.copy(cacheDir) { ViewerCopyCache.openSource(contentResolver, source) }
+                }
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                viewModel.progressSuppressed = false
+                val msg = e.localizedMessage ?: getString(R.string.error_title)
+                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+                return@launch
+            }
+            Log.i(TAG, "view copy: ${copy.bytes} bytes in ${copy.elapsedMs} ms (${copy.file.name})")
+            fragment.bridge.reload(Uri.fromFile(copy.file)) {
+                viewModel.progressSuppressed = false
+                // Попередні копії видаляємо лише після того, як нова завантажена (або спроба провалена).
+                lifecycleScope.launch(Dispatchers.IO) {
+                    ViewerCopyCache.purge(cacheDir, keep = copy.file)
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            // Переглядач закривається назавжди: поточна копія більше не потрібна.
+            Thread { ViewerCopyCache.purge(cacheDir) }.start()
         }
     }
 
@@ -609,6 +654,7 @@ class ReaderActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_DOCUMENT_TITLE = "extra_document_title"
+        private const val TAG = "ReaderActivity"
         private const val TAG_PDF_VIEWER = "tag_pdf_viewer_fragment"
         private const val KEY_SAVED_URI = "key_saved_reader_uri"
         private const val KEY_DRAWING_MODE = "key_drawing_mode_active"
