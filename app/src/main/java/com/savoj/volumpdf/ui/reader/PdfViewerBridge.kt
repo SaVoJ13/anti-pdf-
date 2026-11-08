@@ -279,8 +279,19 @@ class VolumPdfViewerFragment : PdfViewerFragment() {
     val currentPageIndex: Int
         get() = bridge.viewport?.firstVisiblePage ?: 0
 
+    /**
+     * D6: на content:// бібліотека показує власну кнопку-олівець (toolbox, запуск зовнішнього
+     * редактора анотацій). Єдине місце, де вона показується, — сеттер isToolboxVisible, який
+     * викликає реалізація за замовчуванням цього методу (isToolboxVisible = !enterImmersive).
+     * Тому не викликаємо super і тримаємо toolbox прихованим.
+     */
+    override fun onRequestImmersiveMode(enterImmersive: Boolean) {
+        isToolboxVisible = false
+    }
+
     override fun onLoadDocumentSuccess(document: PdfDocument) {
         super.onLoadDocumentSuccess(document)
+        isToolboxVisible = false
         onDocumentLoadedListener?.invoke(document.pageCount)
         bridge.onDocumentLoaded()
     }
