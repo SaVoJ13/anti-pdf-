@@ -1,5 +1,6 @@
 package com.savoj.volumpdf.ui.reader
 
+import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -7,19 +8,31 @@ import java.io.DataOutputStream
 import java.io.File
 import java.security.MessageDigest
 
-/** Бінарний формат незбережених об'єктів (DataOutputStream; перший байт — версія). Без Android і без бібліотек. */
+/**
+ * Бінарний формат незбереженого (DataOutputStream; перший байт — версія). Без Android і без бібліотек.
+ * Версія 1 (етап 3c): лише об'єкти. Версія 2 (етап 3d): після об'єктів — розділ значень полів форми
+ * (кількість; для кожного: fullyQualifiedName, тип 0 = String / 1 = Boolean, значення). Версію 1 читаємо без форм.
+ */
 object PendingCodec {
-    const val VERSION: Int = 1
+    const val VERSION: Int = 2
+    const val VERSION_OBJECTS_ONLY: Int = 1
+    private const val MAX_FORM_UPDATES = 100_000
+    private const val TYPE_STRING = 0
+    private const val TYPE_BOOLEAN = 1
     private const val MAX_ITEMS = 100_000
     private const val MAX_FLOATS = 8_000_000
     private const val MAX_TEXT_BYTES = 4_000_000
 
-    class Decoded(val documentKey: String, val items: List<PendingMarkup>)
+    class Decoded(val documentKey: String, val items: List<PendingMarkup>, val forms: List<FormFieldUpdate> = emptyList())
 
-    fun encode(documentKey: String, items: List<PendingMarkup>): ByteArray {
+    fun encode(documentKey: String, items: List<PendingMarkup>, forms: List<FormFieldUpdate> = emptyList()): ByteArray =
+        encodeVersion(VERSION, documentKey, items, forms)
+
+    /** Лише для тестів сумісності: запис у форматі заданої версії (для 1 розділ форм не пишеться). */
+    internal fun encodeVersion(version: Int, documentKey: String, items: List<PendingMarkup>, forms: List<FormFieldUpdate>): ByteArray {
         val bytes = ByteArrayOutputStream()
         DataOutputStream(bytes).use { out ->
-            out.writeByte(VERSION)
+            out.writeByte(version)
             writeString(out, documentKey)
             out.writeInt(items.size)
             for (p in items) {
@@ -38,6 +51,16 @@ object PendingCodec {
                     for (v in xy) out.writeFloat(v)
                 }
             }
+            if (version >= 2) {
+                out.writeInt(forms.size)
+                for (f in forms) {
+                    writeString(out, f.fullyQualifiedName)
+                    when (val v = f.value) {
+                        is Boolean -> { out.writeByte(TYPE_BOOLEAN); out.writeBoolean(v) }
+                        else -> { out.writeByte(TYPE_STRING); writeString(out, v.toString()) }
+                    }
+                }
+            }
         }
         return bytes.toByteArray()
     }
@@ -45,7 +68,8 @@ object PendingCodec {
     /** null — невідома версія, пошкоджені чи обрізані дані (такий файл ігнорується, а не валить застосунок). */
     fun decode(data: ByteArray): Decoded? = try {
         DataInputStream(ByteArrayInputStream(data)).use { inp ->
-            if (inp.readUnsignedByte() != VERSION) return null
+            val version = inp.readUnsignedByte()
+            if (version != VERSION && version != VERSION_OBJECTS_ONLY) return null
             val key = readString(inp)
             val count = inp.readInt()
             if (count < 0 || count > MAX_ITEMS) return null
@@ -68,8 +92,22 @@ object PendingCodec {
                 }
                 items += PendingMarkup(id, tool, page, x, y, text, size, color, ink, aspect)
             }
+            val forms = ArrayList<FormFieldUpdate>()
+            if (version >= 2) {
+                val n = inp.readInt()
+                if (n < 0 || n > MAX_FORM_UPDATES) return null
+                repeat(n) {
+                    val name = readString(inp)
+                    val value: Any = when (inp.readUnsignedByte()) {
+                        TYPE_STRING -> readString(inp)
+                        TYPE_BOOLEAN -> inp.readBoolean()
+                        else -> return null
+                    }
+                    forms += FormFieldUpdate(name, value)
+                }
+            }
             if (inp.read() != -1) return null // зайві байти: файл не наш
-            Decoded(key, items)
+            Decoded(key, items, forms)
         }
     } catch (_: Exception) {
         null
@@ -106,8 +144,17 @@ class PendingStore(private val root: File) {
      * Зберігає список. Порожній список = видалення запису. Для кожного підпису без PNG викликається [writeImage]
      * (файл для запису); зайві PNG видаляються.
      */
-    fun save(documentKey: String, items: List<PendingMarkup>, writeImage: (itemId: String, target: File) -> Unit) {
-        if (items.isEmpty()) {
+    fun save(documentKey: String, items: List<PendingMarkup>, writeImage: (itemId: String, target: File) -> Unit) =
+        save(documentKey, items, emptyList(), writeImage)
+
+    /** Те саме з незбереженими значеннями полів форми [forms]. Порожні об'єкти ТА форми = видалення запису. */
+    fun save(
+        documentKey: String,
+        items: List<PendingMarkup>,
+        forms: List<FormFieldUpdate>,
+        writeImage: (itemId: String, target: File) -> Unit
+    ) {
+        if (items.isEmpty() && forms.isEmpty()) {
             clear(documentKey)
             return
         }
@@ -128,7 +175,7 @@ class PendingStore(private val root: File) {
             }
         }
         val tmp = File(dir, STATE_NAME + ".tmp")
-        tmp.writeBytes(PendingCodec.encode(documentKey, items))
+        tmp.writeBytes(PendingCodec.encode(documentKey, items, forms))
         val target = stateFile(documentKey)
         if (!tmp.renameTo(target)) {
             tmp.copyTo(target, overwrite = true)
@@ -140,11 +187,14 @@ class PendingStore(private val root: File) {
     }
 
     /** null — запису немає, або він пошкоджений, або належить іншому документові (колізія хеша). */
-    fun load(documentKey: String): List<PendingMarkup>? {
+    fun load(documentKey: String): List<PendingMarkup>? = loadState(documentKey)?.items
+
+    /** Об'єкти й значення форм. Невідома/пошкоджена версія безпечно відкидається (null), без падінь. */
+    fun loadState(documentKey: String): PendingCodec.Decoded? {
         val f = stateFile(documentKey)
         if (!f.isFile) return null
         val decoded = try { PendingCodec.decode(f.readBytes()) } catch (_: Exception) { null } ?: return null
-        return if (decoded.documentKey == documentKey) decoded.items else null
+        return if (decoded.documentKey == documentKey) decoded else null
     }
 
     fun clear(documentKey: String) {

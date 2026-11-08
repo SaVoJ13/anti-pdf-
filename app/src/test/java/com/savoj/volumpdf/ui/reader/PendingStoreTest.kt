@@ -1,5 +1,6 @@
 package com.savoj.volumpdf.ui.reader
 
+import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -100,5 +101,75 @@ class PendingStoreTest {
         assertEquals(h, PendingStore.hash("content://com.android.providers.media.documents/document/document%3A1"))
         assertTrue(h.matches(Regex("[0-9a-f]{32}")))
         assertTrue(h != PendingStore.hash("file:///a.pdf"))
+    }
+
+    private val forms = listOf(
+        FormFieldUpdate("applicant.імʼя", "Іван\nПетренко"),
+        FormFieldUpdate("agree", true),
+        FormFieldUpdate("country", ""),
+        FormFieldUpdate("off", false)
+    )
+
+    @Test
+    fun codecRoundTripKeepsFormSectionOrderAndTypes() {
+        val bytes = PendingCodec.encode("k", sample(), forms)
+        assertEquals(2, bytes[0].toInt())
+        val back = PendingCodec.decode(bytes)!!
+        assertEquals(sample(), back.items)
+        assertEquals(forms, back.forms)
+        assertTrue(back.forms[1].value is Boolean && back.forms[0].value is String && back.forms[2].value is String)
+        // лише форми, без об'єктів
+        val onlyForms = PendingCodec.decode(PendingCodec.encode("k", emptyList(), forms))!!
+        assertTrue(onlyForms.items.isEmpty())
+        assertEquals(forms, onlyForms.forms)
+    }
+
+    @Test
+    fun oldVersion1FileIsReadWithoutForms() {
+        val v1 = PendingCodec.encodeVersion(1, "k", sample(), emptyList())
+        assertEquals(1, v1[0].toInt())
+        val back = PendingCodec.decode(v1)!!
+        assertEquals(sample(), back.items)
+        assertTrue(back.forms.isEmpty())
+    }
+
+    @Test
+    fun formSectionRejectsTruncationUnknownTypeAndTrailingBytes() {
+        val good = PendingCodec.encode("k", sample(), forms)
+        assertNull(PendingCodec.decode(good.copyOf(good.size - 2)))
+        assertNull(PendingCodec.decode(good + byteArrayOf(0)))
+        // v1-файл із «хвостом» розділу форм — не наш
+        assertNull(PendingCodec.decode(PendingCodec.encodeVersion(1, "k", sample(), emptyList()) + byteArrayOf(0, 0, 0, 0)))
+    }
+
+    @Test
+    fun storeKeepsFormsAloneAndClearsWhenBothEmpty() {
+        val store = PendingStore(File(tmp.root, "pending"))
+        store.save("doc", emptyList(), forms) { _, _ -> }
+        val st = store.loadState("doc")!!
+        assertEquals(forms, st.forms)
+        assertTrue(st.items.isEmpty())
+        store.save("doc", sample(), forms) { _, f -> f.writeBytes(byteArrayOf(1)) }
+        assertEquals(forms, store.loadState("doc")!!.forms)
+        assertEquals(sample(), store.load("doc"))
+        store.save("doc", emptyList(), emptyList()) { _, _ -> }
+        assertFalse(store.dirFor("doc").exists())
+        assertNull(store.loadState("doc"))
+    }
+
+    @Test
+    fun oldFileOnDiskLoadsAndFormsOnlyRecordIsPurgedWhenOld() {
+        val store = PendingStore(File(tmp.root, "pending"))
+        val dir = store.dirFor("old1").also { it.mkdirs() }
+        File(dir, PendingStore.STATE_NAME).writeBytes(PendingCodec.encodeVersion(1, "old1", sample(), emptyList()))
+        assertEquals(sample(), store.load("old1"))
+        store.save("f", emptyList(), forms) { _, _ -> }
+        val now = System.currentTimeMillis()
+        val old = now - 8L * 24 * 60 * 60 * 1000
+        store.dirFor("f").listFiles()!!.forEach { it.setLastModified(old) }
+        store.dirFor("f").setLastModified(old)
+        assertEquals(1, store.purgeOlderThan(now, PendingStore.MAX_AGE_MS))
+        assertNull(store.loadState("f"))
+        assertNotNull(store.load("old1"))
     }
 }
