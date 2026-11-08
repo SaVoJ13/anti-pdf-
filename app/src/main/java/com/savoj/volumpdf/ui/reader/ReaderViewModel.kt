@@ -74,7 +74,54 @@ class ReaderViewModel(
         }
     }
 
+    // --- режим «Поставити»: незбережені об'єкти й вибір інструмента (переживають процес) ----------
+
+    private val _pending = MutableStateFlow(
+        PlaceMarkupLogic.deserializeAll(savedStateHandle.get<ArrayList<String>>(KEY_PENDING))
+    )
+    val pending: StateFlow<List<PendingMarkup>> = _pending.asStateFlow()
+
+    fun addPending(item: PendingMarkup) = setPending(_pending.value + item)
+
+    fun clearPending() = setPending(emptyList())
+
+    private fun setPending(list: List<PendingMarkup>) {
+        _pending.value = list
+        savedStateHandle[KEY_PENDING] = PlaceMarkupLogic.serializeAll(list)
+    }
+
+    var placeModeActive: Boolean
+        get() = savedStateHandle.get<Boolean>(KEY_PLACE_MODE) ?: false
+        set(value) { savedStateHandle[KEY_PLACE_MODE] = value }
+
+    var placeTool: PlaceTool
+        get() = savedStateHandle.get<String>(KEY_TOOL)
+            ?.let { name -> PlaceTool.values().firstOrNull { it.name == name } } ?: PlaceTool.CHECK
+        set(value) { savedStateHandle[KEY_TOOL] = value.name }
+
+    var placeColor: Int
+        get() = savedStateHandle.get<Int>(KEY_COLOR) ?: DEFAULT_PLACE_COLOR
+        set(value) { savedStateHandle[KEY_COLOR] = value }
+
+    /** Розмір окремо для ✓/✗ і для тексту. */
+    fun placeSize(tool: PlaceTool): Float {
+        val key = if (tool == PlaceTool.TEXT) KEY_TEXT_SIZE else KEY_MARK_SIZE
+        return PlaceMarkupLogic.clampSize(tool, savedStateHandle.get<Float>(key) ?: PlaceMarkupLogic.defaultSize(tool))
+    }
+
+    fun setPlaceSize(tool: PlaceTool, value: Float) {
+        val key = if (tool == PlaceTool.TEXT) KEY_TEXT_SIZE else KEY_MARK_SIZE
+        savedStateHandle[key] = PlaceMarkupLogic.clampSize(tool, value)
+    }
+
     companion object {
         private const val KEY_URI = "saved_document_uri"
+        private const val KEY_PENDING = "place_pending"
+        private const val KEY_PLACE_MODE = "place_mode"
+        private const val KEY_TOOL = "place_tool"
+        private const val KEY_COLOR = "place_color"
+        private const val KEY_TEXT_SIZE = "place_text_size"
+        private const val KEY_MARK_SIZE = "place_mark_size"
+        const val DEFAULT_PLACE_COLOR = 0xFFD32F2F.toInt()
     }
 }

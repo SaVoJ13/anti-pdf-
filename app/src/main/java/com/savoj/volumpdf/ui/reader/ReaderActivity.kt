@@ -9,7 +9,12 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.content.res.Configuration
 import android.view.View
+import android.view.WindowManager
+import android.widget.FrameLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -22,13 +27,17 @@ import com.savoj.volumpdf.R
 import com.savoj.volumpdf.core.pdf.AnnotationEngine
 import com.savoj.volumpdf.core.pdf.FormEngine
 import com.savoj.volumpdf.core.pdf.PdfBoxAnnotationEngine
+import com.savoj.volumpdf.core.pdf.MarkupEngine
+import com.savoj.volumpdf.core.pdf.MarkupLayout
 import com.savoj.volumpdf.core.pdf.PdfBoxFormEngine
+import com.savoj.volumpdf.core.pdf.PdfBoxMarkupEngine
 import com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine
 import com.savoj.volumpdf.core.pdf.model.FormField
-import com.savoj.volumpdf.core.pdf.model.FreeTextData
+import com.savoj.volumpdf.core.pdf.model.PageMarkup
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.databinding.ActivityReaderBinding
+import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
 import com.savoj.volumpdf.util.SafUtils
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import kotlinx.coroutines.CancellationException
@@ -38,6 +47,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
+import java.util.UUID
 
 class ReaderActivity : AppCompatActivity() {
 
@@ -51,6 +61,11 @@ class ReaderActivity : AppCompatActivity() {
     private val annotationEngine: AnnotationEngine = PdfBoxAnnotationEngine()
     private val formEngine: FormEngine = PdfBoxFormEngine()
     private var detectedFormFields: List<FormField> = emptyList()
+
+    private val markupEngine: MarkupEngine =
+        PdfBoxMarkupEngine({ applicationContext.assets.open(MarkupLayout.FONT_ASSET_PATH) })
+    private var enteringPlaceMode = false
+    private var savingPlace = false
 
     private var isDrawingMode = false
 
@@ -93,6 +108,7 @@ class ReaderActivity : AppCompatActivity() {
         setupDrawingToolbar()
         setupBottomActionBar()
         setupBackNavigation()
+        setupPlaceMode()
         observeViewModel()
 
         checkForFormFields(uri)
@@ -139,7 +155,7 @@ class ReaderActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.action_forms -> {
                     if (isDrawingMode) toggleDrawingMode(false)
-                    openFillFormDialog()
+                    leavePlaceThen { openFillFormDialog() }
                     false
                 }
                 R.id.action_draw -> {
@@ -151,9 +167,9 @@ class ReaderActivity : AppCompatActivity() {
                     openSignatureDialog()
                     false
                 }
-                R.id.action_add_text -> {
+                R.id.action_place -> {
                     if (isDrawingMode) toggleDrawingMode(false)
-                    openAddTextDialog()
+                    enterPlaceMode()
                     false
                 }
                 else -> false
@@ -273,6 +289,8 @@ class ReaderActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 if (isDrawingMode) {
                     toggleDrawingMode(false)
+                } else if (viewModel.placeModeActive) {
+                    leavePlaceThen { }
                 } else {
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
@@ -400,62 +418,300 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    private fun openAddTextDialog() {
-        val dialog = AddTextBottomSheetDialogFragment.newInstance()
-        dialog.onTextConfirmed = { text, fontSize, color ->
-            insertTextToDocument(text, fontSize, color)
-        }
-        dialog.show(supportFragmentManager, AddTextBottomSheetDialogFragment.TAG)
+    // ---------------------------------------------------------------------------------------------
+    // Режим «Поставити» (етап 3a): ✓, ✗, текст; незбережене живе у ViewModel; одне «Зберегти».
+    // ---------------------------------------------------------------------------------------------
+
+    private val toolButtons by lazy {
+        mapOf(
+            PlaceTool.CHECK to R.id.btnToolCheck,
+            PlaceTool.CROSS to R.id.btnToolCross,
+            PlaceTool.TEXT to R.id.btnToolText
+        )
     }
 
-    private fun insertTextToDocument(text: String, fontSize: Float, color: Int) {
-        val uri = documentUri ?: return
-        val pageIndex = viewerFragment?.currentPageIndex ?: 0
+    private val colorButtons by lazy {
+        mapOf(
+            R.id.btnPlaceColorRed to COLOR_RED,
+            R.id.btnPlaceColorBlack to COLOR_BLACK,
+            R.id.btnPlaceColorBlue to COLOR_BLUE,
+            R.id.btnPlaceColorGreen to COLOR_GREEN,
+            R.id.btnPlaceColorYellow to COLOR_YELLOW
+        )
+    }
 
-        showLoadingOverlay(getString(R.string.saving_annotations))
+    private fun setupPlaceMode() {
+        val fragment = viewerFragment
+        binding.markupOverlay.bridge = fragment?.bridge
+
+        binding.placeToolGroup.check(toolButtons.getValue(viewModel.placeTool))
+        val colorId = colorButtons.entries.firstOrNull { it.value == viewModel.placeColor }?.key ?: R.id.btnPlaceColorRed
+        binding.placeColorGroup.check(colorId)
+        updateSizeLabel()
+        applyPlacePanelOrientation()
+        applyPlacePanelInsets()
+
+        binding.placeToolGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                toolButtons.entries.firstOrNull { it.value == checkedId }?.key?.let { viewModel.placeTool = it }
+                updateSizeLabel()
+            }
+        }
+        binding.placeColorGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) colorButtons[checkedId]?.let { viewModel.placeColor = it }
+        }
+        binding.btnSizeMinus.setOnClickListener { changePlaceSize(-1) }
+        binding.btnSizePlus.setOnClickListener { changePlaceSize(+1) }
+        binding.btnPlaceDone.setOnClickListener { leavePlaceThen { } }
+        binding.btnPlaceSave.setOnClickListener { savePending() }
 
         lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.pending.collect { list ->
+                    binding.markupOverlay.items = list
+                    binding.btnPlaceSave.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
+                }
+            }
+        }
+
+        // Відновлення після завершення процесу: режим і незбережене повертаються з ViewModel.
+        if (viewModel.placeModeActive || viewModel.pending.value.isNotEmpty()) {
+            enterPlaceMode()
+        }
+    }
+
+    private fun changePlaceSize(direction: Int) {
+        val tool = viewModel.placeTool
+        viewModel.setPlaceSize(tool, PlaceMarkupLogic.stepSize(tool, viewModel.placeSize(tool), direction))
+        updateSizeLabel()
+    }
+
+    private fun updateSizeLabel() {
+        val size = viewModel.placeSize(viewModel.placeTool)
+        binding.tvPlaceSize.text = getString(R.string.place_size_format, size.toInt())
+    }
+
+    /** Перевірка прав → показ панелі й увімкнення тапу в мості. Для захищених/заборонених — лише пояснення. */
+    private fun enterPlaceMode() {
+        if (enteringPlaceMode) return
+        if (viewModel.placeModeActive && binding.placePanelCard.visibility == View.VISIBLE) return
+        val uri = documentUri ?: return
+        enteringPlaceMode = true
+        lifecycleScope.launch {
             try {
-                val (pageWidthPt, pageHeightPt) = getPageDimensions(uri, pageIndex)
+                val editability = withContext(Dispatchers.IO) {
+                    try {
+                        markupEngine.checkEditability(applicationContext, uri, null)
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        null
+                    }
+                }
+                val gate = PlaceMarkupLogic.gate(editability?.isEncrypted, editability?.canMarkup)
+                if (gate != PlaceMarkupLogic.Gate.ALLOWED) {
+                    viewModel.clearPending()
+                    viewModel.placeModeActive = false
+                    showMessage(gateMessage(gate), long = true)
+                    return@launch
+                }
+                showPlaceUi()
+            } finally {
+                enteringPlaceMode = false
+            }
+        }
+    }
 
-                val textData = FreeTextData(
-                    text = text,
-                    x = 54f,
-                    y = 72f,
-                    fontSize = fontSize,
-                    color = color
+    private fun gateMessage(gate: PlaceMarkupLogic.Gate): String = getString(
+        when (gate) {
+            PlaceMarkupLogic.Gate.ENCRYPTED -> R.string.place_blocked_encrypted
+            PlaceMarkupLogic.Gate.NO_MARKUP_RIGHTS -> R.string.place_blocked_rights
+            else -> R.string.place_blocked_unreadable
+        }
+    )
+
+    private fun showPlaceUi() {
+        viewModel.placeModeActive = true
+        binding.placePanelCard.visibility = View.VISIBLE
+        binding.bottomActionBar.visibility = View.GONE
+        ViewCompat.requestApplyInsets(binding.placePanelCard)
+        viewerFragment?.bridge?.setPlaceMode(true) { point -> onPageTapped(point) }
+    }
+
+    private fun hidePlaceUi() {
+        viewModel.placeModeActive = false
+        viewerFragment?.bridge?.setPlaceMode(false)
+        binding.placePanelCard.visibility = View.GONE
+        if (!isDrawingMode) binding.bottomActionBar.visibility = View.VISIBLE
+    }
+
+    /**
+     * Виходить із режиму й виконує [action]. Якщо є незбережене — діалог «Зберегти / Відкинути / Скасувати».
+     * Якщо режим не активний — просто [action].
+     */
+    private fun leavePlaceThen(action: () -> Unit) {
+        if (!viewModel.placeModeActive) {
+            action()
+            return
+        }
+        if (viewModel.pending.value.isEmpty()) {
+            hidePlaceUi()
+            action()
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.place_unsaved_title)
+            .setMessage(R.string.place_unsaved_message)
+            .setPositiveButton(R.string.action_save) { _, _ ->
+                savePending(onSuccess = {
+                    hidePlaceUi()
+                    action()
+                })
+            }
+            .setNegativeButton(R.string.place_discard) { _, _ ->
+                viewModel.clearPending()
+                hidePlaceUi()
+                action()
+            }
+            .setNeutralButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    private fun onPageTapped(point: PageViewPoint) {
+        if (savingPlace || viewerFragment?.bridge?.isRestoring == true) return
+        when (val tool = viewModel.placeTool) {
+            PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.addPending(
+                PlaceMarkupLogic.markFromTap(
+                    UUID.randomUUID().toString(), tool, point.pageIndex, point.x, point.y,
+                    viewModel.placeSize(tool), viewModel.placeColor
                 )
+            )
+            PlaceTool.TEXT -> showTextInputDialog(point)
+        }
+    }
 
-                val result = annotationEngine.addFreeText(
+    private fun showTextInputDialog(point: PageViewPoint) {
+        val dialogBinding = DialogPlaceTextBinding.inflate(layoutInflater)
+        val dialog = MaterialAlertDialogBuilder(this).setView(dialogBinding.root).create()
+        dialog.window?.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+        )
+        dialogBinding.placeTextCancel.setOnClickListener { dialog.dismiss() }
+        dialogBinding.placeTextConfirm.setOnClickListener {
+            val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
+            val unsupported = try {
+                markupEngine.findUnsupportedChars(raw)
+            } catch (e: Throwable) {
+                dialogBinding.placeTextInputLayout.error = getString(R.string.error_title)
+                return@setOnClickListener
+            }
+            val check = PlaceMarkupLogic.textFromTap(
+                UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
+                raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, unsupported
+            )
+            when (check) {
+                is TextCheck.Ok -> {
+                    viewModel.addPending(check.markup)
+                    dialog.dismiss()
+                }
+                TextCheck.Empty -> dialogBinding.placeTextInputLayout.error = getString(R.string.text_error_empty)
+                is TextCheck.Unsupported ->
+                    dialogBinding.placeTextInputLayout.error = getString(R.string.place_text_unsupported, check.chars)
+            }
+        }
+        dialog.show()
+    }
+
+    /**
+     * Єдине збереження: checkEditability → applyEdits (той самий URI) → reload. Після успіху незбережене
+     * очищується; при Error лишається. Реклама в читачі не показується (R4).
+     */
+    private fun savePending(onSuccess: () -> Unit = {}) {
+        if (savingPlace) return
+        val uri = documentUri ?: return
+        val items = viewModel.pending.value
+        if (items.isEmpty()) {
+            onSuccess()
+            return
+        }
+        savingPlace = true
+        showLoadingOverlay(getString(R.string.saving_annotations))
+        lifecycleScope.launch {
+            try {
+                val editability = withContext(Dispatchers.IO) {
+                    try {
+                        markupEngine.checkEditability(applicationContext, uri, null)
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        null
+                    }
+                }
+                val gate = PlaceMarkupLogic.gate(editability?.isEncrypted, editability?.canMarkup)
+                if (gate != PlaceMarkupLogic.Gate.ALLOWED) {
+                    showMessage(gateMessage(gate), long = true)
+                    return@launch
+                }
+                val markups: List<PageMarkup> = items.map(PlaceMarkupLogic::toPageMarkup)
+                when (val result = markupEngine.applyEdits(
                     context = applicationContext,
                     sourceUri = uri,
-                    pageIndex = pageIndex,
-                    textData = textData,
-                    pageWidthPt = pageWidthPt,
-                    pageHeightPt = pageHeightPt,
-                    outputUri = uri
-                )
-
-                hideLoadingOverlay()
-
-                when (result) {
+                    markups = markups,
+                    outputUri = uri,
+                    password = null
+                )) {
                     is PdfOperationResult.Success -> {
                         reloadViewerDocument()
+                        viewModel.clearPending()
                         checkForFormFields(uri)
-                        Snackbar.make(binding.root, R.string.text_success, Snackbar.LENGTH_SHORT).show()
+                        showMessage(getString(R.string.place_saved), long = false)
+                        onSuccess()
                     }
-                    is PdfOperationResult.Error -> {
-                        Snackbar.make(binding.root, result.userMessage, Snackbar.LENGTH_LONG).show()
-                    }
+                    is PdfOperationResult.Error -> showMessage(result.userMessage, long = true)
                     is PdfOperationResult.Progress -> Unit
                 }
             } catch (e: Throwable) {
                 if (e is CancellationException) throw e
+                showMessage(e.localizedMessage ?: getString(R.string.error_title), long = true)
+            } finally {
                 hideLoadingOverlay()
-                val msg = e.localizedMessage ?: getString(R.string.error_title)
-                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+                savingPlace = false
             }
         }
+    }
+
+    private fun showMessage(text: String, long: Boolean) {
+        val snackbar = Snackbar.make(binding.root, text, if (long) Snackbar.LENGTH_LONG else Snackbar.LENGTH_SHORT)
+        if (binding.placePanelCard.visibility == View.VISIBLE) snackbar.setAnchorView(binding.placePanelCard)
+        snackbar.show()
+    }
+
+    /** Ландшафт: усі елементи панелі в один рядок (панель прокручується, якщо не вміщується). */
+    private fun applyPlacePanelOrientation() {
+        val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        binding.placePanelContent.orientation =
+            if (landscape) android.widget.LinearLayout.HORIZONTAL else android.widget.LinearLayout.VERTICAL
+        val lp = binding.placeRowActions.layoutParams as android.widget.LinearLayout.LayoutParams
+        val gap = (6 * resources.displayMetrics.density).toInt()
+        lp.topMargin = if (landscape) 0 else gap
+        lp.marginStart = if (landscape) gap * 2 else 0
+        binding.placeRowActions.layoutParams = lp
+    }
+
+    /** Панель не заходить під системні панелі (жести й три кнопки) та виріз. */
+    private fun applyPlacePanelInsets() {
+        val card = binding.placePanelCard
+        val base = (12 * resources.displayMetrics.density).toInt()
+        ViewCompat.setOnApplyWindowInsetsListener(card) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            val lp = v.layoutParams as FrameLayout.LayoutParams
+            lp.setMargins(base + bars.left, base, base + bars.right, base + bars.bottom)
+            v.layoutParams = lp
+            insets
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyPlacePanelOrientation()
     }
 
     /**
@@ -584,23 +840,25 @@ class ReaderActivity : AppCompatActivity() {
             android.R.id.home -> {
                 if (isDrawingMode) {
                     toggleDrawingMode(false)
+                } else if (viewModel.placeModeActive) {
+                    leavePlaceThen { finish() }
                 } else {
                     finish()
                 }
                 true
             }
             R.id.action_draw -> {
-                toggleDrawingMode()
+                leavePlaceThen { toggleDrawingMode() }
                 true
             }
             R.id.action_signature -> {
                 if (isDrawingMode) toggleDrawingMode(false)
-                openSignatureDialog()
+                leavePlaceThen { openSignatureDialog() }
                 true
             }
-            R.id.action_add_text -> {
+            R.id.action_place -> {
                 if (isDrawingMode) toggleDrawingMode(false)
-                openAddTextDialog()
+                enterPlaceMode()
                 true
             }
             R.id.action_toggle_favorite -> {

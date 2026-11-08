@@ -13,6 +13,7 @@ import android.graphics.PointF
 import android.graphics.RectF
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.View
 import androidx.pdf.ExperimentalPdfApi
 import androidx.pdf.PdfDocument
 import androidx.pdf.PdfPoint
@@ -65,6 +66,23 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
     /** Точка сторінки → піксель у PdfView (null, якщо переглядача ще немає). */
     fun pageToView(point: PageViewPoint): PointF? =
         pdfView?.pdfToViewPoint(PdfPoint(point.pageIndex, point.x, point.y))
+
+    /** Масштаб: пікселів на pt (1 px = 1 pt при zoom = 1); 1 — якщо переглядача ще немає. */
+    val zoom: Float
+        get() = pdfView?.zoom ?: 1f
+
+    /**
+     * Зсув початку PdfView відносно [target] у пікселях (x, y): додається до [pageToView], щоб
+     * малювати в системі координат іншого в'ю (оверлей). null, якщо переглядача ще немає.
+     */
+    fun offsetTo(target: View): IntArray? {
+        val v = pdfView ?: return null
+        val a = IntArray(2)
+        val b = IntArray(2)
+        v.getLocationOnScreen(a)
+        target.getLocationOnScreen(b)
+        return intArrayOf(a[0] - b[0], a[1] - b[1])
+    }
 
     /** Піксель PdfView → точка сторінки; pageIndex береться з PdfPoint.pageNum, не з firstVisiblePage. */
     fun viewToPage(x: Float, y: Float): PageViewPoint? =

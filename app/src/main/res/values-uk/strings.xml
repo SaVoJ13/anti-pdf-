@@ -104,7 +104,6 @@
     <!-- Annotations & Editing -->
     <string name="action_draw">Малювати</string>
     <string name="action_signature">Підпис</string>
-    <string name="action_add_text">Додати текст</string>
     <string name="action_undo">Скасувати</string>
     <string name="action_clear_all">Очистити все</string>
     <string name="action_save">Зберегти</string>
@@ -124,13 +123,8 @@
     <string name="signature_insert">Вставити</string>
     <string name="signature_error_empty">Будь ласка, розпишіться перед вставкою</string>
     <string name="signature_success">Підпис успішно додано</string>
-    <string name="text_dialog_title">Додати текст</string>
     <string name="text_input_hint">Введіть текст анотації</string>
-    <string name="text_size_label">Розмір шрифту:</string>
-    <string name="text_size_format">Розмір шрифту: %1$d pt</string>
-    <string name="text_insert">Додати на документ</string>
     <string name="text_error_empty">Текст не може бути порожнім</string>
-    <string name="text_success">Текст успішно додано</string>
     <string name="drawing_success">Малюнок успішно збережено</string>
 
     <!-- Interactive Forms (AcroForm) -->
@@ -142,4 +136,24 @@
     <string name="form_saved_success">Форму успішно збережено</string>
     <string name="form_read_only_badge">Лише читання</string>
     <string name="form_select_option">Оберіть варіант</string>
+
+    <!-- Place on page (stage 3a) -->
+    <string name="action_place">Поставити</string>
+    <string name="place_tool_check">Галочка</string>
+    <string name="place_tool_cross">Хрестик</string>
+    <string name="place_tool_text">Текст</string>
+    <string name="place_size_decrease">Менше</string>
+    <string name="place_size_increase">Більше</string>
+    <string name="place_size_format">%1$d pt</string>
+    <string name="place_done">Готово</string>
+    <string name="place_text_title">Додати текст</string>
+    <string name="place_text_add">Додати</string>
+    <string name="place_text_unsupported">Ці символи не підтримуються: %1$s</string>
+    <string name="place_saved">Збережено в документ</string>
+    <string name="place_blocked_encrypted">Документи, захищені паролем, поки не можна редагувати — це з’явиться пізніше.</string>
+    <string name="place_blocked_rights">Автор документа заборонив зміни.</string>
+    <string name="place_blocked_unreadable">Не вдалося відкрити документ для редагування.</string>
+    <string name="place_unsaved_title">Незбережені зміни</string>
+    <string name="place_unsaved_message">Зберегти додане на сторінках?</string>
+    <string name="place_discard">Відкинути</string>
 </resources>

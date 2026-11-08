@@ -104,7 +104,6 @@
     <!-- Annotations & Editing -->
     <string name="action_draw">Zeichnen</string>
     <string name="action_signature">Unterschrift</string>
-    <string name="action_add_text">Text hinzufügen</string>
     <string name="action_undo">Rückgängig</string>
     <string name="action_clear_all">Alles löschen</string>
     <string name="action_save">Speichern</string>
@@ -124,13 +123,8 @@
     <string name="signature_insert">Einfügen</string>
     <string name="signature_error_empty">Bitte unterschreiben Sie vor dem Einfügen</string>
     <string name="signature_success">Unterschrift erfolgreich hinzugefügt</string>
-    <string name="text_dialog_title">Text hinzufügen</string>
     <string name="text_input_hint">Anmerkungstext eingeben</string>
-    <string name="text_size_label">Schriftgröße:</string>
-    <string name="text_size_format">Schriftgröße: %1$d pt</string>
-    <string name="text_insert">Zum Dokument hinzufügen</string>
     <string name="text_error_empty">Text darf nicht leer sein</string>
-    <string name="text_success">Text erfolgreich hinzugefügt</string>
     <string name="drawing_success">Zeichnung erfolgreich gespeichert</string>
 
     <!-- Interactive Forms (AcroForm) -->
@@ -142,4 +136,24 @@
     <string name="form_saved_success">Formular erfolgreich gespeichert</string>
     <string name="form_read_only_badge">Schreibgeschützt</string>
     <string name="form_select_option">Option auswählen</string>
+
+    <!-- Place on page (stage 3a) -->
+    <string name="action_place">Setzen</string>
+    <string name="place_tool_check">Häkchen</string>
+    <string name="place_tool_cross">Kreuz</string>
+    <string name="place_tool_text">Text</string>
+    <string name="place_size_decrease">Kleiner</string>
+    <string name="place_size_increase">Größer</string>
+    <string name="place_size_format">%1$d pt</string>
+    <string name="place_done">Fertig</string>
+    <string name="place_text_title">Text hinzufügen</string>
+    <string name="place_text_add">Hinzufügen</string>
+    <string name="place_text_unsupported">Diese Zeichen werden nicht unterstützt: %1$s</string>
+    <string name="place_saved">Im Dokument gespeichert</string>
+    <string name="place_blocked_encrypted">Passwortgeschützte Dokumente können noch nicht bearbeitet werden – das kommt später.</string>
+    <string name="place_blocked_rights">Der Autor des Dokuments hat Änderungen nicht erlaubt.</string>
+    <string name="place_blocked_unreadable">Das Dokument konnte nicht zur Bearbeitung geöffnet werden.</string>
+    <string name="place_unsaved_title">Nicht gespeicherte Änderungen</string>
+    <string name="place_unsaved_message">Auf den Seiten Platziertes speichern?</string>
+    <string name="place_discard">Verwerfen</string>
 </resources>

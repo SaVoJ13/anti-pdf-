@@ -104,7 +104,6 @@
     <!-- Annotations & Editing -->
     <string name="action_draw">Draw</string>
     <string name="action_signature">Signature</string>
-    <string name="action_add_text">Add Text</string>
     <string name="action_undo">Undo</string>
     <string name="action_clear_all">Clear all</string>
     <string name="action_save">Save</string>
@@ -124,13 +123,8 @@
     <string name="signature_insert">Insert</string>
     <string name="signature_error_empty">Please draw your signature before inserting</string>
     <string name="signature_success">Signature added successfully</string>
-    <string name="text_dialog_title">Add Text</string>
     <string name="text_input_hint">Enter annotation text</string>
-    <string name="text_size_label">Font size:</string>
-    <string name="text_size_format">Font size: %1$d pt</string>
-    <string name="text_insert">Add to document</string>
     <string name="text_error_empty">Text cannot be empty</string>
-    <string name="text_success">Text added successfully</string>
     <string name="drawing_success">Drawing saved successfully</string>
 
     <!-- Interactive Forms (AcroForm) -->
@@ -142,4 +136,24 @@
     <string name="form_saved_success">Form saved successfully</string>
     <string name="form_read_only_badge">Read only</string>
     <string name="form_select_option">Select an option</string>
+
+    <!-- Place on page (stage 3a) -->
+    <string name="action_place">Place</string>
+    <string name="place_tool_check">Checkmark</string>
+    <string name="place_tool_cross">Cross</string>
+    <string name="place_tool_text">Text</string>
+    <string name="place_size_decrease">Smaller</string>
+    <string name="place_size_increase">Larger</string>
+    <string name="place_size_format">%1$d pt</string>
+    <string name="place_done">Done</string>
+    <string name="place_text_title">Add text</string>
+    <string name="place_text_add">Add</string>
+    <string name="place_text_unsupported">These characters are not supported: %1$s</string>
+    <string name="place_saved">Saved to the document</string>
+    <string name="place_blocked_encrypted">Password-protected documents can\'t be edited yet — this will come later.</string>
+    <string name="place_blocked_rights">The document\'s author has not allowed changes.</string>
+    <string name="place_blocked_unreadable">Couldn\'t open the document for editing.</string>
+    <string name="place_unsaved_title">Unsaved changes</string>
+    <string name="place_unsaved_message">Save what you\'ve placed on the pages?</string>
+    <string name="place_discard">Discard</string>
 </resources>
