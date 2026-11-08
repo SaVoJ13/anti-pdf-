@@ -222,7 +222,8 @@ class ReaderActivity : AppCompatActivity() {
         viewModel.placeTool = PlaceTool.SIGNATURE
         if (viewModel.placeModeActive) {
             selectToolButton(PlaceTool.SIGNATURE)
-            showMessage(getString(R.string.place_signature_tap_hint), long = false)
+            dismissSignatureHint()
+            signatureHint = showMessage(getString(R.string.place_signature_tap_hint), long = false, indefinite = true)
         } else {
             enterPlaceMode()
         }
@@ -299,6 +300,7 @@ class ReaderActivity : AppCompatActivity() {
             if (isChecked && !syncingPanel) {
                 val tool = toolButtons.entries.firstOrNull { it.value == checkedId }?.key ?: return@addOnButtonCheckedListener
                 viewModel.placeTool = tool
+                if (tool != PlaceTool.SIGNATURE) dismissSignatureHint()
                 // Поки малюємо, виділення не потрібне: кожен дотик — штрих.
                 if (tool == PlaceTool.INK) viewModel.edit { PlaceEditor.select(it, null) }
                 renderEditor(viewModel.editor.value)
@@ -505,6 +507,7 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun hidePlaceUi() {
+        dismissSignatureHint()
         viewModel.placeModeActive = false
         binding.markupOverlay.editingEnabled = false
         viewModel.clearPending() // виділення й історія скасування не переживають вихід із режиму
@@ -578,6 +581,7 @@ class ReaderActivity : AppCompatActivity() {
             bitmap.width, bitmap.height, PlaceMarkupLogic.DEFAULT_SIGNATURE_WIDTH_PT, page
         ) ?: return
         viewModel.signatureBitmaps[item.id] = bitmap
+        dismissSignatureHint() // підказка зникає за станом: підпис розміщено
         viewModel.armedSignature = null
         viewModel.addPending(item)
         // Далі підпис можна рухати й міняти: «рука» + виділення.
@@ -755,10 +759,18 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    private fun showMessage(text: String, long: Boolean) {
-        val snackbar = Snackbar.make(binding.root, text, if (long) Snackbar.LENGTH_LONG else Snackbar.LENGTH_SHORT)
+    private var signatureHint: Snackbar? = null
+
+    private fun dismissSignatureHint() {
+        signatureHint?.dismiss()
+        signatureHint = null
+    }
+
+    private fun showMessage(text: String, long: Boolean, indefinite: Boolean = false): Snackbar {
+        val snackbar = Snackbar.make(binding.root, text, if (indefinite) Snackbar.LENGTH_INDEFINITE else if (long) Snackbar.LENGTH_LONG else Snackbar.LENGTH_SHORT)
         if (binding.placePanelCard.visibility == View.VISIBLE) snackbar.setAnchorView(binding.placePanelCard)
         snackbar.show()
+        return snackbar
     }
 
     private var lastEdges = SystemEdges.NONE
