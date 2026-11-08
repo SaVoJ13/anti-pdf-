@@ -156,4 +156,10 @@
     <string name="place_unsaved_title">Unsaved changes</string>
     <string name="place_unsaved_message">Save what you\'ve placed on the pages?</string>
     <string name="place_discard">Discard</string>
+    <string name="place_delete">Delete</string>
+    <string name="place_edit_text">Edit text</string>
+    <string name="place_change_to_check">Change to ✓</string>
+    <string name="place_change_to_cross">Change to ✗</string>
+    <string name="place_text_apply">Apply</string>
+    <string name="place_selected_hint">Selected object: move it, or change size and colour below</string>
 </resources>

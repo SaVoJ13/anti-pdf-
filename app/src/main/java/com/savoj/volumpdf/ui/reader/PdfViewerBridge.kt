@@ -46,6 +46,13 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
         get() = pdfView?.let { Viewport(it.zoom, it.scrollX, it.scrollY, it.firstVisiblePage) }
 
     private val viewportListeners = mutableListOf<(Viewport) -> Unit>()
+
+    /** Розміри видимих областей сторінок, pt: pageLocations (px) / zoom. Кеш оновлюється при кожній зміні viewport. */
+    private val pageSizes = SparseArray<PageSizePt>()
+
+    /** Розмір видимої області сторінки в pt; null — сторінка ще не потрапляла у viewport. */
+    fun pageSizePt(pageIndex: Int): PageSizePt? = pageSizes.get(pageIndex)
+
     private val viewportListener = object : PdfView.OnViewportChangedListener {
         override fun onViewportChanged(
             firstVisiblePage: Int,
@@ -53,6 +60,13 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
             pageLocations: SparseArray<RectF>,
             zoomLevel: Float
         ) {
+            // pageLocations переробляються після виклику: копіюємо числа одразу.
+            if (zoomLevel > 0f) {
+                for (i in 0 until pageLocations.size()) {
+                    val r = pageLocations.valueAt(i)
+                    pageSizes.put(pageLocations.keyAt(i), PageSizePt(r.width() / zoomLevel, r.height() / zoomLevel))
+                }
+            }
             val v = viewport ?: return
             viewportListeners.toList().forEach { it(v) }
         }
@@ -174,6 +188,7 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
         pendingTarget = target
         onRestoreFinished = onFinished
         isRestoring = true
+        pageSizes.clear()
         reloadStartedMs = SystemClock.uptimeMillis()
         userTouched = false
         v.alpha = 0f

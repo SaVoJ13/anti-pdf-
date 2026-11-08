@@ -445,9 +445,21 @@ class ReaderActivity : AppCompatActivity() {
         )
     }
 
+    /** true, поки панель синхронізується з виділеним об'єктом програмно (слухачі кнопок мовчать). */
+    private var syncingPanel = false
+
     private fun setupPlaceMode() {
         val fragment = viewerFragment
         binding.markupOverlay.bridge = fragment?.bridge
+        binding.markupOverlay.editListener = object : MarkupOverlayView.EditListener {
+            override fun onItemTapped(id: String) = viewModel.edit { PlaceEditor.select(it, id) }
+
+            override fun onItemMoved(id: String, x: Float, y: Float) {
+                val pageIndex = viewModel.editor.value.items.firstOrNull { it.id == id }?.pageIndex ?: return
+                val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
+                viewModel.edit { PlaceEditor.move(PlaceEditor.select(it, id), id, x, y, page) }
+            }
+        }
 
         binding.placeToolGroup.check(toolButtons.getValue(viewModel.placeTool))
         val colorId = colorButtons.entries.firstOrNull { it.value == viewModel.placeColor }?.key ?: R.id.btnPlaceColorRed
@@ -456,42 +468,94 @@ class ReaderActivity : AppCompatActivity() {
         applyPlacePanelOrientation()
 
         binding.placeToolGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
+            if (isChecked && !syncingPanel) {
                 toolButtons.entries.firstOrNull { it.value == checkedId }?.key?.let { viewModel.placeTool = it }
                 updateSizeLabel()
             }
         }
         binding.placeColorGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) colorButtons[checkedId]?.let { viewModel.placeColor = it }
+            if (!isChecked || syncingPanel) return@addOnButtonCheckedListener
+            val color = colorButtons[checkedId] ?: return@addOnButtonCheckedListener
+            val selectedId = viewModel.editor.value.selectedId
+            if (selectedId != null) viewModel.edit { PlaceEditor.setColor(it, selectedId, color) }
+            else viewModel.placeColor = color
         }
         binding.btnSizeMinus.setOnClickListener { changePlaceSize(-1) }
         binding.btnSizePlus.setOnClickListener { changePlaceSize(+1) }
         binding.btnPlaceDone.setOnClickListener { leavePlaceThen { } }
         binding.btnPlaceSave.setOnClickListener { savePending() }
+        binding.btnPlaceUndo.setOnClickListener { viewModel.edit { PlaceEditor.undo(it) } }
+        binding.btnSelDelete.setOnClickListener {
+            viewModel.editor.value.selectedId?.let { id -> viewModel.edit { PlaceEditor.delete(it, id) } }
+        }
+        binding.btnSelEdit.setOnClickListener { editSelected() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.pending.collect { list ->
-                    binding.markupOverlay.items = list
-                    updatePlaceSaveVisibility(list.isNotEmpty())
-                }
+                viewModel.editor.collect { state -> renderEditor(state) }
             }
         }
 
         // Відновлення після завершення процесу: режим і незбережене повертаються з ViewModel.
-        if (viewModel.placeModeActive || viewModel.pending.value.isNotEmpty()) {
+        if (viewModel.placeModeActive || viewModel.editor.value.items.isNotEmpty()) {
             enterPlaceMode()
         }
     }
 
+    /** Малює стан редактора: оверлей, кнопки «Зберегти»/«Скасувати», панель дій виділеного, значення розміру й кольору. */
+    private fun renderEditor(state: PlaceEditorState) {
+        binding.markupOverlay.items = state.items
+        binding.markupOverlay.selectedId = state.selectedId
+        updatePlaceSaveVisibility(state.items.isNotEmpty())
+        binding.btnPlaceUndo.isEnabled = state.canUndo
+
+        val sel = state.selected
+        binding.selectionBarCard.visibility =
+            if (sel != null && viewModel.placeModeActive) View.VISIBLE else View.GONE
+        if (sel != null) {
+            binding.btnSelEdit.setText(
+                when (sel.tool) {
+                    PlaceTool.TEXT -> R.string.place_edit_text
+                    PlaceTool.CHECK -> R.string.place_change_to_cross
+                    PlaceTool.CROSS -> R.string.place_change_to_check
+                }
+            )
+        }
+        syncingPanel = true
+        try {
+            val color = sel?.color ?: viewModel.placeColor
+            colorButtons.entries.firstOrNull { it.value == color }?.key?.let { binding.placeColorGroup.check(it) }
+            updateSizeLabel()
+        } finally {
+            syncingPanel = false
+        }
+    }
+
+    /** «Змінити»: текст — повторне введення, ✓/✗ — перемикання виду. */
+    private fun editSelected() {
+        val sel = viewModel.editor.value.selected ?: return
+        when (sel.tool) {
+            PlaceTool.TEXT -> showTextDialog(
+                initial = sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply
+            ) { raw -> viewModel.edit { PlaceEditor.setText(it, sel.id, raw) } }
+            PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.edit { PlaceEditor.toggleMarkKind(it, sel.id) }
+        }
+    }
+
     private fun changePlaceSize(direction: Int) {
+        val sel = viewModel.editor.value.selected
+        if (sel != null) {
+            val next = PlaceMarkupLogic.stepSize(sel.tool, sel.sizePt, direction)
+            viewModel.edit { PlaceEditor.setSize(it, sel.id, next) }
+            return
+        }
         val tool = viewModel.placeTool
         viewModel.setPlaceSize(tool, PlaceMarkupLogic.stepSize(tool, viewModel.placeSize(tool), direction))
         updateSizeLabel()
     }
 
     private fun updateSizeLabel() {
-        val size = viewModel.placeSize(viewModel.placeTool)
+        val size = viewModel.editor.value.selected?.sizePt ?: viewModel.placeSize(viewModel.placeTool)
         binding.tvPlaceSize.text = getString(R.string.place_size_format, size.toInt())
     }
 
@@ -539,10 +603,15 @@ class ReaderActivity : AppCompatActivity() {
         binding.placePanelCard.visibility = View.VISIBLE
         binding.bottomActionBar.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(true) { point -> onPageTapped(point) }
+        binding.markupOverlay.editingEnabled = !savingPlace
+        renderEditor(viewModel.editor.value)
     }
 
     private fun hidePlaceUi() {
         viewModel.placeModeActive = false
+        binding.markupOverlay.editingEnabled = false
+        viewModel.clearPending() // виділення й історія скасування не переживають вихід із режиму
+        binding.selectionBarCard.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(false)
         binding.placePanelCard.visibility = View.GONE
         if (!isDrawingMode) binding.bottomActionBar.visibility = View.VISIBLE
@@ -557,7 +626,7 @@ class ReaderActivity : AppCompatActivity() {
             action()
             return
         }
-        if (viewModel.pending.value.isEmpty()) {
+        if (viewModel.editor.value.items.isEmpty()) {
             hidePlaceUi()
             action()
             return
@@ -582,6 +651,10 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun onPageTapped(point: PageViewPoint) {
         if (savingPlace || viewerFragment?.bridge?.isRestoring == true) return
+        if (viewModel.editor.value.selectedId != null) { // тап повз об'єкт знімає виділення, нового об'єкта не ставить
+            viewModel.edit { PlaceEditor.select(it, null) }
+            return
+        }
         when (val tool = viewModel.placeTool) {
             PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.addPending(
                 PlaceMarkupLogic.markFromTap(
@@ -688,12 +761,13 @@ class ReaderActivity : AppCompatActivity() {
     private fun savePending(onSuccess: () -> Unit = {}) {
         if (savingPlace) return
         val uri = documentUri ?: return
-        val items = viewModel.pending.value
+        val items = viewModel.editor.value.items
         if (items.isEmpty()) {
             onSuccess()
             return
         }
         savingPlace = true
+        binding.markupOverlay.editingEnabled = false
         showLoadingOverlay(getString(R.string.saving_annotations))
         lifecycleScope.launch {
             try {
@@ -734,6 +808,7 @@ class ReaderActivity : AppCompatActivity() {
             } finally {
                 hideLoadingOverlay()
                 savingPlace = false
+                binding.markupOverlay.editingEnabled = viewModel.placeModeActive
             }
         }
     }
@@ -792,7 +867,7 @@ class ReaderActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             )
         }
-        updatePlaceSaveVisibility(viewModel.pending.value.isNotEmpty())
+        updatePlaceSaveVisibility(viewModel.editor.value.items.isNotEmpty())
         updatePlacePanelWidth()
     }
 

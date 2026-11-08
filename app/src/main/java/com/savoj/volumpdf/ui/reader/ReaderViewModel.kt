@@ -74,21 +74,28 @@ class ReaderViewModel(
         }
     }
 
-    // --- режим «Поставити»: незбережені об'єкти й вибір інструмента (переживають процес) ----------
+    // --- режим «Поставити»: незбережені об'єкти й вибір інструмента ---------------------------------
+    // Об'єкти переживають поворот і завершення процесу (SavedStateHandle). Виділення та історія
+    // скасування живуть лише в пам'яті й скидаються після успішного збереження.
 
-    private val _pending = MutableStateFlow(
-        PlaceMarkupLogic.deserializeAll(savedStateHandle.get<ArrayList<String>>(KEY_PENDING))
+    private val _editor = MutableStateFlow(
+        PlaceEditor.initial(PlaceMarkupLogic.deserializeAll(savedStateHandle.get<ArrayList<String>>(KEY_PENDING)))
     )
-    val pending: StateFlow<List<PendingMarkup>> = _pending.asStateFlow()
+    val editor: StateFlow<PlaceEditorState> = _editor.asStateFlow()
 
-    fun addPending(item: PendingMarkup) = setPending(_pending.value + item)
-
-    fun clearPending() = setPending(emptyList())
-
-    private fun setPending(list: List<PendingMarkup>) {
-        _pending.value = list
-        savedStateHandle[KEY_PENDING] = PlaceMarkupLogic.serializeAll(list)
+    /** Застосовує перехід стану; зберігає список об'єктів, якщо він змінився. */
+    fun edit(transform: (PlaceEditorState) -> PlaceEditorState) {
+        val old = _editor.value
+        val new = transform(old)
+        if (new == old) return
+        _editor.value = new
+        if (new.items != old.items) savedStateHandle[KEY_PENDING] = PlaceMarkupLogic.serializeAll(new.items)
     }
+
+    fun addPending(item: PendingMarkup) = edit { PlaceEditor.add(it, item) }
+
+    /** Очищає все: об'єкти, виділення, історію (після збереження чи відкидання). */
+    fun clearPending() = edit { PlaceEditor.reset() }
 
     var placeModeActive: Boolean
         get() = savedStateHandle.get<Boolean>(KEY_PLACE_MODE) ?: false

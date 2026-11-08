@@ -156,4 +156,10 @@
     <string name="place_unsaved_title">Несохранённые изменения</string>
     <string name="place_unsaved_message">Сохранить добавленное на страницах?</string>
     <string name="place_discard">Отбросить</string>
+    <string name="place_delete">Удалить</string>
+    <string name="place_edit_text">Изменить текст</string>
+    <string name="place_change_to_check">Изменить на ✓</string>
+    <string name="place_change_to_cross">Изменить на ✗</string>
+    <string name="place_text_apply">Применить</string>
+    <string name="place_selected_hint">Выбранный объект: перетащите его или измените размер и цвет ниже</string>
 </resources>

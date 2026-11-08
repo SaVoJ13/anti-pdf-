@@ -156,4 +156,10 @@
     <string name="place_unsaved_title">Nicht gespeicherte Änderungen</string>
     <string name="place_unsaved_message">Auf den Seiten Platziertes speichern?</string>
     <string name="place_discard">Verwerfen</string>
+    <string name="place_delete">Löschen</string>
+    <string name="place_edit_text">Text ändern</string>
+    <string name="place_change_to_check">Zu ✓ ändern</string>
+    <string name="place_change_to_cross">Zu ✗ ändern</string>
+    <string name="place_text_apply">Übernehmen</string>
+    <string name="place_selected_hint">Ausgewähltes Objekt: verschieben oder unten Größe und Farbe ändern</string>
 </resources>

@@ -69,7 +69,7 @@ class PlaceMarkupLogicTest {
         assertEquals(4f, PlaceMarkupLogic.clampSize(PlaceTool.TEXT, 0f), 0f)
         assertEquals(4f, PlaceMarkupLogic.clampSize(PlaceTool.TEXT, -3f), 0f)
         assertEquals(4f, PlaceMarkupLogic.clampSize(PlaceTool.TEXT, 3.9f), 0f)
-        assertEquals(72f, PlaceMarkupLogic.clampSize(PlaceTool.TEXT, 500f), 0f)
+        assertEquals(144f, PlaceMarkupLogic.clampSize(PlaceTool.TEXT, 500f), 0f)
         val r = PlaceMarkupLogic.textFromTap("t", 0, 0f, 0f, "x", 1f, red, "") as TextCheck.Ok
         assertEquals(4f, r.markup.sizePt, 0f)
     }
@@ -77,17 +77,17 @@ class PlaceMarkupLogicTest {
     @Test
     fun `mark size is clamped and NaN falls back to default`() {
         assertEquals(4f, PlaceMarkupLogic.clampSize(PlaceTool.CHECK, 1f), 0f)
-        assertEquals(96f, PlaceMarkupLogic.clampSize(PlaceTool.CROSS, 1000f), 0f)
+        assertEquals(144f, PlaceMarkupLogic.clampSize(PlaceTool.CROSS, 1000f), 0f)
         assertEquals(16f, PlaceMarkupLogic.clampSize(PlaceTool.CHECK, Float.NaN), 0f)
         assertEquals(14f, PlaceMarkupLogic.clampSize(PlaceTool.TEXT, Float.POSITIVE_INFINITY), 0f)
     }
 
     @Test
     fun `size stepping stays in range`() {
-        assertEquals(18f, PlaceMarkupLogic.stepSize(PlaceTool.CHECK, 16f, +1), 0f)
+        assertEquals(17f, PlaceMarkupLogic.stepSize(PlaceTool.CHECK, 16f, +1), 0f)
         assertEquals(4f, PlaceMarkupLogic.stepSize(PlaceTool.TEXT, 5f, -1), 0f)
         assertEquals(4f, PlaceMarkupLogic.stepSize(PlaceTool.TEXT, 4f, -1), 0f)
-        assertEquals(72f, PlaceMarkupLogic.stepSize(PlaceTool.TEXT, 72f, +1), 0f)
+        assertEquals(76f, PlaceMarkupLogic.stepSize(PlaceTool.TEXT, 72f, +1), 0f)
     }
 
     // --- рішення про доступність -----------------------------------------------------------------
