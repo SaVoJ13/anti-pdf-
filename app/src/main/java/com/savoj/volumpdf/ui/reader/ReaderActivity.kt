@@ -13,6 +13,7 @@ import android.content.res.Configuration
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.view.WindowManager
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -704,6 +705,21 @@ class ReaderActivity : AppCompatActivity() {
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         lateinit var validate: Runnable
 
+        // Z2: у ландшафті з клавіатурою видима частина діалогу низька (≈65 dp) — заголовок прибираємо, а
+        // після появи помилки прокручуємо вміст так, щоб поле разом із рядком помилки було видно.
+        val scroll = dialogBinding.root as ScrollView
+        val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        if (landscape) {
+            dialogBinding.placeTextTitle.visibility = View.GONE
+            scroll.setPadding(scroll.paddingLeft, 0, scroll.paddingRight, 0)
+        }
+        fun revealError() {
+            scroll.post {
+                val content = scroll.getChildAt(0) ?: return@post
+                scroll.scrollTo(0, (content.height - scroll.height).coerceAtLeast(0))
+            }
+        }
+
         fun render(raw: String): Boolean {
             val unsupported = safeUnsupported(raw)
             if (unsupported == null) {
@@ -718,6 +734,7 @@ class ReaderActivity : AppCompatActivity() {
                 is TextVerdict.Unsupported -> getString(R.string.place_text_unsupported, verdict.chars)
             }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = verdict == TextVerdict.Ok
+            if (verdict != TextVerdict.Ok && dialogBinding.placeTextInputLayout.error != null) revealError()
             return verdict == TextVerdict.Ok
         }
 
