@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.view.WindowManager
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
@@ -741,6 +742,12 @@ class ReaderActivity : AppCompatActivity() {
             val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
             listOf(confirm, cancel).forEach { it.minHeight = min; it.minimumHeight = min; it.minWidth = min; it.minimumWidth = min }
             render(dialogBinding.placeTextInput.text?.toString().orEmpty())
+            // Z1: SOFT_INPUT_STATE_VISIBLE сам клавіатуру не показує (Gboard на S24 Ultra): фокус + явний показ IME.
+            val input = dialogBinding.placeTextInput
+            input.requestFocus()
+            input.post {
+                dialog.window?.let { w -> WindowCompat.getInsetsController(w, input).show(WindowInsetsCompat.Type.ime()) }
+            }
             confirm.setOnClickListener {
                 handler.removeCallbacks(validate)
                 val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
