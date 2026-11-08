@@ -22,6 +22,13 @@ data class PendingMarkup(
     val color: Int
 )
 
+/** Підсумок перевірки введеного тексту (без створення об'єкта). */
+sealed interface TextVerdict {
+    object Ok : TextVerdict
+    object Empty : TextVerdict
+    data class Unsupported(val chars: String) : TextVerdict
+}
+
 /** Результат спроби створити текстовий об'єкт. */
 sealed interface TextCheck {
     data class Ok(val markup: PendingMarkup) : TextCheck
@@ -51,6 +58,13 @@ object PlaceMarkupLogic {
     fun stepSize(tool: PlaceTool, current: Float, direction: Int): Float =
         clampSize(tool, current + direction * SIZE_STEP_PT)
 
+    /** Порожній (лише пробіли й розриви) — Empty; символи, яких немає у шрифті, — Unsupported. */
+    fun checkText(rawText: String, unsupported: String): TextVerdict = when {
+        rawText.isBlank() -> TextVerdict.Empty
+        unsupported.isNotEmpty() -> TextVerdict.Unsupported(unsupported)
+        else -> TextVerdict.Ok
+    }
+
     /** ✓/✗: центр позначки — у точці тапу. */
     fun markFromTap(id: String, tool: PlaceTool, pageIndex: Int, x: Float, y: Float, sizePt: Float, color: Int): PendingMarkup {
         require(tool != PlaceTool.TEXT) { "Текст створюється через textFromTap" }
@@ -65,8 +79,11 @@ object PlaceMarkupLogic {
         id: String, pageIndex: Int, x: Float, y: Float,
         rawText: String, sizePt: Float, color: Int, unsupported: String
     ): TextCheck {
-        if (rawText.isBlank()) return TextCheck.Empty
-        if (unsupported.isNotEmpty()) return TextCheck.Unsupported(unsupported)
+        when (val v = checkText(rawText, unsupported)) {
+            TextVerdict.Empty -> return TextCheck.Empty
+            is TextVerdict.Unsupported -> return TextCheck.Unsupported(v.chars)
+            TextVerdict.Ok -> Unit
+        }
         return TextCheck.Ok(PendingMarkup(id, PlaceTool.TEXT, pageIndex, x, y, rawText, clampSize(PlaceTool.TEXT, sizePt), color))
     }
 

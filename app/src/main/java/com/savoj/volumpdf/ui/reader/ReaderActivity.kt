@@ -535,6 +535,7 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showPlaceUi() {
         viewModel.placeModeActive = true
+        Thread { safeUnsupported("a") }.start() // прогрів кешу шрифту: перша перевірка тексту без затримки
         binding.placePanelCard.visibility = View.VISIBLE
         binding.bottomActionBar.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(true) { point -> onPageTapped(point) }
@@ -593,44 +594,90 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun showTextInputDialog(point: PageViewPoint) {
+        showTextDialog(initial = "", titleRes = R.string.place_text_title, confirmRes = R.string.place_text_add) { raw ->
+            val check = PlaceMarkupLogic.textFromTap(
+                UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
+                raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, safeUnsupported(raw) ?: ""
+            )
+            if (check is TextCheck.Ok) viewModel.addPending(check.markup)
+        }
+    }
+
+    /** Непідтримувані символи; null — перевірку виконати не вдалося (шрифт недоступний). */
+    private fun safeUnsupported(raw: String): String? = try {
+        markupEngine.findUnsupportedChars(raw)
+    } catch (e: Throwable) {
+        null
+    }
+
+    /**
+     * Діалог введення тексту (додавання й повторне введення). Перевірка символів — при кожній зміні тексту
+     * (TextWatcher, debounce [TEXT_VALIDATE_DEBOUNCE_MS]); «Додати» вимкнена, поки текст порожній або містить
+     * непідтримувані символи. Шрифт розбирається один раз (кеш у двигуні) і прогрівається при вході в режим.
+     * Кнопки діалогу лежать поза прокруткою й завжди ≥ 48 dp.
+     */
+    private fun showTextDialog(initial: String, titleRes: Int, confirmRes: Int, onAccept: (String) -> Unit) {
         val dialogBinding = DialogPlaceTextBinding.inflate(layoutInflater)
+        dialogBinding.placeTextTitle.setText(titleRes)
         val dialog = MaterialAlertDialogBuilder(this)
             .setView(dialogBinding.root)
-            .setPositiveButton(R.string.place_text_add, null)
+            .setPositiveButton(confirmRes, null)
             .setNegativeButton(R.string.action_cancel, null)
             .create()
         dialog.window?.setSoftInputMode(
             WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
         )
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        lateinit var validate: Runnable
+
+        fun render(raw: String): Boolean {
+            val unsupported = safeUnsupported(raw)
+            if (unsupported == null) {
+                dialogBinding.placeTextInputLayout.error = getString(R.string.error_title)
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = false
+                return false
+            }
+            val verdict = PlaceMarkupLogic.checkText(raw, unsupported)
+            dialogBinding.placeTextInputLayout.error = when (verdict) {
+                TextVerdict.Ok -> null
+                TextVerdict.Empty -> if (raw.isEmpty()) null else getString(R.string.text_error_empty)
+                is TextVerdict.Unsupported -> getString(R.string.place_text_unsupported, verdict.chars)
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = verdict == TextVerdict.Ok
+            return verdict == TextVerdict.Ok
+        }
+
+        validate = Runnable { render(dialogBinding.placeTextInput.text?.toString().orEmpty()) }
+        dialogBinding.placeTextInput.setText(initial)
+        dialogBinding.placeTextInput.setSelection(initial.length)
+        dialogBinding.placeTextInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: android.text.Editable?) {
+                handler.removeCallbacks(validate)
+                if (s.isNullOrBlank()) {
+                    validate.run() // порожнє: без затримки вимикаємо «Додати»
+                } else {
+                    handler.postDelayed(validate, TEXT_VALIDATE_DEBOUNCE_MS)
+                }
+            }
+        })
         dialog.setOnShowListener {
-            // Кнопки діалогу лежать поза прокруткою й завжди ≥ 48 dp; «Додати» не закриває діалог сама.
             val min = dp(48)
             val confirm = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
             listOf(confirm, cancel).forEach { it.minHeight = min; it.minimumHeight = min; it.minWidth = min; it.minimumWidth = min }
+            render(dialogBinding.placeTextInput.text?.toString().orEmpty())
             confirm.setOnClickListener {
+                handler.removeCallbacks(validate)
                 val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
-                val unsupported = try {
-                    markupEngine.findUnsupportedChars(raw)
-                } catch (e: Throwable) {
-                    dialogBinding.placeTextInputLayout.error = getString(R.string.error_title)
-                    return@setOnClickListener
-                }
-                val check = PlaceMarkupLogic.textFromTap(
-                    UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
-                    raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, unsupported
-                )
-                when (check) {
-                    is TextCheck.Ok -> {
-                        viewModel.addPending(check.markup)
-                        dialog.dismiss()
-                    }
-                    TextCheck.Empty -> dialogBinding.placeTextInputLayout.error = getString(R.string.text_error_empty)
-                    is TextCheck.Unsupported ->
-                        dialogBinding.placeTextInputLayout.error = getString(R.string.place_text_unsupported, check.chars)
+                if (render(raw)) { // остаточна перевірка без затримки
+                    onAccept(raw)
+                    dialog.dismiss()
                 }
             }
         }
+        dialog.setOnDismissListener { handler.removeCallbacks(validate) }
         dialog.show()
     }
 
@@ -991,6 +1038,7 @@ class ReaderActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_DOCUMENT_TITLE = "extra_document_title"
         private const val TAG = "ReaderActivity"
+        private const val TEXT_VALIDATE_DEBOUNCE_MS = 120L
         private const val TAG_PDF_VIEWER = "tag_pdf_viewer_fragment"
         private const val KEY_SAVED_URI = "key_saved_reader_uri"
         private const val KEY_DRAWING_MODE = "key_drawing_mode_active"
