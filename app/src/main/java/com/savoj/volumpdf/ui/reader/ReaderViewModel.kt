@@ -95,7 +95,16 @@ class ReaderViewModel(
     fun addPending(item: PendingMarkup) = edit { PlaceEditor.add(it, item) }
 
     /** Очищає все: об'єкти, виділення, історію (після збереження чи відкидання). */
-    fun clearPending() = edit { PlaceEditor.reset() }
+    fun clearPending() {
+        edit { PlaceEditor.reset() }
+        signatureBitmaps.clear()
+    }
+
+    /** Картинки підписів поставлених об'єктів за id (лише в пам'яті; на диск — окремо, див. сховище незбереженого). */
+    val signatureBitmaps = java.util.concurrent.ConcurrentHashMap<String, android.graphics.Bitmap>()
+
+    /** Створений, але ще не поставлений підпис: наступний тап по сторінці ставить його (лише в пам'яті). */
+    var armedSignature: android.graphics.Bitmap? = null
 
     var placeModeActive: Boolean
         get() = savedStateHandle.get<Boolean>(KEY_PLACE_MODE) ?: false

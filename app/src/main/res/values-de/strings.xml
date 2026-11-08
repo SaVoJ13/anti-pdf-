@@ -164,4 +164,7 @@
     <string name="place_selected_hint">Ausgewähltes Objekt: verschieben oder unten Größe und Farbe ändern</string>
     <string name="place_tool_ink">Zeichnen</string>
     <string name="place_tool_hand">Hand (Scrollen und Zoomen)</string>
+    <string name="place_tool_signature">Unterschrift</string>
+    <string name="place_signature_width">Breite der Unterschrift</string>
+    <string name="place_signature_tap_hint">Tippen Sie auf die Seite, um die Unterschrift zu setzen</string>
 </resources>

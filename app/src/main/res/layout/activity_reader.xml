@@ -199,6 +199,20 @@
                                 app:iconPadding="0dp" />
 
                             <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnToolSignature"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="48dp"
+                                android:minWidth="48dp"
+                                android:contentDescription="@string/place_tool_signature"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingHorizontal="12dp"
+                                app:icon="@drawable/ic_signature"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp" />
+
+                            <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnToolHand"
                                 style="@style/Widget.Material3.Button.OutlinedButton"
                                 android:layout_width="wrap_content"
@@ -399,6 +413,33 @@
                                 android:padding="0dp"
                                 android:text="+"
                                 android:textSize="20sp" />
+                        </LinearLayout>
+
+                        <!-- Ширина виділеного підпису: 30–400 pt, пропорції зберігаються -->
+                        <LinearLayout
+                            android:id="@+id/placeSignatureBlock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:id="@+id/tvSignatureWidth"
+                                android:layout_width="72dp"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                            <com.google.android.material.slider.Slider
+                                android:id="@+id/placeSignatureSlider"
+                                android:layout_width="240dp"
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/place_signature_width"
+                                android:stepSize="1"
+                                android:value="120"
+                                android:valueFrom="30"
+                                android:valueTo="400" />
                         </LinearLayout>
                     </LinearLayout>
                 </HorizontalScrollView>

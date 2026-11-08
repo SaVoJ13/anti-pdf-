@@ -164,4 +164,7 @@
     <string name="place_selected_hint">Selected object: move it, or change size and colour below</string>
     <string name="place_tool_ink">Draw</string>
     <string name="place_tool_hand">Hand (scroll and zoom)</string>
+    <string name="place_tool_signature">Signature</string>
+    <string name="place_signature_width">Signature width</string>
+    <string name="place_signature_tap_hint">Tap the page to place the signature</string>
 </resources>

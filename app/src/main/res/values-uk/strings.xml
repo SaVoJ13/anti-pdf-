@@ -164,4 +164,7 @@
     <string name="place_selected_hint">Вибраний об’єкт: перетягніть його або змініть розмір і колір нижче</string>
     <string name="place_tool_ink">Малювати</string>
     <string name="place_tool_hand">Рука (гортання й масштаб)</string>
+    <string name="place_tool_signature">Підпис</string>
+    <string name="place_signature_width">Ширина підпису</string>
+    <string name="place_signature_tap_hint">Торкніться сторінки, щоб поставити підпис</string>
 </resources>

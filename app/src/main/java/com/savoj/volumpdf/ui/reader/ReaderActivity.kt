@@ -367,62 +367,34 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
+    /** Полотно підпису: результат — лише картинка для розміщення (запису в документ немає). */
     private fun openSignatureDialog() {
-        val dialog = SignatureBottomSheetDialogFragment.newInstance()
-        dialog.onSignatureConfirmed = { signatureBitmap ->
-            insertSignatureToDocument(signatureBitmap)
+        val dialog = (supportFragmentManager.findFragmentByTag(SignatureBottomSheetDialogFragment.TAG)
+            as? SignatureBottomSheetDialogFragment) ?: SignatureBottomSheetDialogFragment.newInstance().also {
+            it.show(supportFragmentManager, SignatureBottomSheetDialogFragment.TAG)
         }
-        dialog.show(supportFragmentManager, SignatureBottomSheetDialogFragment.TAG)
+        dialog.onSignatureConfirmed = { bitmap -> armSignature(bitmap) }
     }
 
-    private fun insertSignatureToDocument(bitmap: Bitmap) {
-        val uri = documentUri ?: return
-        val pageIndex = viewerFragment?.currentPageIndex ?: 0
-
-        showLoadingOverlay(getString(R.string.saving_annotations))
-
-        lifecycleScope.launch {
-            try {
-                val (pageWidthPt, pageHeightPt) = getPageDimensions(uri, pageIndex)
-
-                // Розміщення підпису у правій нижній частині сторінки
-                val stampWidthPt = minOf(160f, pageWidthPt * 0.35f)
-                val stampHeightPt = stampWidthPt * (bitmap.height.toFloat() / maxOf(1, bitmap.width).toFloat())
-                val left = pageWidthPt - stampWidthPt - 40f
-                val top = pageHeightPt - stampHeightPt - 60f
-                val targetRectPt = RectF(left, top, left + stampWidthPt, top + stampHeightPt)
-
-                val result = annotationEngine.addSignatureStamp(
-                    context = applicationContext,
-                    sourceUri = uri,
-                    pageIndex = pageIndex,
-                    signatureBitmap = bitmap,
-                    targetRectPt = targetRectPt,
-                    pageWidthPt = pageWidthPt,
-                    pageHeightPt = pageHeightPt,
-                    outputUri = uri
-                )
-
-                hideLoadingOverlay()
-
-                when (result) {
-                    is PdfOperationResult.Success -> {
-                        reloadViewerDocument()
-                        checkForFormFields(uri)
-                        Snackbar.make(binding.root, R.string.signature_success, Snackbar.LENGTH_SHORT).show()
-                    }
-                    is PdfOperationResult.Error -> {
-                        Snackbar.make(binding.root, result.userMessage, Snackbar.LENGTH_LONG).show()
-                    }
-                    is PdfOperationResult.Progress -> Unit
-                }
-            } catch (e: Throwable) {
-                if (e is CancellationException) throw e
-                hideLoadingOverlay()
-                val msg = e.localizedMessage ?: getString(R.string.error_title)
-                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
-            }
+    private fun armSignature(bitmap: Bitmap) {
+        viewModel.armedSignature = bitmap
+        viewModel.placeTool = PlaceTool.SIGNATURE
+        if (viewModel.placeModeActive) {
+            selectToolButton(PlaceTool.SIGNATURE)
+            showMessage(getString(R.string.place_signature_tap_hint), long = false)
+        } else {
+            enterPlaceMode()
         }
+    }
+
+    private fun selectToolButton(tool: PlaceTool) {
+        syncingPanel = true
+        try {
+            binding.placeToolGroup.check(toolButtons.getValue(tool))
+        } finally {
+            syncingPanel = false
+        }
+        renderEditor(viewModel.editor.value)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -435,6 +407,7 @@ class ReaderActivity : AppCompatActivity() {
             PlaceTool.CROSS to R.id.btnToolCross,
             PlaceTool.TEXT to R.id.btnToolText,
             PlaceTool.INK to R.id.btnToolInk,
+            PlaceTool.SIGNATURE to R.id.btnToolSignature,
             PlaceTool.HAND to R.id.btnToolHand
         )
     }
@@ -490,6 +463,15 @@ class ReaderActivity : AppCompatActivity() {
                 renderEditor(viewModel.editor.value)
             }
         }
+        binding.btnToolSignature.setOnClickListener {
+            if (viewModel.armedSignature == null) openSignatureDialog()
+        }
+        binding.placeSignatureSlider.addOnChangeListener { _, value, fromUser ->
+            if (!fromUser || syncingPanel) return@addOnChangeListener
+            val sel = viewModel.editor.value.selected ?: return@addOnChangeListener
+            if (sel.tool == PlaceTool.SIGNATURE) viewModel.edit { PlaceEditor.setSize(it, sel.id, value) }
+        }
+        binding.markupOverlay.signatureBitmaps = { id -> viewModel.signatureBitmaps[id] }
         binding.placeInkPresetGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked || syncingPanel) return@addOnButtonCheckedListener
             val preset = when (checkedId) {
@@ -567,7 +549,9 @@ class ReaderActivity : AppCompatActivity() {
         binding.placeColorGroup.visibility = if (hasColor) View.VISIBLE else View.GONE
         binding.placeSizeBlock.visibility = if (hasColor) View.VISIBLE else View.GONE
         binding.placeInkPresetGroup.visibility = if (target == PlaceTool.INK) View.VISIBLE else View.GONE
-        binding.placeOptionsScroll.visibility = if (hasColor) View.VISIBLE else View.GONE
+        val hasSignature = sel?.tool == PlaceTool.SIGNATURE
+        binding.placeSignatureBlock.visibility = if (hasSignature) View.VISIBLE else View.GONE
+        binding.placeOptionsScroll.visibility = if (hasColor || hasSignature) View.VISIBLE else View.GONE
 
         syncingPanel = true
         try {
@@ -582,6 +566,12 @@ class ReaderActivity : AppCompatActivity() {
                 null -> Unit
             }
             updateSizeLabel()
+            if (sel != null && sel.tool == PlaceTool.SIGNATURE) {
+                binding.placeSignatureSlider.value = sel.sizePt.coerceIn(
+                    PlaceMarkupLogic.MIN_SIGNATURE_WIDTH_PT, PlaceMarkupLogic.MAX_SIGNATURE_WIDTH_PT
+                )
+                binding.tvSignatureWidth.text = getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(sel.sizePt))
+            }
         } finally {
             syncingPanel = false
         }
@@ -728,8 +718,30 @@ class ReaderActivity : AppCompatActivity() {
                 )
             )
             PlaceTool.TEXT -> showTextInputDialog(point)
-            PlaceTool.INK, PlaceTool.SIGNATURE, PlaceTool.HAND -> Unit // штрих малює оверлей; «рука» нічого не ставить
+            PlaceTool.SIGNATURE -> placeArmedSignature(point)
+            PlaceTool.INK, PlaceTool.HAND -> Unit // штрих малює оверлей; «рука» нічого не ставить
         }
+    }
+
+    /** Тап із готовим підписом: лівий верхній кут у точці тапу, ширина 120 pt, пропорції збережено. */
+    private fun placeArmedSignature(point: PageViewPoint) {
+        val bitmap = viewModel.armedSignature
+        if (bitmap == null) {
+            openSignatureDialog()
+            return
+        }
+        val page = viewerFragment?.bridge?.pageSizePt(point.pageIndex)
+        val item = PlaceMarkupLogic.signatureFromTap(
+            UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
+            bitmap.width, bitmap.height, PlaceMarkupLogic.DEFAULT_SIGNATURE_WIDTH_PT, page
+        ) ?: return
+        viewModel.signatureBitmaps[item.id] = bitmap
+        viewModel.armedSignature = null
+        viewModel.addPending(item)
+        // Далі підпис можна рухати й міняти: «рука» + виділення.
+        viewModel.placeTool = PlaceTool.HAND
+        viewModel.edit { PlaceEditor.select(it, item.id) }
+        selectToolButton(PlaceTool.HAND)
     }
 
     private fun showTextInputDialog(point: PageViewPoint) {
@@ -872,7 +884,7 @@ class ReaderActivity : AppCompatActivity() {
                     showMessage(gateMessage(gate), long = true)
                     return@launch
                 }
-                val markups: List<PageMarkup> = items.map(PlaceMarkupLogic::toPageMarkup)
+                val markups: List<PageMarkup> = items.map { PlaceMarkupLogic.toPageMarkup(it) { id -> viewModel.signatureBitmaps[id] } }
                 when (val result = markupEngine.applyEdits(
                     context = applicationContext,
                     sourceUri = uri,
