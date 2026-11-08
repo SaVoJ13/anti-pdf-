@@ -72,9 +72,14 @@ class MarkupOverlayView @JvmOverloads constructor(
         strokeJoin = Paint.Join.ROUND
     }
 
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    // D2: у PDF ширина рядка = сума горизонтальних просувів шрифту при розмірі в pt без кернінгу й
+    // без округлення; тому лінійний текст, субпіксельне позиціонування та вимкнений кернінг.
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG or Paint.LINEAR_TEXT_FLAG).apply {
         style = Paint.Style.FILL
         typeface = loadTypeface()
+        isLinearText = true
+        isSubpixelText = true
+        fontFeatureSettings = "'kern' 0, 'liga' 0"
     }
 
     private val framePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
