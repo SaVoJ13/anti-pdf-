@@ -144,7 +144,7 @@
     <string name="place_tool_text">Текст</string>
     <string name="place_size_decrease">Меньше</string>
     <string name="place_size_increase">Больше</string>
-    <string name="place_size_format">%1$d pt</string>
+    <string name="place_size_format">%1$s pt</string>
     <string name="place_done">Готово</string>
     <string name="place_text_title">Добавить текст</string>
     <string name="place_text_add">Добавить</string>
@@ -162,4 +162,6 @@
     <string name="place_change_to_cross">Изменить на ✗</string>
     <string name="place_text_apply">Применить</string>
     <string name="place_selected_hint">Выбранный объект: перетащите его или измените размер и цвет ниже</string>
+    <string name="place_tool_ink">Рисовать</string>
+    <string name="place_tool_hand">Рука (прокрутка и масштаб)</string>
 </resources>

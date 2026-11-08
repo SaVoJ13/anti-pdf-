@@ -114,6 +114,21 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
         return PageViewPoint(pageIndex, p.first, p.second)
     }
 
+    /** Те саме для багатьох точок (плоский масив x0,y0,…) з одним зверненням до pdfToViewPoint; null — не вдалося. */
+    fun viewToPageSpace(pageIndex: Int, xyView: FloatArray): FloatArray? {
+        val v = pdfView ?: return null
+        val origin = v.pdfToViewPoint(PdfPoint(pageIndex, 0f, 0f)) ?: return null
+        val out = FloatArray(xyView.size)
+        var i = 0
+        while (i + 1 < xyView.size) {
+            val p = PageSpaceMath.toPageSpace(origin.x, origin.y, v.zoom, xyView[i], xyView[i + 1]) ?: return null
+            out[i] = p.first
+            out[i + 1] = p.second
+            i += 2
+        }
+        return out
+    }
+
     // --- режим «поставити» (R14) ----------------------------------------------------------------
 
     private var placeEnabled = false

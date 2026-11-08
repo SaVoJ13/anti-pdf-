@@ -433,7 +433,9 @@ class ReaderActivity : AppCompatActivity() {
         mapOf(
             PlaceTool.CHECK to R.id.btnToolCheck,
             PlaceTool.CROSS to R.id.btnToolCross,
-            PlaceTool.TEXT to R.id.btnToolText
+            PlaceTool.TEXT to R.id.btnToolText,
+            PlaceTool.INK to R.id.btnToolInk,
+            PlaceTool.HAND to R.id.btnToolHand
         )
     }
 
@@ -461,6 +463,16 @@ class ReaderActivity : AppCompatActivity() {
                 val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
                 viewModel.edit { PlaceEditor.move(PlaceEditor.select(it, id), id, x, y, page) }
             }
+
+            override fun onInkDrawn(pageIndex: Int, xy: FloatArray) {
+                if (savingPlace || viewerFragment?.bridge?.isRestoring == true) return
+                val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
+                val stroke = PlaceMarkupLogic.inkFromStroke(
+                    UUID.randomUUID().toString(), pageIndex, xy,
+                    viewModel.placeSize(PlaceTool.INK), viewModel.newInkColor(), page
+                ) ?: return // усі точки поза сторінкою або штрих порожній
+                viewModel.addPending(stroke)
+            }
         }
 
         binding.placeToolGroup.check(toolButtons.getValue(viewModel.placeTool))
@@ -471,8 +483,27 @@ class ReaderActivity : AppCompatActivity() {
 
         binding.placeToolGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked && !syncingPanel) {
-                toolButtons.entries.firstOrNull { it.value == checkedId }?.key?.let { viewModel.placeTool = it }
-                updateSizeLabel()
+                val tool = toolButtons.entries.firstOrNull { it.value == checkedId }?.key ?: return@addOnButtonCheckedListener
+                viewModel.placeTool = tool
+                // Поки малюємо, виділення не потрібне: кожен дотик — штрих.
+                if (tool == PlaceTool.INK) viewModel.edit { PlaceEditor.select(it, null) }
+                renderEditor(viewModel.editor.value)
+            }
+        }
+        binding.placeInkPresetGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked || syncingPanel) return@addOnButtonCheckedListener
+            val preset = when (checkedId) {
+                R.id.btnInkMarker -> InkPreset.MARKER
+                R.id.btnInkHighlighter -> InkPreset.HIGHLIGHTER
+                else -> InkPreset.PEN
+            }
+            val selected = viewModel.editor.value.selected
+            if (selected != null && selected.tool == PlaceTool.INK) {
+                viewModel.edit { PlaceEditor.setInkStyle(it, selected.id, preset.widthPt, preset.alpha) }
+            } else {
+                viewModel.inkPreset = preset
+                viewModel.setPlaceSize(PlaceTool.INK, preset.widthPt)
+                renderEditor(viewModel.editor.value)
             }
         }
         binding.placeColorGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -504,33 +535,64 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    /** Малює стан редактора: оверлей, кнопки «Зберегти»/«Скасувати», панель дій виділеного, значення розміру й кольору. */
+    /** Малює стан редактора: оверлей, кнопки «Зберегти»/«Скасувати», панель дій виділеного, параметри за типом цілі. */
     private fun renderEditor(state: PlaceEditorState) {
         binding.markupOverlay.items = state.items
         binding.markupOverlay.selectedId = state.selectedId
-        updatePlaceSaveVisibility(state.items.isNotEmpty())
+        binding.btnPlaceSave.visibility = if (state.items.isNotEmpty()) View.VISIBLE else View.GONE
         binding.btnPlaceUndo.isEnabled = state.canUndo
 
         val sel = state.selected
+        val tool = viewModel.placeTool
+        binding.markupOverlay.drawingEnabled = viewModel.placeModeActive && tool == PlaceTool.INK
+        binding.markupOverlay.inkColor = viewModel.newInkColor()
+        binding.markupOverlay.inkWidthPt = viewModel.placeSize(PlaceTool.INK)
+
         binding.selectionBarCard.visibility =
             if (sel != null && viewModel.placeModeActive) View.VISIBLE else View.GONE
         if (sel != null) {
-            binding.btnSelEdit.setText(
-                when (sel.tool) {
-                    PlaceTool.TEXT -> R.string.place_edit_text
-                    PlaceTool.CHECK -> R.string.place_change_to_cross
-                    PlaceTool.CROSS -> R.string.place_change_to_check
-                }
-            )
+            val editLabel = when (sel.tool) {
+                PlaceTool.TEXT -> R.string.place_edit_text
+                PlaceTool.CHECK -> R.string.place_change_to_cross
+                PlaceTool.CROSS -> R.string.place_change_to_check
+                else -> null
+            }
+            binding.btnSelEdit.visibility = if (editLabel == null) View.GONE else View.VISIBLE
+            if (editLabel != null) binding.btnSelEdit.setText(editLabel)
         }
+
+        // Параметри залежать від цілі: виділений об'єкт, інакше поточний інструмент.
+        val target = sel?.tool ?: tool
+        val hasColor = target == PlaceTool.CHECK || target == PlaceTool.CROSS || target == PlaceTool.TEXT || target == PlaceTool.INK
+        binding.placeColorGroup.visibility = if (hasColor) View.VISIBLE else View.GONE
+        binding.placeSizeBlock.visibility = if (hasColor) View.VISIBLE else View.GONE
+        binding.placeInkPresetGroup.visibility = if (target == PlaceTool.INK) View.VISIBLE else View.GONE
+        binding.placeOptionsScroll.visibility = if (hasColor) View.VISIBLE else View.GONE
+
         syncingPanel = true
         try {
-            val color = sel?.color ?: viewModel.placeColor
+            val color = (sel?.color ?: viewModel.placeColor) or PlaceMarkupLogic.ALPHA_MASK
             colorButtons.entries.firstOrNull { it.value == color }?.key?.let { binding.placeColorGroup.check(it) }
+            val preset = if (sel?.tool == PlaceTool.INK) presetOf(sel) else viewModel.inkPreset
+            binding.placeInkPresetGroup.clearChecked()
+            when (preset) {
+                InkPreset.PEN -> binding.placeInkPresetGroup.check(R.id.btnInkPen)
+                InkPreset.MARKER -> binding.placeInkPresetGroup.check(R.id.btnInkMarker)
+                InkPreset.HIGHLIGHTER -> binding.placeInkPresetGroup.check(R.id.btnInkHighlighter)
+                null -> Unit
+            }
             updateSizeLabel()
         } finally {
             syncingPanel = false
         }
+    }
+
+    /** Пресет, якому відповідає виділений штрих (за альфою й товщиною); null — власна товщина. */
+    private fun presetOf(stroke: PendingMarkup): InkPreset? = when {
+        (stroke.color ushr 24) < 0xFF -> InkPreset.HIGHLIGHTER
+        stroke.sizePt == InkPreset.PEN.widthPt -> InkPreset.PEN
+        stroke.sizePt == InkPreset.MARKER.widthPt -> InkPreset.MARKER
+        else -> null
     }
 
     /** «Змінити»: текст — повторне введення, ✓/✗ — перемикання виду. */
@@ -541,6 +603,7 @@ class ReaderActivity : AppCompatActivity() {
                 initial = sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply
             ) { raw -> viewModel.edit { PlaceEditor.setText(it, sel.id, raw) } }
             PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.edit { PlaceEditor.toggleMarkKind(it, sel.id) }
+            else -> Unit
         }
     }
 
@@ -558,7 +621,7 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun updateSizeLabel() {
         val size = viewModel.editor.value.selected?.sizePt ?: viewModel.placeSize(viewModel.placeTool)
-        binding.tvPlaceSize.text = getString(R.string.place_size_format, size.toInt())
+        binding.tvPlaceSize.text = getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(size))
     }
 
     /** Перевірка прав → показ панелі й увімкнення тапу в мості. Для захищених/заборонених — лише пояснення. */
@@ -665,6 +728,7 @@ class ReaderActivity : AppCompatActivity() {
                 )
             )
             PlaceTool.TEXT -> showTextInputDialog(point)
+            PlaceTool.INK, PlaceTool.SIGNATURE, PlaceTool.HAND -> Unit // штрих малює оверлей; «рука» нічого не ставить
         }
     }
 
@@ -848,50 +912,31 @@ class ReaderActivity : AppCompatActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     /**
-     * Розкладка панелі «Поставити» без горизонтального прокручування (D1): «Зберегти» й усі кнопки завжди
-     * цілком у межах картки. Портрет: 4 рядки (інструменти / колір+скасувати / розмір+готово / зберегти);
-     * ландшафт: 2 рядки у картці ≤ 640 dp. Текст кнопок може йти у 2 рядки, але не обрізається.
+     * Розкладка панелі «Поставити»: смуга інструментів і смуга параметрів прокручуються по горизонталі, а рядок
+     * «Скасувати / Готово / Зберегти» завжди видимий. Портрет: рядок дій — окремий рядок знизу; ландшафт: він
+     * переноситься в кінець верхнього рядка (картка ≤ 640 dp, щоб не займати пів екрана по висоті).
      */
     private fun applyPlacePanelOrientation() {
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val rowA = binding.placeRowA
-        val rowB = binding.placeRowB
-        val rowC = binding.placeRowC
-        val rowD = binding.placeRowD
-        val items = listOf<View>(
-            binding.placeToolGroup, binding.placeSizeBlock, binding.placeColorGroup,
-            binding.btnPlaceUndo, binding.btnPlaceDone, binding.btnPlaceSave
-        )
-        items.forEach { (it.parent as? ViewGroup)?.removeView(it) }
-        listOf(rowA, rowB, rowC, rowD).forEach { it.removeAllViews() }
-        binding.placeStash.visibility = View.GONE
-
-        fun wrap(start: Int = 0) = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { marginStart = start }
-        fun weighted(start: Int = 0) = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            .apply { marginStart = start }
-        val gap = dp(8)
-
-        if (landscape) {
-            rowA.addView(binding.placeToolGroup, wrap())
-            rowA.addView(binding.placeSizeBlock, wrap(gap * 2))
-            rowB.addView(binding.placeColorGroup, wrap())
-            rowB.addView(binding.btnPlaceUndo, wrap(gap))
-            rowB.addView(binding.btnPlaceDone, weighted(gap))
-            rowB.addView(binding.btnPlaceSave, weighted(gap))
-        } else {
-            rowA.addView(binding.placeToolGroup, wrap())
-            rowB.addView(binding.placeColorGroup, wrap())
-            rowB.addView(binding.btnPlaceUndo, wrap(gap))
-            rowC.addView(binding.placeSizeBlock, wrap())
-            rowC.addView(binding.btnPlaceDone, weighted(gap))
-            rowD.addView(
-                binding.btnPlaceSave,
-                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        val actions = binding.placeActionsRow
+        val target: ViewGroup = if (landscape) binding.placeTopRow else binding.placePanelContent
+        if (actions.parent !== target) {
+            (actions.parent as? ViewGroup)?.removeView(actions)
+            target.addView(
+                actions,
+                if (landscape) LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { marginStart = dp(8) }
+                else LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { topMargin = dp(4) }
             )
         }
-        updatePlaceSaveVisibility(viewModel.editor.value.items.isNotEmpty())
+        // У ландшафті рядок дій має природну ширину, у портреті «Готово» й «Зберегти» ділять рядок порівну.
+        listOf(binding.btnPlaceDone, binding.btnPlaceSave).forEach { b ->
+            val lp = b.layoutParams as LinearLayout.LayoutParams
+            lp.width = if (landscape) ViewGroup.LayoutParams.WRAP_CONTENT else 0
+            lp.weight = if (landscape) 0f else 1f
+            b.layoutParams = lp
+        }
         updatePlacePanelWidth()
     }
 
@@ -904,13 +949,6 @@ class ReaderActivity : AppCompatActivity() {
             lp.width = newWidth
             binding.placePanelCard.layoutParams = lp
         }
-    }
-
-    private fun updatePlaceSaveVisibility(hasPending: Boolean) {
-        binding.btnPlaceSave.visibility = if (hasPending) View.VISIBLE else View.GONE
-        binding.placeRowD.visibility =
-            if (binding.placeRowD.childCount > 0 && hasPending) View.VISIBLE else View.GONE
-        binding.placeRowC.visibility = if (binding.placeRowC.childCount > 0) View.VISIBLE else View.GONE
     }
 
     /**

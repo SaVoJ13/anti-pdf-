@@ -110,16 +110,29 @@ class ReaderViewModel(
         get() = savedStateHandle.get<Int>(KEY_COLOR) ?: DEFAULT_PLACE_COLOR
         set(value) { savedStateHandle[KEY_COLOR] = value }
 
-    /** Розмір окремо для ✓/✗ і для тексту. */
-    fun placeSize(tool: PlaceTool): Float {
-        val key = if (tool == PlaceTool.TEXT) KEY_TEXT_SIZE else KEY_MARK_SIZE
-        return PlaceMarkupLogic.clampSize(tool, savedStateHandle.get<Float>(key) ?: PlaceMarkupLogic.defaultSize(tool))
+    /** Розмір окремо для ✓/✗, тексту й штриха (товщина, pt). */
+    private fun sizeKey(tool: PlaceTool) = when (tool) {
+        PlaceTool.TEXT -> KEY_TEXT_SIZE
+        PlaceTool.INK -> KEY_INK_WIDTH
+        PlaceTool.SIGNATURE -> KEY_SIGNATURE_WIDTH
+        else -> KEY_MARK_SIZE
     }
 
+    fun placeSize(tool: PlaceTool): Float =
+        PlaceMarkupLogic.clampSize(tool, savedStateHandle.get<Float>(sizeKey(tool)) ?: PlaceMarkupLogic.defaultSize(tool))
+
     fun setPlaceSize(tool: PlaceTool, value: Float) {
-        val key = if (tool == PlaceTool.TEXT) KEY_TEXT_SIZE else KEY_MARK_SIZE
-        savedStateHandle[key] = PlaceMarkupLogic.clampSize(tool, value)
+        savedStateHandle[sizeKey(tool)] = PlaceMarkupLogic.clampSize(tool, value)
     }
+
+    /** Пресет пензля (ручка / маркер / хайлайтер): задає альфу нових штрихів; товщина — [placeSize] (INK). */
+    var inkPreset: InkPreset
+        get() = savedStateHandle.get<String>(KEY_INK_PRESET)
+            ?.let { name -> InkPreset.values().firstOrNull { it.name == name } } ?: InkPreset.PEN
+        set(value) { savedStateHandle[KEY_INK_PRESET] = value.name }
+
+    /** Колір нових штрихів: RGB з палітри й альфа пресета. */
+    fun newInkColor(): Int = ((inkPreset.alpha and 0xFF) shl 24) or (placeColor and 0x00FFFFFF)
 
     companion object {
         private const val KEY_URI = "saved_document_uri"
@@ -129,6 +142,9 @@ class ReaderViewModel(
         private const val KEY_COLOR = "place_color"
         private const val KEY_TEXT_SIZE = "place_text_size"
         private const val KEY_MARK_SIZE = "place_mark_size"
+        private const val KEY_INK_WIDTH = "place_ink_width"
+        private const val KEY_SIGNATURE_WIDTH = "place_signature_width"
+        private const val KEY_INK_PRESET = "place_ink_preset"
         const val DEFAULT_PLACE_COLOR = 0xFFD32F2F.toInt()
     }
 }

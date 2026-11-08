@@ -19,9 +19,18 @@ data class RectPx(val left: Float, val top: Float, val right: Float, val bottom:
     }
 }
 
-data class HitTarget(val id: String, val rect: RectPx)
+/**
+ * Ціль для hit-test у пікселях. [polylinePx] (x0,y0,x1,y1,…) — для штриха: дотик вимірюється відстанню до ламаної
+ * мінус половина товщини [halfWidthPx], а не до прямокутника.
+ */
+class HitTarget(
+    val id: String,
+    val rect: RectPx,
+    val polylinePx: FloatArray? = null,
+    val halfWidthPx: Float = 0f
+)
 
-/** Вибір об'єкта під пальцем. Зона дотику — межі об'єкта плюс [SLOP_DP] з усіх боків. */
+/** Вибір об'єкта під пальцем. Зона дотику — межі об'єкта (штрих: відстань до ламаної) плюс [SLOP_DP]. */
 object PlaceHitTest {
     const val SLOP_DP = 24f
 
@@ -33,8 +42,15 @@ object PlaceHitTest {
         var best: String? = null
         var bestDist = Float.MAX_VALUE
         for (t in targets) {
-            if (!t.rect.inflate(slopPx).contains(x, y)) continue
-            val d = t.rect.distanceTo(x, y)
+            val line = t.polylinePx
+            val d: Float
+            if (line != null) {
+                d = (PolylineMath.distance(line, x, y) - t.halfWidthPx).coerceAtLeast(0f)
+                if (d > slopPx) continue
+            } else {
+                if (!t.rect.inflate(slopPx).contains(x, y)) continue
+                d = t.rect.distanceTo(x, y)
+            }
             if (d <= bestDist) {
                 bestDist = d
                 best = t.id
@@ -76,17 +92,31 @@ object PlaceEditor {
         return if (valid == s.selectedId && s.lastEditKey == null) s else s.copy(selectedId = valid, lastEditKey = null)
     }
 
-    /** Переносить опорну точку; [page] — розмір сторінки об'єкта для кламп (null — невідомий). */
-    fun move(s: PlaceEditorState, id: String, x: Float, y: Float, page: PageSizePt?): PlaceEditorState {
-        val (cx, cy) = PlaceMarkupLogic.clampToPage(x, y, page)
-        return update(s, id, key = null) { if (it.x == cx && it.y == cy) it else it.copy(x = cx, y = cy) }
-    }
+    /**
+     * Переносить опорну точку (штрих — цілком); [page] — розмір сторінки об'єкта для клампів (null — невідомий).
+     * Клампи залежать від типу об'єкта: [PlaceMarkupLogic.clampedAnchor].
+     */
+    fun move(s: PlaceEditorState, id: String, x: Float, y: Float, page: PageSizePt?): PlaceEditorState =
+        update(s, id, key = null) { item ->
+            val (cx, cy) = PlaceMarkupLogic.clampedAnchor(item, x, y, page)
+            PlaceMarkupLogic.withAnchor(item, cx, cy)
+        }
 
     fun setSize(s: PlaceEditorState, id: String, sizePt: Float): PlaceEditorState =
         update(s, id, key = "size:$id") { it.copy(sizePt = PlaceMarkupLogic.clampSize(it.tool, sizePt)) }
 
     fun setColor(s: PlaceEditorState, id: String, color: Int): PlaceEditorState =
-        update(s, id, key = "color:$id") { it.copy(color = color) }
+        update(s, id, key = "color:$id") { it.copy(color = PlaceMarkupLogic.recolor(it, color)) }
+
+    /** Пресет штриха: товщина й альфа (хайлайтер); колір (RGB) лишається. Окремий крок скасування. */
+    fun setInkStyle(s: PlaceEditorState, id: String, widthPt: Float, alpha: Int): PlaceEditorState =
+        update(s, id, key = null) {
+            if (it.tool != PlaceTool.INK) it
+            else it.copy(
+                sizePt = PlaceMarkupLogic.clampSize(PlaceTool.INK, widthPt),
+                color = ((alpha and 0xFF) shl 24) or (it.color and 0x00FFFFFF)
+            )
+        }
 
     /** Нове значення тексту для текстового об'єкта; для ✓/✗ — без змін. Перевірку тексту робить викликач. */
     fun setText(s: PlaceEditorState, id: String, text: String): PlaceEditorState =
@@ -98,7 +128,7 @@ object PlaceEditor {
             when (it.tool) {
                 PlaceTool.CHECK -> it.copy(tool = PlaceTool.CROSS)
                 PlaceTool.CROSS -> it.copy(tool = PlaceTool.CHECK)
-                PlaceTool.TEXT -> it
+                else -> it
             }
         }
 
@@ -132,6 +162,17 @@ object PlaceEditor {
 
 /** Межі об'єктів у пікселях — для малювання рамки й для зони дотику (одні й ті самі числа). */
 object PlaceBounds {
+    /**
+     * Точки штриха в пікселях: опорна точка (перша точка штриха) лежить у ([originX], [originY]), решта — зі зсувом
+     * (точка − опорна) × [zoom].
+     */
+    fun inkPointsPx(item: PendingMarkup, originX: Float, originY: Float, zoom: Float): FloatArray {
+        val xy = item.ink?.xy ?: return FloatArray(0)
+        return FloatArray(xy.size) { i ->
+            if (i % 2 == 0) originX + (xy[i] - item.x) * zoom else originY + (xy[i] - item.y) * zoom
+        }
+    }
+
     /** Нижче бази: Roboto descent ≈ 0.21 em. */
     const val TEXT_DESCENT_RATIO = 0.22f
 
@@ -142,6 +183,29 @@ object PlaceBounds {
     fun boundsPx(
         item: PendingMarkup, originX: Float, originY: Float, zoom: Float, lineWidthPx: (String) -> Float
     ): RectPx = when (item.tool) {
+        PlaceTool.INK -> {
+            val pts = inkPointsPx(item, originX, originY, zoom)
+            val half = item.sizePt * zoom / 2f
+            var l = originX
+            var t = originY
+            var r = originX
+            var b = originY
+            if (pts.size >= 2) {
+                l = pts[0]; r = pts[0]; t = pts[1]; b = pts[1]
+                var i = 2
+                while (i + 1 < pts.size) {
+                    if (pts[i] < l) l = pts[i]
+                    if (pts[i] > r) r = pts[i]
+                    if (pts[i + 1] < t) t = pts[i + 1]
+                    if (pts[i + 1] > b) b = pts[i + 1]
+                    i += 2
+                }
+            }
+            RectPx(l - half, t - half, r + half, b + half)
+        }
+        PlaceTool.SIGNATURE ->
+            RectPx(originX, originY, originX + item.sizePt * zoom, originY + item.sizePt * item.aspect * zoom)
+        PlaceTool.HAND -> RectPx(originX, originY, originX, originY)
         PlaceTool.CHECK, PlaceTool.CROSS -> {
             val half = item.sizePt * zoom / 2f + MarkupOverlayMath.strokePx(item.sizePt, zoom) / 2f
             RectPx(originX - half, originY - half, originX + half, originY + half)
