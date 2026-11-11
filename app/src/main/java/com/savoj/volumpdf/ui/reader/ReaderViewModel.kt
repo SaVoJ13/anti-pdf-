@@ -151,7 +151,11 @@ class ReaderViewModel(
         viewModelScope.launch {
             var restoredForms: List<FormFieldUpdate> = emptyList()
             val items = withContext(Dispatchers.IO) {
-                val state = try { store.loadState(key) } catch (_: Exception) { null }
+                val state = try {
+                    store.loadState(key) { version, shortKey ->
+                        android.util.Log.w(TAG, PendingStore.rejectMessage(version, shortKey))
+                    }
+                } catch (_: Exception) { null }
                 val loaded = state?.items ?: emptyList()
                 restoredForms = state?.forms ?: emptyList()
                 for (p in loaded) {
@@ -261,6 +265,7 @@ class ReaderViewModel(
     fun newInkColor(): Int = ((inkPreset.alpha and 0xFF) shl 24) or (placeColor and 0x00FFFFFF)
 
     companion object {
+        private const val TAG = "ReaderViewModel"
         private const val KEY_URI = "saved_document_uri"
         private const val KEY_PLACE_MODE = "place_mode"
         private const val KEY_TOOL = "place_tool"

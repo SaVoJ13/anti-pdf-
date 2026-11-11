@@ -190,11 +190,18 @@ class PendingStore(private val root: File) {
     fun load(documentKey: String): List<PendingMarkup>? = loadState(documentKey)?.items
 
     /** Об'єкти й значення форм. Невідома/пошкоджена версія безпечно відкидається (null), без падінь. */
-    fun loadState(documentKey: String): PendingCodec.Decoded? {
+    fun loadState(documentKey: String, onRejected: ((version: Int?, shortKey: String) -> Unit)? = null): PendingCodec.Decoded? {
+        // Відкинутий файл НЕ видаляємо: невідома версія може бути з новішого застосунку (чистка за віком прибере).
+        // Про відкидання кажемо через onRejected: лише номер версії (null — файл порожній) і короткий хеш ключа.
         val f = stateFile(documentKey)
         if (!f.isFile) return null
-        val decoded = try { PendingCodec.decode(f.readBytes()) } catch (_: Exception) { null } ?: return null
-        return if (decoded.documentKey == documentKey) decoded else null
+        val bytes = try { f.readBytes() } catch (_: Exception) { null }
+        val decoded = bytes?.let { try { PendingCodec.decode(it) } catch (_: Exception) { null } }
+        if (decoded == null || decoded.documentKey != documentKey) {
+            onRejected?.invoke(bytes?.firstOrNull()?.let { it.toInt() and 0xFF }, shortKey(documentKey))
+            return null
+        }
+        return decoded
     }
 
     fun clear(documentKey: String) {
@@ -214,6 +221,13 @@ class PendingStore(private val root: File) {
     companion object {
         const val STATE_NAME = "state.bin"
         const val MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000
+
+        /** Короткий хеш ключа документа для логів (8 символів); за ним документ не впізнати. */
+        fun shortKey(documentKey: String): String = hash(documentKey).take(8)
+
+        /** Текст запису в лог про відкинутий файл: лише факт, версія й короткий хеш. */
+        fun rejectMessage(version: Int?, shortKey: String): String =
+            "pending state rejected: version=${version ?: "none"} key=$shortKey"
 
         fun hash(documentKey: String): String {
             val d = MessageDigest.getInstance("SHA-256").digest(documentKey.toByteArray(Charsets.UTF_8))
