@@ -154,7 +154,7 @@
     <string name="place_blocked_rights">Das Bearbeiten geschützter Dokumente wird später hinzugefügt.</string>
     <string name="place_blocked_unreadable">Das Dokument konnte nicht zur Bearbeitung geöffnet werden.</string>
     <string name="place_unsaved_title">Nicht gespeicherte Änderungen</string>
-    <string name="place_unsaved_message">Auf den Seiten Platziertes speichern?</string>
+    <string name="place_unsaved_message">Änderungen speichern?</string>
     <string name="place_discard">Verwerfen</string>
     <string name="place_delete">Löschen</string>
     <string name="place_edit_text">Text ändern</string>

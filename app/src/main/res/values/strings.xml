@@ -154,7 +154,7 @@
     <string name="place_blocked_rights">Editing protected documents will be added later.</string>
     <string name="place_blocked_unreadable">Couldn\'t open the document for editing.</string>
     <string name="place_unsaved_title">Unsaved changes</string>
-    <string name="place_unsaved_message">Save what you\'ve placed on the pages?</string>
+    <string name="place_unsaved_message">Save changes?</string>
     <string name="place_discard">Discard</string>
     <string name="place_delete">Delete</string>
     <string name="place_edit_text">Edit text</string>

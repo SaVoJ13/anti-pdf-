@@ -154,7 +154,7 @@
     <string name="place_blocked_rights">Редагування захищених документів буде додано пізніше.</string>
     <string name="place_blocked_unreadable">Не вдалося відкрити документ для редагування.</string>
     <string name="place_unsaved_title">Незбережені зміни</string>
-    <string name="place_unsaved_message">Зберегти додане на сторінках?</string>
+    <string name="place_unsaved_message">Зберегти зміни?</string>
     <string name="place_discard">Відкинути</string>
     <string name="place_delete">Видалити</string>
     <string name="place_edit_text">Змінити текст</string>

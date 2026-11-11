@@ -154,7 +154,7 @@
     <string name="place_blocked_rights">Редактирование защищённых документов будет добавлено позже.</string>
     <string name="place_blocked_unreadable">Не удалось открыть документ для редактирования.</string>
     <string name="place_unsaved_title">Несохранённые изменения</string>
-    <string name="place_unsaved_message">Сохранить добавленное на страницах?</string>
+    <string name="place_unsaved_message">Сохранить изменения?</string>
     <string name="place_discard">Отбросить</string>
     <string name="place_delete">Удалить</string>
     <string name="place_edit_text">Изменить текст</string>
