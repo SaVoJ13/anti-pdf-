@@ -164,7 +164,7 @@ class ReaderActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val fields = withContext(Dispatchers.IO) {
                 try {
-                    formEngine.extractFormFields(applicationContext, uri)
+                    formEngine.extractFormFields(applicationContext, uri, viewModel.documentPassword)
                 } catch (e: Throwable) {
                     if (e is CancellationException) throw e
                     emptyList()
