@@ -17,6 +17,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -36,6 +37,7 @@ import com.savoj.volumpdf.core.pdf.model.PageMarkup
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.databinding.ActivityReaderBinding
+import com.savoj.volumpdf.databinding.DialogDocumentPasswordBinding
 import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
@@ -44,6 +46,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
@@ -73,7 +77,8 @@ class ReaderActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         applyWindowInsets()
 
-        val uri = intent.data ?: savedInstanceState?.getString(KEY_SAVED_URI)?.let { Uri.parse(it) }
+        // Після відновлення (поворот, завершення процесу) — URI поточного документа (це може бути збережена копія).
+        val uri = savedInstanceState?.getString(KEY_SAVED_URI)?.let { Uri.parse(it) } ?: intent.data
         if (uri == null) {
             finish()
             return
@@ -121,6 +126,7 @@ class ReaderActivity : AppCompatActivity() {
         }
 
         fragment.onDocumentLoadedListener = { count ->
+            viewModel.viewerOpened = true
             viewModel.updatePageCount(count)
         }
 
@@ -158,7 +164,7 @@ class ReaderActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val fields = withContext(Dispatchers.IO) {
                 try {
-                    formEngine.extractFormFields(applicationContext, uri)
+                    formEngine.extractFormFields(applicationContext, uri, viewModel.documentPassword)
                 } catch (e: Throwable) {
                     if (e is CancellationException) throw e
                     emptyList()
@@ -191,21 +197,94 @@ class ReaderActivity : AppCompatActivity() {
         val uri = documentUri ?: return
         if (supportFragmentManager.findFragmentByTag(FillFormBottomSheetDialogFragment.TAG) != null) return
         lifecycleScope.launch {
-            val editability = withContext(Dispatchers.IO) {
-                try {
-                    markupEngine.checkEditability(applicationContext, uri, null)
-                } catch (e: Throwable) {
-                    if (e is CancellationException) throw e
-                    null
-                }
-            }
-            when {
-                editability == null -> showMessage(getString(R.string.place_blocked_unreadable), long = true)
-                editability.isEncrypted -> showMessage(getString(R.string.place_blocked_encrypted), long = true)
-                else -> FillFormBottomSheetDialogFragment.newInstance(editability.canFillForms)
-                    .show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
+            val access = obtainAccess() ?: return@launch
+            // L1: права автора керують окремо — без права заповнення шторка лише для читання з поясненням.
+            FillFormBottomSheetDialogFragment.newInstance(EditAccessModel.formsMode(access) == EditAccessModel.FormsMode.EDITABLE)
+                .show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Доступ до редагування (етап 3e): checkEditability → EditAccess; пароль лише в пам'яті ViewModel.
+    // ---------------------------------------------------------------------------------------------
+
+    private suspend fun queryAccess(password: String?): EditAccess {
+        val uri = documentUri ?: return EditAccess.Unreadable
+        val editability = withContext(Dispatchers.IO) {
+            try {
+                markupEngine.checkEditability(applicationContext, uri, password)
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                null
             }
         }
+        return EditAccessModel.resolve(editability, passwordEntered = password != null, viewerOpened = viewModel.viewerOpened)
+    }
+
+    /**
+     * Доступ до редагування або null, якщо його нема (користувач скасував пароль чи документ не відкрито; для
+     * Unreadable показано повідомлення). Стан «потрібен пароль»: власний діалог із повтором при помилці; успішний
+     * пароль живе лише у ViewModel; після нього поля форм читаються знову (з паролем).
+     */
+    private suspend fun obtainAccess(): EditAccess? {
+        var access = queryAccess(viewModel.documentPassword)
+        while (EditAccessModel.needsPassword(access)) {
+            val entered = askPassword(showError = access === EditAccess.WrongPassword) ?: return null
+            val next = queryAccess(entered)
+            if (next !== EditAccess.WrongPassword) {
+                viewModel.documentPassword = entered
+                if (next is EditAccess.Restricted || next is EditAccess.Open) documentUri?.let { checkForFormFields(it) }
+            }
+            access = next
+        }
+        if (access === EditAccess.Unreadable) {
+            showMessage(getString(R.string.place_blocked_unreadable), long = true)
+            return null
+        }
+        return access
+    }
+
+    /** Діалог пароля (textPassword). null — скасовано. Пароль нікуди не пишеться й не логується. */
+    private suspend fun askPassword(showError: Boolean): String? = suspendCancellableCoroutine { cont ->
+        val dialogBinding = DialogDocumentPasswordBinding.inflate(layoutInflater)
+        if (showError) dialogBinding.passwordInputLayout.error = getString(R.string.password_wrong)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.password_title)
+            .setView(dialogBinding.root)
+            .setPositiveButton(R.string.password_continue, null)
+            .setNegativeButton(R.string.action_cancel, null)
+            .create()
+        dialog.window?.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+        )
+        var answered = false
+        fun answer(value: String?) {
+            if (answered) return
+            answered = true
+            if (cont.isActive) cont.resume(value)
+        }
+        dialog.setOnShowListener {
+            val min = dp(48)
+            listOf(dialog.getButton(AlertDialog.BUTTON_POSITIVE), dialog.getButton(AlertDialog.BUTTON_NEGATIVE)).forEach {
+                it.minHeight = min; it.minimumHeight = min; it.minWidth = min; it.minimumWidth = min
+            }
+            val input = dialogBinding.passwordInput
+            input.requestFocus()
+            input.post {
+                dialog.window?.let { w -> WindowCompat.getInsetsController(w, input).show(WindowInsetsCompat.Type.ime()) }
+            }
+            fun submit() {
+                val text = input.text?.toString().orEmpty()
+                if (text.isEmpty()) return
+                answer(text)
+                dialog.dismiss()
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { submit() }
+            input.setOnEditorActionListener { _, _, _ -> submit(); true }
+        }
+        dialog.setOnDismissListener { answer(null) }
+        cont.invokeOnCancellation { if (dialog.isShowing) dialog.dismiss() }
+        dialog.show()
     }
 
     private fun setupBackNavigation() {
@@ -495,23 +574,23 @@ class ReaderActivity : AppCompatActivity() {
     private fun enterPlaceMode() {
         if (enteringPlaceMode) return
         if (viewModel.placeModeActive && binding.placePanelCard.visibility == View.VISIBLE) return
-        val uri = documentUri ?: return
+        documentUri ?: return
         enteringPlaceMode = true
         lifecycleScope.launch {
             try {
-                val editability = withContext(Dispatchers.IO) {
-                    try {
-                        markupEngine.checkEditability(applicationContext, uri, null)
-                    } catch (e: Throwable) {
-                        if (e is CancellationException) throw e
-                        null
-                    }
+                val access = obtainAccess()
+                if (access == null) {
+                    // Пароль скасовано або документ не відкрито: режим не вмикаємо, незбережене НЕ чіпаємо
+                    // (воно лишається на панелі «Зберегти / Відкинути» й у сховищі).
+                    viewModel.placeModeActive = false
+                    return@launch
                 }
-                val gate = PlaceMarkupLogic.gate(editability?.isEncrypted, editability?.canMarkup)
-                if (gate != PlaceMarkupLogic.Gate.ALLOWED) {
+                if (!EditAccessModel.canMarkup(access)) {
+                    // Автор заборонив зміну: інструменти «Поставити» вимкнені з поясненням (значення форм, якщо
+                    // їх дозволено, редагуються у шторці «Форми»).
                     viewModel.clearPending()
                     viewModel.placeModeActive = false
-                    showMessage(gateMessage(gate), long = true)
+                    showMessage(getString(R.string.place_blocked_rights), long = true)
                     return@launch
                 }
                 showPlaceUi()
@@ -751,75 +830,118 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * Єдине збереження: checkEditability → ОДИН applyEdits (той самий URI; formUpdates зі змін форм) → reload.
-     * Після успіху незбережене (об'єкти, форми, файл у pending) очищується, поля читаються знову; при Error усе
-     * лишається, повідомлення містить userMessage (для Choice — назву поля). Реклама в читачі не показується (R4).
+     * Єдине збереження. Незашифрований документ — як у 3d: ОДИН applyEdits у той самий URI. Зашифрований — лише нова
+     * копія (R15): попередження → CreateDocument → applyEdits(outputUri = копія, password = введений пароль або null).
+     * Після успіху незбережене очищується; при Error усе лишається, повідомлення містить userMessage.
      */
     private fun savePending(onSuccess: () -> Unit = {}) {
         if (savingPlace) return
-        val uri = documentUri ?: return
-        val items = viewModel.editor.value.items
-        val request = SaveLogic.request(
-            items.map { PlaceMarkupLogic.toPageMarkup(it) { id -> viewModel.signatureBitmaps[id] } },
-            viewModel.formFields.value, viewModel.formEdits.value
-        )
+        documentUri ?: return
+        val request = buildSaveRequest()
         if (request.markups.isEmpty() && request.formUpdates.isEmpty()) {
             // Лише записи без поля у файлі (застарілі) — зберігати нічого.
             if (viewModel.hasUnsaved.value) viewModel.clearAllPending()
             onSuccess()
             return
         }
+        lifecycleScope.launch {
+            val access = obtainAccess() ?: return@launch
+            when (EditAccessModel.saveTarget(access, request.markups.isNotEmpty(), request.formUpdates.isNotEmpty())) {
+                EditAccessModel.SaveTarget.SAME_URI -> runSave(documentUri ?: return@launch, copy = false, onSuccess = onSuccess)
+                EditAccessModel.SaveTarget.NEW_COPY -> confirmCopy(onSuccess)
+                EditAccessModel.SaveTarget.DENIED -> showMessage(getString(R.string.place_blocked_rights), long = true)
+                EditAccessModel.SaveTarget.UNAVAILABLE -> showMessage(getString(R.string.place_blocked_unreadable), long = true)
+            }
+        }
+    }
+
+    private fun buildSaveRequest(): SaveLogic.Request<PageMarkup> {
+        val items = viewModel.editor.value.items
+        return SaveLogic.request(
+            items.map { PlaceMarkupLogic.toPageMarkup(it) { id -> viewModel.signatureBitmaps[id] } },
+            viewModel.formFields.value, viewModel.formEdits.value
+        )
+    }
+
+    /** Дія після успішного збереження копії; тримається поки відкрито системний вибір місця (поворот його не губить, процес — так). */
+    private var copyOnSuccess: (() -> Unit)? = null
+
+    private val createCopyLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { out ->
+        val onSuccess = copyOnSuccess
+        copyOnSuccess = null
+        if (out == null) return@registerForActivityResult // вибір скасовано: нічого не втрачено, незбережене на місці
+        lifecycleScope.launch { runSave(out, copy = true, onSuccess = onSuccess ?: {}) }
+    }
+
+    private fun confirmCopy(onSuccess: () -> Unit) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.copy_warning_title)
+            .setMessage(R.string.copy_warning_message)
+            .setPositiveButton(R.string.copy_save) { _, _ ->
+                copyOnSuccess = onSuccess
+                createCopyLauncher.launch(CopyNaming.suggestedName(documentTitle))
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    /** Записує зміни: [copy] = false — у документ ([output] = той самий URI); true — у нову копію [output]. */
+    private suspend fun runSave(output: Uri, copy: Boolean, onSuccess: () -> Unit) {
+        if (savingPlace) return
+        val source = documentUri ?: return
+        val request = buildSaveRequest()
         savingPlace = true
         binding.markupOverlay.editingEnabled = false
         showLoadingOverlay(getString(R.string.saving_annotations))
-        lifecycleScope.launch {
-            try {
-                val editability = withContext(Dispatchers.IO) {
-                    try {
-                        markupEngine.checkEditability(applicationContext, uri, null)
-                    } catch (e: Throwable) {
-                        if (e is CancellationException) throw e
-                        null
-                    }
-                }
-                val gate = SaveLogic.gate(
-                    editability?.isEncrypted, editability?.canMarkup, editability?.canFillForms,
-                    hasItems = request.markups.isNotEmpty(), hasForms = request.formUpdates.isNotEmpty()
+        try {
+            val password = if (copy) viewModel.documentPassword else null
+            val outcome = SaveLogic.run(request) { markups, formUpdates ->
+                markupEngine.applyEdits(
+                    context = applicationContext,
+                    sourceUri = source,
+                    markups = markups,
+                    formUpdates = formUpdates,
+                    outputUri = output,
+                    password = password
                 )
-                if (gate != PlaceMarkupLogic.Gate.ALLOWED) {
-                    showMessage(gateMessage(gate), long = true)
-                    return@launch
-                }
-                val outcome = SaveLogic.run(request) { markups, formUpdates ->
-                    markupEngine.applyEdits(
-                        context = applicationContext,
-                        sourceUri = uri,
-                        markups = markups,
-                        formUpdates = formUpdates,
-                        outputUri = uri,
-                        password = null
-                    )
-                }
-                when (outcome) {
-                    SaveOutcome.Saved -> {
+            }
+            when (outcome) {
+                SaveOutcome.Saved -> {
+                    if (copy) {
+                        SafUtils.takePersistableUriPermissionSafe(this, output)
+                        viewModel.clearAllPending() // незбережене оригіналу: його вже записано в копію
+                        switchToDocument(output) // копія — поточний документ (читач, «Останні»)
+                        showMessage(getString(R.string.place_copy_saved), long = false)
+                    } else {
                         reloadViewerDocument()
                         viewModel.clearAllPending()
-                        checkForFormFields(uri) // поля читаємо знову, бейдж оновлюється
+                        checkForFormFields(source) // поля читаємо знову, бейдж оновлюється
                         showMessage(getString(R.string.place_saved), long = false)
-                        onSuccess()
                     }
-                    is SaveOutcome.Failed -> showMessage(outcome.message.ifBlank { getString(R.string.error_title) }, long = true)
-                    SaveOutcome.NothingToSave -> onSuccess()
+                    onSuccess()
                 }
-            } catch (e: Throwable) {
-                if (e is CancellationException) throw e
-                showMessage(e.localizedMessage ?: getString(R.string.error_title), long = true)
-            } finally {
-                hideLoadingOverlay()
-                savingPlace = false
-                binding.markupOverlay.editingEnabled = viewModel.placeModeActive
+                is SaveOutcome.Failed -> showError(outcome.message.ifBlank { getString(R.string.error_title) })
+                SaveOutcome.NothingToSave -> onSuccess()
             }
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            showError(e.localizedMessage ?: getString(R.string.error_title))
+        } finally {
+            hideLoadingOverlay()
+            savingPlace = false
+            binding.markupOverlay.editingEnabled = viewModel.placeModeActive
         }
+    }
+
+    /** Копія стає поточним документом: URI, назва, запис у «Останніх», переглядач (з відновленням позиції), поля форм. */
+    private fun switchToDocument(newUri: Uri) {
+        documentUri = newUri
+        documentTitle = SafUtils.queryDisplayName(this, newUri)
+        intent.putExtra(EXTRA_DOCUMENT_TITLE, documentTitle)
+        binding.toolbar.title = documentTitle
+        viewModel.initDocument(newUri, documentTitle) // запис у «Останніх» і порожнє незбережене нового ключа
+        reloadViewerDocument()
+        checkForFormFields(newUri)
     }
 
     private var signatureHint: Snackbar? = null
@@ -827,6 +949,20 @@ class ReaderActivity : AppCompatActivity() {
     private fun dismissSignatureHint() {
         signatureHint?.dismiss()
         signatureHint = null
+    }
+
+    private var errorSnackbar: Snackbar? = null
+
+    /** L7: повідомлення про помилку лишається, доки користувач не закриє («ОК»); успіх — короткий [showMessage]. */
+    private fun showError(text: String): Snackbar {
+        errorSnackbar?.dismiss()
+        val snackbar = Snackbar.make(binding.root, text, Snackbar.LENGTH_INDEFINITE)
+            .setAction(R.string.action_ok) { }
+        snackbar.view.findViewById<android.widget.TextView>(com.google.android.material.R.id.snackbar_text)?.maxLines = 6
+        if (binding.placePanelCard.visibility == View.VISIBLE) snackbar.setAnchorView(binding.placePanelCard)
+        snackbar.show()
+        errorSnackbar = snackbar
+        return snackbar
     }
 
     private fun showMessage(text: String, long: Boolean, indefinite: Boolean = false): Snackbar {
@@ -995,11 +1131,8 @@ class ReaderActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
-                if (viewModel.placeModeActive) {
-                    exitReaderThen { finish() }
-                } else {
-                    finish()
-                }
+                // M2: «вгору» — той самий вихід, що й «Назад»: за незбережених змін (об'єкти чи форми) діалог.
+                exitReaderThen { finish() }
                 true
             }
             R.id.action_place -> {

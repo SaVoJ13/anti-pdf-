@@ -151,10 +151,10 @@
     <string name="place_text_unsupported">These characters are not supported: %1$s</string>
     <string name="place_saved">Saved to the document</string>
     <string name="place_blocked_encrypted">Editing protected documents will be added later.</string>
-    <string name="place_blocked_rights">Editing protected documents will be added later.</string>
+    <string name="place_blocked_rights">The document author has disabled changes.</string>
     <string name="place_blocked_unreadable">Couldn\'t open the document for editing.</string>
     <string name="place_unsaved_title">Unsaved changes</string>
-    <string name="place_unsaved_message">Save what you\'ve placed on the pages?</string>
+    <string name="place_unsaved_message">Save changes?</string>
     <string name="place_discard">Discard</string>
     <string name="place_delete">Delete</string>
     <string name="place_edit_text">Edit text</string>
@@ -172,4 +172,12 @@
     <string name="forms_reset_all">Reset all form changes</string>
     <string name="forms_read_only_note">This document does not allow filling in forms, so the fields are view-only.</string>
     <string name="unsaved_bar_text">You have unsaved changes</string>
+    <string name="password_title">Password required</string>
+    <string name="password_message">Enter the password to edit this document.</string>
+    <string name="password_continue">Continue</string>
+    <string name="password_wrong">Wrong password, or the file does not support editing</string>
+    <string name="copy_warning_title">Protected file</string>
+    <string name="copy_warning_message">The file is protected. The copy will be saved with the same password; the owner password and rights restrictions are not carried over.</string>
+    <string name="copy_save">Save copy</string>
+    <string name="place_copy_saved">Copy saved</string>
 </resources>

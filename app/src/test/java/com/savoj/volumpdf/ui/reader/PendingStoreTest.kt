@@ -172,4 +172,31 @@ class PendingStoreTest {
         assertNull(store.loadState("f"))
         assertNotNull(store.load("old1"))
     }
+
+    @Test
+    fun rejectedFileIsReportedWithVersionAndShortKeyOnlyAndKept() {
+        val store = PendingStore(tmp.newFolder("rej"))
+        val key = "content://secret/Мій документ.pdf"
+        val dir = store.dirFor(key).also { it.mkdirs() }
+        val file = File(dir, PendingStore.STATE_NAME)
+        file.writeBytes(byteArrayOf(99, 1, 2, 3)) // невідома (новіша) версія
+
+        var version: Int? = -1
+        var short = ""
+        assertNull(store.loadState(key) { v, s -> version = v; short = s })
+        assertEquals(99, version)
+        assertEquals(8, short.length)
+        assertTrue(file.isFile) // файл не видалено
+
+        val msg = PendingStore.rejectMessage(version, short)
+        assertEquals("pending state rejected: version=99 key=$short", msg)
+        assertFalse(msg.contains("secret"))
+        assertFalse(msg.contains("документ"))
+
+        file.writeBytes(ByteArray(0)) // порожній файл: версії немає
+        var v2: Int? = -1
+        assertNull(store.loadState(key) { v, _ -> v2 = v })
+        assertNull(v2)
+        assertTrue(file.isFile)
+    }
 }

@@ -151,10 +151,10 @@
     <string name="place_text_unsupported">Ці символи не підтримуються: %1$s</string>
     <string name="place_saved">Збережено в документ</string>
     <string name="place_blocked_encrypted">Редагування захищених документів буде додано пізніше.</string>
-    <string name="place_blocked_rights">Редагування захищених документів буде додано пізніше.</string>
+    <string name="place_blocked_rights">Автор документа заборонив зміни.</string>
     <string name="place_blocked_unreadable">Не вдалося відкрити документ для редагування.</string>
     <string name="place_unsaved_title">Незбережені зміни</string>
-    <string name="place_unsaved_message">Зберегти додане на сторінках?</string>
+    <string name="place_unsaved_message">Зберегти зміни?</string>
     <string name="place_discard">Відкинути</string>
     <string name="place_delete">Видалити</string>
     <string name="place_edit_text">Змінити текст</string>
@@ -172,4 +172,12 @@
     <string name="forms_reset_all">Скинути всі зміни форм</string>
     <string name="forms_read_only_note">Цей документ не дозволяє заповнювати форми, тому поля доступні лише для перегляду.</string>
     <string name="unsaved_bar_text">Є незбережені зміни</string>
+    <string name="password_title">Потрібен пароль</string>
+    <string name="password_message">Введіть пароль, щоб редагувати цей документ.</string>
+    <string name="password_continue">Продовжити</string>
+    <string name="password_wrong">Невірний пароль або файл не підтримується для редагування</string>
+    <string name="copy_warning_title">Файл захищено</string>
+    <string name="copy_warning_message">Файл захищено. Копію буде збережено з тим самим паролем; пароль власника й обмеження прав не переносяться.</string>
+    <string name="copy_save">Зберегти копію</string>
+    <string name="place_copy_saved">Копію збережено</string>
 </resources>

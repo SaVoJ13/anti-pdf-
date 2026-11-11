@@ -184,7 +184,11 @@ class FormFieldsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             val values = FormEditing.choiceOptionsWithNone(field) // "" означає «не вибрано»
             val noneLabel = context.getString(R.string.form_choice_none)
             fun display(v: String) = if (v.isEmpty() && !field.isEditableCombo) noneLabel else v
-            val adapter = ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, values.map { display(it) })
+            val shown = values.map { display(it) }
+            // L4+L5: нередагований Choice — лише випадний список: усі варіанти завжди (без фільтра за текстом).
+            val adapter: ArrayAdapter<String> =
+                if (field.isEditableCombo) ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, shown)
+                else AllItemsAdapter(context, shown)
             binding.autoCompleteChoice.setAdapter(adapter)
 
             comboWatcher?.let { binding.autoCompleteChoice.removeTextChangedListener(it) }
@@ -208,8 +212,21 @@ class FormFieldsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                 comboWatcher = watcher
                 binding.autoCompleteChoice.addTextChangedListener(watcher)
             } else {
+                // TYPE_NULL лишає TextKeyListener (апаратна клавіатура вводила символи): прибираємо слухач клавіш.
                 binding.autoCompleteChoice.inputType = InputType.TYPE_NULL
+                binding.autoCompleteChoice.keyListener = null
             }
+        }
+    }
+
+    /** Адаптер без фільтра: випадний список завжди показує всі варіанти, незалежно від поточного тексту поля. */
+    private class AllItemsAdapter(context: android.content.Context, private val all: List<String>) :
+        ArrayAdapter<String>(context, android.R.layout.simple_dropdown_item_1line, all) {
+        override fun getFilter(): android.widget.Filter = object : android.widget.Filter() {
+            override fun performFiltering(constraint: CharSequence?) =
+                FilterResults().also { it.values = all; it.count = all.size }
+
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) = notifyDataSetChanged()
         }
     }
 
