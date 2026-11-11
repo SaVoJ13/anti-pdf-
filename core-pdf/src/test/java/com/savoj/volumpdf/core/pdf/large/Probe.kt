@@ -105,6 +105,7 @@ abstract class LargeTestBase : MarkupTestSupport() {
         val v = res.getOrNull()
         if (v is PdfOperationResult.Error) {
             org.junit.Assert.assertTrue("[$case/$op] Error без userMessage", v.userMessage.isNotBlank())
+            if (v.cause is OutOfMemoryError) org.junit.Assert.assertEquals("[$case/$op] OOM має давати повідомлення про завеликий файл", "Файл завеликий для редагування", v.userMessage)
         }
         when (expect) {
             Expect.OK -> org.junit.Assert.assertTrue("[$case/$op] очікувався успіх, отримано ${row.outcome}: ${row.detail}", row.outcome == "OK")
