@@ -995,11 +995,8 @@ class ReaderActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
-                if (viewModel.placeModeActive) {
-                    exitReaderThen { finish() }
-                } else {
-                    finish()
-                }
+                // M2: «вгору» — той самий вихід, що й «Назад»: за незбережених змін (об'єкти чи форми) діалог.
+                exitReaderThen { finish() }
                 true
             }
             R.id.action_place -> {
