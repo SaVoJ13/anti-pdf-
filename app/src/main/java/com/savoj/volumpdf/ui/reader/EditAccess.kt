@@ -84,3 +84,11 @@ object EditAccessModel {
         return if (encrypted) SaveTarget.NEW_COPY else SaveTarget.SAME_URI
     }
 }
+
+/** Пропонована назва копії зашифрованого документа: «<ім'я>_edited.pdf». */
+object CopyNaming {
+    fun suggestedName(title: String?): String {
+        val base = (title ?: "").trim().let { if (it.endsWith(".pdf", ignoreCase = true)) it.dropLast(4) else it }.trim()
+        return (if (base.isEmpty()) "document" else base) + "_edited.pdf"
+    }
+}

@@ -17,6 +17,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -76,7 +77,8 @@ class ReaderActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         applyWindowInsets()
 
-        val uri = intent.data ?: savedInstanceState?.getString(KEY_SAVED_URI)?.let { Uri.parse(it) }
+        // Після відновлення (поворот, завершення процесу) — URI поточного документа (це може бути збережена копія).
+        val uri = savedInstanceState?.getString(KEY_SAVED_URI)?.let { Uri.parse(it) } ?: intent.data
         if (uri == null) {
             finish()
             return
@@ -828,75 +830,118 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * Єдине збереження: checkEditability → ОДИН applyEdits (той самий URI; formUpdates зі змін форм) → reload.
-     * Після успіху незбережене (об'єкти, форми, файл у pending) очищується, поля читаються знову; при Error усе
-     * лишається, повідомлення містить userMessage (для Choice — назву поля). Реклама в читачі не показується (R4).
+     * Єдине збереження. Незашифрований документ — як у 3d: ОДИН applyEdits у той самий URI. Зашифрований — лише нова
+     * копія (R15): попередження → CreateDocument → applyEdits(outputUri = копія, password = введений пароль або null).
+     * Після успіху незбережене очищується; при Error усе лишається, повідомлення містить userMessage.
      */
     private fun savePending(onSuccess: () -> Unit = {}) {
         if (savingPlace) return
-        val uri = documentUri ?: return
-        val items = viewModel.editor.value.items
-        val request = SaveLogic.request(
-            items.map { PlaceMarkupLogic.toPageMarkup(it) { id -> viewModel.signatureBitmaps[id] } },
-            viewModel.formFields.value, viewModel.formEdits.value
-        )
+        documentUri ?: return
+        val request = buildSaveRequest()
         if (request.markups.isEmpty() && request.formUpdates.isEmpty()) {
             // Лише записи без поля у файлі (застарілі) — зберігати нічого.
             if (viewModel.hasUnsaved.value) viewModel.clearAllPending()
             onSuccess()
             return
         }
+        lifecycleScope.launch {
+            val access = obtainAccess() ?: return@launch
+            when (EditAccessModel.saveTarget(access, request.markups.isNotEmpty(), request.formUpdates.isNotEmpty())) {
+                EditAccessModel.SaveTarget.SAME_URI -> runSave(documentUri ?: return@launch, copy = false, onSuccess = onSuccess)
+                EditAccessModel.SaveTarget.NEW_COPY -> confirmCopy(onSuccess)
+                EditAccessModel.SaveTarget.DENIED -> showMessage(getString(R.string.place_blocked_rights), long = true)
+                EditAccessModel.SaveTarget.UNAVAILABLE -> showMessage(getString(R.string.place_blocked_unreadable), long = true)
+            }
+        }
+    }
+
+    private fun buildSaveRequest(): SaveLogic.Request<PageMarkup> {
+        val items = viewModel.editor.value.items
+        return SaveLogic.request(
+            items.map { PlaceMarkupLogic.toPageMarkup(it) { id -> viewModel.signatureBitmaps[id] } },
+            viewModel.formFields.value, viewModel.formEdits.value
+        )
+    }
+
+    /** Дія після успішного збереження копії; тримається поки відкрито системний вибір місця (поворот його не губить, процес — так). */
+    private var copyOnSuccess: (() -> Unit)? = null
+
+    private val createCopyLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { out ->
+        val onSuccess = copyOnSuccess
+        copyOnSuccess = null
+        if (out == null) return@registerForActivityResult // вибір скасовано: нічого не втрачено, незбережене на місці
+        lifecycleScope.launch { runSave(out, copy = true, onSuccess = onSuccess ?: {}) }
+    }
+
+    private fun confirmCopy(onSuccess: () -> Unit) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.copy_warning_title)
+            .setMessage(R.string.copy_warning_message)
+            .setPositiveButton(R.string.copy_save) { _, _ ->
+                copyOnSuccess = onSuccess
+                createCopyLauncher.launch(CopyNaming.suggestedName(documentTitle))
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    /** Записує зміни: [copy] = false — у документ ([output] = той самий URI); true — у нову копію [output]. */
+    private suspend fun runSave(output: Uri, copy: Boolean, onSuccess: () -> Unit) {
+        if (savingPlace) return
+        val source = documentUri ?: return
+        val request = buildSaveRequest()
         savingPlace = true
         binding.markupOverlay.editingEnabled = false
         showLoadingOverlay(getString(R.string.saving_annotations))
-        lifecycleScope.launch {
-            try {
-                val editability = withContext(Dispatchers.IO) {
-                    try {
-                        markupEngine.checkEditability(applicationContext, uri, null)
-                    } catch (e: Throwable) {
-                        if (e is CancellationException) throw e
-                        null
-                    }
-                }
-                val gate = SaveLogic.gate(
-                    editability?.isEncrypted, editability?.canMarkup, editability?.canFillForms,
-                    hasItems = request.markups.isNotEmpty(), hasForms = request.formUpdates.isNotEmpty()
+        try {
+            val password = if (copy) viewModel.documentPassword else null
+            val outcome = SaveLogic.run(request) { markups, formUpdates ->
+                markupEngine.applyEdits(
+                    context = applicationContext,
+                    sourceUri = source,
+                    markups = markups,
+                    formUpdates = formUpdates,
+                    outputUri = output,
+                    password = password
                 )
-                if (gate != PlaceMarkupLogic.Gate.ALLOWED) {
-                    showMessage(gateMessage(gate), long = true)
-                    return@launch
-                }
-                val outcome = SaveLogic.run(request) { markups, formUpdates ->
-                    markupEngine.applyEdits(
-                        context = applicationContext,
-                        sourceUri = uri,
-                        markups = markups,
-                        formUpdates = formUpdates,
-                        outputUri = uri,
-                        password = null
-                    )
-                }
-                when (outcome) {
-                    SaveOutcome.Saved -> {
+            }
+            when (outcome) {
+                SaveOutcome.Saved -> {
+                    if (copy) {
+                        SafUtils.takePersistableUriPermissionSafe(this, output)
+                        viewModel.clearAllPending() // незбережене оригіналу: його вже записано в копію
+                        switchToDocument(output) // копія — поточний документ (читач, «Останні»)
+                        showMessage(getString(R.string.place_copy_saved), long = false)
+                    } else {
                         reloadViewerDocument()
                         viewModel.clearAllPending()
-                        checkForFormFields(uri) // поля читаємо знову, бейдж оновлюється
+                        checkForFormFields(source) // поля читаємо знову, бейдж оновлюється
                         showMessage(getString(R.string.place_saved), long = false)
-                        onSuccess()
                     }
-                    is SaveOutcome.Failed -> showError(outcome.message.ifBlank { getString(R.string.error_title) })
-                    SaveOutcome.NothingToSave -> onSuccess()
+                    onSuccess()
                 }
-            } catch (e: Throwable) {
-                if (e is CancellationException) throw e
-                showError(e.localizedMessage ?: getString(R.string.error_title))
-            } finally {
-                hideLoadingOverlay()
-                savingPlace = false
-                binding.markupOverlay.editingEnabled = viewModel.placeModeActive
+                is SaveOutcome.Failed -> showError(outcome.message.ifBlank { getString(R.string.error_title) })
+                SaveOutcome.NothingToSave -> onSuccess()
             }
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            showError(e.localizedMessage ?: getString(R.string.error_title))
+        } finally {
+            hideLoadingOverlay()
+            savingPlace = false
+            binding.markupOverlay.editingEnabled = viewModel.placeModeActive
         }
+    }
+
+    /** Копія стає поточним документом: URI, назва, запис у «Останніх», переглядач (з відновленням позиції), поля форм. */
+    private fun switchToDocument(newUri: Uri) {
+        documentUri = newUri
+        documentTitle = SafUtils.queryDisplayName(this, newUri)
+        intent.putExtra(EXTRA_DOCUMENT_TITLE, documentTitle)
+        binding.toolbar.title = documentTitle
+        viewModel.initDocument(newUri, documentTitle) // запис у «Останніх» і порожнє незбережене нового ключа
+        reloadViewerDocument()
+        checkForFormFields(newUri)
     }
 
     private var signatureHint: Snackbar? = null

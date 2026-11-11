@@ -126,4 +126,12 @@ class EditAccessTest {
         }
         assertTrue("password leaks: $risky", risky.isEmpty())
     }
+
+    @Test fun copyNameIsNameEditedPdf() {
+        assertEquals("report_edited.pdf", CopyNaming.suggestedName("report.pdf"))
+        assertEquals("Звіт_edited.pdf", CopyNaming.suggestedName("Звіт.PDF"))
+        assertEquals("scan_edited.pdf", CopyNaming.suggestedName("scan"))
+        assertEquals("document_edited.pdf", CopyNaming.suggestedName(null))
+        assertEquals("document_edited.pdf", CopyNaming.suggestedName(".pdf"))
+    }
 }

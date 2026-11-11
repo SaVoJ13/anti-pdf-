@@ -176,4 +176,8 @@
     <string name="password_message">Geben Sie das Passwort ein, um dieses Dokument zu bearbeiten.</string>
     <string name="password_continue">Weiter</string>
     <string name="password_wrong">Falsches Passwort oder die Datei unterstützt keine Bearbeitung</string>
+    <string name="copy_warning_title">Geschützte Datei</string>
+    <string name="copy_warning_message">Die Datei ist geschützt. Die Kopie wird mit demselben Passwort gespeichert; das Besitzerpasswort und die Rechtebeschränkungen werden nicht übernommen.</string>
+    <string name="copy_save">Kopie speichern</string>
+    <string name="place_copy_saved">Kopie gespeichert</string>
 </resources>

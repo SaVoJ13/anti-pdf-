@@ -176,4 +176,8 @@
     <string name="password_message">Введіть пароль, щоб редагувати цей документ.</string>
     <string name="password_continue">Продовжити</string>
     <string name="password_wrong">Невірний пароль або файл не підтримується для редагування</string>
+    <string name="copy_warning_title">Файл захищено</string>
+    <string name="copy_warning_message">Файл захищено. Копію буде збережено з тим самим паролем; пароль власника й обмеження прав не переносяться.</string>
+    <string name="copy_save">Зберегти копію</string>
+    <string name="place_copy_saved">Копію збережено</string>
 </resources>
