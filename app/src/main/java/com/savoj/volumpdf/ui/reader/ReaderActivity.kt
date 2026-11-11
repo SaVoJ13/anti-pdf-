@@ -808,12 +808,12 @@ class ReaderActivity : AppCompatActivity() {
                         showMessage(getString(R.string.place_saved), long = false)
                         onSuccess()
                     }
-                    is SaveOutcome.Failed -> showMessage(outcome.message.ifBlank { getString(R.string.error_title) }, long = true)
+                    is SaveOutcome.Failed -> showError(outcome.message.ifBlank { getString(R.string.error_title) })
                     SaveOutcome.NothingToSave -> onSuccess()
                 }
             } catch (e: Throwable) {
                 if (e is CancellationException) throw e
-                showMessage(e.localizedMessage ?: getString(R.string.error_title), long = true)
+                showError(e.localizedMessage ?: getString(R.string.error_title))
             } finally {
                 hideLoadingOverlay()
                 savingPlace = false
@@ -827,6 +827,20 @@ class ReaderActivity : AppCompatActivity() {
     private fun dismissSignatureHint() {
         signatureHint?.dismiss()
         signatureHint = null
+    }
+
+    private var errorSnackbar: Snackbar? = null
+
+    /** L7: повідомлення про помилку лишається, доки користувач не закриє («ОК»); успіх — короткий [showMessage]. */
+    private fun showError(text: String): Snackbar {
+        errorSnackbar?.dismiss()
+        val snackbar = Snackbar.make(binding.root, text, Snackbar.LENGTH_INDEFINITE)
+            .setAction(R.string.action_ok) { }
+        snackbar.view.findViewById<android.widget.TextView>(com.google.android.material.R.id.snackbar_text)?.maxLines = 6
+        if (binding.placePanelCard.visibility == View.VISIBLE) snackbar.setAnchorView(binding.placePanelCard)
+        snackbar.show()
+        errorSnackbar = snackbar
+        return snackbar
     }
 
     private fun showMessage(text: String, long: Boolean, indefinite: Boolean = false): Snackbar {
