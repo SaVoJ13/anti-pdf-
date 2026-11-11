@@ -172,4 +172,8 @@
     <string name="forms_reset_all">Скинути всі зміни форм</string>
     <string name="forms_read_only_note">Цей документ не дозволяє заповнювати форми, тому поля доступні лише для перегляду.</string>
     <string name="unsaved_bar_text">Є незбережені зміни</string>
+    <string name="password_title">Потрібен пароль</string>
+    <string name="password_message">Введіть пароль, щоб редагувати цей документ.</string>
+    <string name="password_continue">Продовжити</string>
+    <string name="password_wrong">Невірний пароль або файл не підтримується для редагування</string>
 </resources>

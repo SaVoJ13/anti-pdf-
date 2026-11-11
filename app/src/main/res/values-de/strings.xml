@@ -172,4 +172,8 @@
     <string name="forms_reset_all">Alle Formularänderungen zurücksetzen</string>
     <string name="forms_read_only_note">Dieses Dokument erlaubt kein Ausfüllen von Formularen, daher sind die Felder nur lesbar.</string>
     <string name="unsaved_bar_text">Nicht gespeicherte Änderungen</string>
+    <string name="password_title">Passwort erforderlich</string>
+    <string name="password_message">Geben Sie das Passwort ein, um dieses Dokument zu bearbeiten.</string>
+    <string name="password_continue">Weiter</string>
+    <string name="password_wrong">Falsches Passwort oder die Datei unterstützt keine Bearbeitung</string>
 </resources>

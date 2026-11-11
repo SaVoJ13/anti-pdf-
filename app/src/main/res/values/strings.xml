@@ -172,4 +172,8 @@
     <string name="forms_reset_all">Reset all form changes</string>
     <string name="forms_read_only_note">This document does not allow filling in forms, so the fields are view-only.</string>
     <string name="unsaved_bar_text">You have unsaved changes</string>
+    <string name="password_title">Password required</string>
+    <string name="password_message">Enter the password to edit this document.</string>
+    <string name="password_continue">Continue</string>
+    <string name="password_wrong">Wrong password, or the file does not support editing</string>
 </resources>

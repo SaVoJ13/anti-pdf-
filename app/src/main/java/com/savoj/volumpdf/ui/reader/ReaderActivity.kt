@@ -36,6 +36,7 @@ import com.savoj.volumpdf.core.pdf.model.PageMarkup
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.databinding.ActivityReaderBinding
+import com.savoj.volumpdf.databinding.DialogDocumentPasswordBinding
 import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
@@ -44,6 +45,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
@@ -121,6 +124,7 @@ class ReaderActivity : AppCompatActivity() {
         }
 
         fragment.onDocumentLoadedListener = { count ->
+            viewModel.viewerOpened = true
             viewModel.updatePageCount(count)
         }
 
@@ -191,21 +195,97 @@ class ReaderActivity : AppCompatActivity() {
         val uri = documentUri ?: return
         if (supportFragmentManager.findFragmentByTag(FillFormBottomSheetDialogFragment.TAG) != null) return
         lifecycleScope.launch {
-            val editability = withContext(Dispatchers.IO) {
-                try {
-                    markupEngine.checkEditability(applicationContext, uri, null)
-                } catch (e: Throwable) {
-                    if (e is CancellationException) throw e
-                    null
-                }
-            }
-            when {
-                editability == null -> showMessage(getString(R.string.place_blocked_unreadable), long = true)
-                editability.isEncrypted -> showMessage(getString(R.string.place_blocked_encrypted), long = true)
-                else -> FillFormBottomSheetDialogFragment.newInstance(editability.canFillForms)
-                    .show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
+            val access = obtainAccess() ?: return@launch
+            when (access) {
+                is EditAccess.Open ->
+                    FillFormBottomSheetDialogFragment.newInstance(access.canFillForms)
+                        .show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
+                else -> showMessage(getString(R.string.place_blocked_encrypted), long = true)
             }
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Доступ до редагування (етап 3e): checkEditability → EditAccess; пароль лише в пам'яті ViewModel.
+    // ---------------------------------------------------------------------------------------------
+
+    private suspend fun queryAccess(password: String?): EditAccess {
+        val uri = documentUri ?: return EditAccess.Unreadable
+        val editability = withContext(Dispatchers.IO) {
+            try {
+                markupEngine.checkEditability(applicationContext, uri, password)
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                null
+            }
+        }
+        return EditAccessModel.resolve(editability, passwordEntered = password != null, viewerOpened = viewModel.viewerOpened)
+    }
+
+    /**
+     * Доступ до редагування або null, якщо його нема (користувач скасував пароль чи документ не відкрито; для
+     * Unreadable показано повідомлення). Стан «потрібен пароль»: власний діалог із повтором при помилці; успішний
+     * пароль живе лише у ViewModel; після нього поля форм читаються знову (з паролем).
+     */
+    private suspend fun obtainAccess(): EditAccess? {
+        var access = queryAccess(viewModel.documentPassword)
+        while (EditAccessModel.needsPassword(access)) {
+            val entered = askPassword(showError = access === EditAccess.WrongPassword) ?: return null
+            val next = queryAccess(entered)
+            if (next !== EditAccess.WrongPassword) {
+                viewModel.documentPassword = entered
+                if (next is EditAccess.Restricted || next is EditAccess.Open) documentUri?.let { checkForFormFields(it) }
+            }
+            access = next
+        }
+        if (access === EditAccess.Unreadable) {
+            showMessage(getString(R.string.place_blocked_unreadable), long = true)
+            return null
+        }
+        return access
+    }
+
+    /** Діалог пароля (textPassword). null — скасовано. Пароль нікуди не пишеться й не логується. */
+    private suspend fun askPassword(showError: Boolean): String? = suspendCancellableCoroutine { cont ->
+        val dialogBinding = DialogDocumentPasswordBinding.inflate(layoutInflater)
+        if (showError) dialogBinding.passwordInputLayout.error = getString(R.string.password_wrong)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.password_title)
+            .setView(dialogBinding.root)
+            .setPositiveButton(R.string.password_continue, null)
+            .setNegativeButton(R.string.action_cancel, null)
+            .create()
+        dialog.window?.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+        )
+        var answered = false
+        fun answer(value: String?) {
+            if (answered) return
+            answered = true
+            if (cont.isActive) cont.resume(value)
+        }
+        dialog.setOnShowListener {
+            val min = dp(48)
+            listOf(dialog.getButton(AlertDialog.BUTTON_POSITIVE), dialog.getButton(AlertDialog.BUTTON_NEGATIVE)).forEach {
+                it.minHeight = min; it.minimumHeight = min; it.minWidth = min; it.minimumWidth = min
+            }
+            val input = dialogBinding.passwordInput
+            input.requestFocus()
+            input.post {
+                dialog.window?.let { w -> WindowCompat.getInsetsController(w, input).show(WindowInsetsCompat.Type.ime()) }
+            }
+            fun submit() {
+                val text = input.text?.toString().orEmpty()
+                if (text.isEmpty()) return
+                answer(text)
+                dialog.dismiss()
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { submit() }
+            input.setOnEditorActionListener { _, _, _ -> submit(); true }
+        }
+        dialog.setOnDismissListener { answer(null) }
+        cont.invokeOnCancellation { if (dialog.isShowing) dialog.dismiss() }
+        dialog.show()
     }
 
     private fun setupBackNavigation() {
@@ -495,23 +575,21 @@ class ReaderActivity : AppCompatActivity() {
     private fun enterPlaceMode() {
         if (enteringPlaceMode) return
         if (viewModel.placeModeActive && binding.placePanelCard.visibility == View.VISIBLE) return
-        val uri = documentUri ?: return
+        documentUri ?: return
         enteringPlaceMode = true
         lifecycleScope.launch {
             try {
-                val editability = withContext(Dispatchers.IO) {
-                    try {
-                        markupEngine.checkEditability(applicationContext, uri, null)
-                    } catch (e: Throwable) {
-                        if (e is CancellationException) throw e
-                        null
-                    }
+                val access = obtainAccess()
+                if (access == null) {
+                    // Пароль скасовано або документ не відкрито: режим не вмикаємо, незбережене НЕ чіпаємо
+                    // (воно лишається на панелі «Зберегти / Відкинути» й у сховищі).
+                    viewModel.placeModeActive = false
+                    return@launch
                 }
-                val gate = PlaceMarkupLogic.gate(editability?.isEncrypted, editability?.canMarkup)
-                if (gate != PlaceMarkupLogic.Gate.ALLOWED) {
+                if (access !is EditAccess.Open) {
                     viewModel.clearPending()
                     viewModel.placeModeActive = false
-                    showMessage(gateMessage(gate), long = true)
+                    showMessage(getString(R.string.place_blocked_encrypted), long = true)
                     return@launch
                 }
                 showPlaceUi()
