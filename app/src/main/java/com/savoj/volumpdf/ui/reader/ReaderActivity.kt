@@ -196,12 +196,9 @@ class ReaderActivity : AppCompatActivity() {
         if (supportFragmentManager.findFragmentByTag(FillFormBottomSheetDialogFragment.TAG) != null) return
         lifecycleScope.launch {
             val access = obtainAccess() ?: return@launch
-            when (access) {
-                is EditAccess.Open ->
-                    FillFormBottomSheetDialogFragment.newInstance(access.canFillForms)
-                        .show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
-                else -> showMessage(getString(R.string.place_blocked_encrypted), long = true)
-            }
+            // L1: права автора керують окремо — без права заповнення шторка лише для читання з поясненням.
+            FillFormBottomSheetDialogFragment.newInstance(EditAccessModel.formsMode(access) == EditAccessModel.FormsMode.EDITABLE)
+                .show(supportFragmentManager, FillFormBottomSheetDialogFragment.TAG)
         }
     }
 
@@ -586,10 +583,12 @@ class ReaderActivity : AppCompatActivity() {
                     viewModel.placeModeActive = false
                     return@launch
                 }
-                if (access !is EditAccess.Open) {
+                if (!EditAccessModel.canMarkup(access)) {
+                    // Автор заборонив зміну: інструменти «Поставити» вимкнені з поясненням (значення форм, якщо
+                    // їх дозволено, редагуються у шторці «Форми»).
                     viewModel.clearPending()
                     viewModel.placeModeActive = false
-                    showMessage(getString(R.string.place_blocked_encrypted), long = true)
+                    showMessage(getString(R.string.place_blocked_rights), long = true)
                     return@launch
                 }
                 showPlaceUi()

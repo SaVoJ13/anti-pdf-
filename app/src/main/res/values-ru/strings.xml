@@ -151,7 +151,7 @@
     <string name="place_text_unsupported">Эти символы не поддерживаются: %1$s</string>
     <string name="place_saved">Сохранено в документ</string>
     <string name="place_blocked_encrypted">Редактирование защищённых документов будет добавлено позже.</string>
-    <string name="place_blocked_rights">Редактирование защищённых документов будет добавлено позже.</string>
+    <string name="place_blocked_rights">Автор документа запретил изменения.</string>
     <string name="place_blocked_unreadable">Не удалось открыть документ для редактирования.</string>
     <string name="place_unsaved_title">Несохранённые изменения</string>
     <string name="place_unsaved_message">Сохранить изменения?</string>
