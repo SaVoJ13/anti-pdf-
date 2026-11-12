@@ -103,7 +103,7 @@ data class DocumentEditability(val isEncrypted: Boolean, val canMarkup: Boolean,
 
 ```kotlin
 // MarkupEngine: додати
-// null — документ не відкрито (хибний пароль, пошкоджений файл)
+// null — не вдалося відкрити для редагування (потрібен пароль, хибний пароль або пошкоджений файл; якщо переглядач відкрив без пароля — UI питає пароль, повторний null з паролем — помилка)
 suspend fun checkEditability(context: Context, sourceUri: Uri, password: String? = null): DocumentEditability?
 ```
 

@@ -1,5 +1,20 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-12 — Керівник проєкту / Агент 0 (оновлення робочої папки за 12.11, перехід на новий репозиторій `anti-pdf-` у середовищі Antigravity, документи після 3e)
+**Простими словами:**
+- Робочу папку проєкту в середовищі Antigravity (`C:\Users\cocro\.gemini\antigravity\scratch\pdf-reader-android`) повністю оновлено до актуальної версії від 11–12.11 (`main` `154d055` + усі гілки, включно з `feature/core-large-files` `71e027e`).
+- Підключено новий основний GitHub-репозиторій `https://github.com/SaVoJ13/anti-pdf-` (`origin`), старий збережено як `old-origin`.
+- Увімкнено автоматичне завантаження Конституції v2.0 у середовищі Antigravity та Claude Code (`AGENTS.md`, `CLAUDE.md`, `.agents/rules/constitution.md`, навички `.agents/skills/*`, а також глобальне правило `~/.gemini/config/rules/AGENTS.md`). Питання 2 у `OWNER_INBOX.md` закрито.
+- Оновлено `CURRENT_STATE.md`, `MARKUP_STAGES.md`, `PROJECT_PROFILE.md` (v1.2, знято позначку DRAFT) і додано уточнення про `null` у `CONTRACTS.md` §1.5.1 після злиття 3e (PR #27, #28).
+- Наступний крок за планом — етап **3f** (`feature/qa-place-final`, приймання режиму розміщення QA і Власником) та рішення щодо гілки `feature/core-large-files`.
+**Що зроблено:** у робочу папку перенесено всі коміти й гілки зі свіжого клону (`e2561c6..154d055` у `main` + `feature/core-large-files` `71e027e`), налаштовано `origin` на `https://github.com/SaVoJ13/anti-pdf-.git`, створено файли конфігурації середовища Antigravity та оновлено документи управління після 3e.
+**Що змінено:** `AGENTS.md`, `CLAUDE.md`, `.agents/rules/constitution.md`, `.agents/skills/*` (`owner-step`, `daily-report`, `phase-gate`, `close-session`, `qa-verify`), `docs/CONTRACTS.md` (§1.5.1, +1 рядок про `null`), `docs/research/MARKUP_STAGES.md` (статус 3e = ЗЛИТО PR #27, #28), `docs/governance/PROJECT_PROFILE.md` (v1.2), `docs/governance/CURRENT_STATE.md`, `docs/governance/DECISIONS.md`, `docs/governance/OWNER_INBOX.md`, `docs/project_log.md`.
+**Рішення:** записані в `docs/governance/DECISIONS.md` за 2026-11-12 (пряма команда Власника щодо переходу на `https://github.com/SaVoJ13/anti-pdf-` і підключення правил середовища).
+**Перевірка перезапису (п. 5.5):** маркерів конфлікту (`<<<<<<<`) немає; усі ключові терміни проєкту з розд. 9 профілю та попередні записи збережено на місці.
+**Що передати далі:** запушити `main` та `feature/core-large-files` у новий репозиторій `https://github.com/SaVoJ13/anti-pdf-`; перейти до етапу **3f** або розгляду знахідок `feature/core-large-files`.
+**Відкриті питання:** рішення Архітектора/Власника щодо гілки `feature/core-large-files` (F1/F2: завантаження через тимчасовий файл `MemoryUsageSetting` проти ліміту розміру файлу; F6/F7: операції зі сторінками на зашифрованих і `saveSafely`).
+**НЕ ПЕРЕВІРЕНО:** збірка й тести в цій документаційній сесії повторно не запускалися (останній прогін QA 3e на `154d055`: `app` 159/159, `core-pdf` 144/146; на `feature/core-large-files` `71e027e`: звичайний `:core-pdf:test` 78/78).
+
 ## 2026-11-11 — QA (етап 3e: захищені документи, пароль, збереження копією; PR #27 уже в main, коміт 2605245; Galaxy S24 Ultra, Android 17)
 **Простими словами:**
 - Головне працює: зашифрований файл не перезаписується, копія `…_edited.pdf` зашифрована тим самим паролем, оригінал за SHA не змінився, копія стає поточним документом, позицію відновлено.

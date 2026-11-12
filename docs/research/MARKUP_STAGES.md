@@ -22,7 +22,7 @@
 | 5b | 3b. Виділення, рух, зміна, видалення, undo | `feature/place-edit-objects` | 3a (злито: PR #19 QA) |
 | 5c | 3c. Малювання й підпис | `feature/place-ink-signature` | 3b (злито: PR #20, QA #21) |
 | 5d | 3d. Поля форми й спільне збереження | `feature/place-forms-save` | 3c |
-| 5e | 3e. Захищені документи | `feature/place-protected-docs` | 3d |
+| 5e | 3e. Захищені документи | `feature/place-protected-docs` | 3d (злито: PR #27, QA #28) |
 | 5f | 3f. Приймання (QA і власник) | `feature/qa-place-final` | 3e |
 | — | Прогрес читання | `feature/reading-progress` | 3f |
 | 6 | 4. QA і безпека | `feature/qa-markup` | прогрес читання |
@@ -95,7 +95,7 @@
 Готовність: Text (латиниця й кирилиця), CheckBox, Choice (combo, список, редагований combo) видно в `PdfView` після збереження; порожнє значення нередагованого Choice знімає вибір; `extractFormFields` після очищення дає null.
 НЕ ПЕРЕВІРЕНО: тап по віджету справжньої форми в режимі «поставити» (що має виграти — віджет чи об'єкт); перевіряє QA 3d.
 
-#### 3e. `feature/place-protected-docs`
+#### 3e. `feature/place-protected-docs` — ЗЛИТО (PR #27 код, #28 QA)
 Перші коміти (рішення Архітектора в чаті 2026-11-08, записано Керівником):
 - `Log.w` для відкинутої версії `PendingStore` (без вмісту, файли не видаляти);
 - M2: стрілка «вгору» з діалогом при незбереженому;
