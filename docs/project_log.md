@@ -1,5 +1,16 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-12 — Керівник проєкту / Агент 0 + Незалежний QA / Агент 4 (`feature/core-large-files-optimization`, Крок 4.1: оптимізація пам'яті PDF-ядра, безпека операцій F1, F2, F4, F5, F6, F7; `QA Verified`)
+**Простими словами:**
+- Злито доробок дослідження великих і пошкоджених файлів (`feature/core-large-files`): виправлення F4 (багаторядкові текстові поля AcroForm тепер коректно читаються й зберігаються) та F5 (помилки браку пам'яті OOM тепер мають зрозумілий текст «Файл завеликий для редагування»).
+- Впроваджено оптимізацію пам'яті PDFBox (F1/F2): `PdfIo.loadDocument` переведено на змішаний режим `MemoryUsageSetting.setupMixed(16 МБ)` з переливом у кеш-каталог, а для локальних файлів (`file://`) — на прямий файловий доступ `File`, що зменшує пікове навантаження на купу пам'яті у 2–6 разів.
+- Операції зі сторінками (`rotatePages`, `deletePages`, `extractPages`) тепер повністю зберігають шифрування документа паролем користувача з рівнем AES-128 (F6).
+- Усі 5 операцій `PdfBoxPageOperationsEngine` переведено на атомарне збереження `PdfIo.saveSafely` через тимчасовий файл (F7), що виключає появу пошкоджених 0-байтних файлів у разі збою.
+- Незалежний QA-субагент провів аудит і видав вердикт **`QA Verified`** (`:core-pdf` — 85/86 тестів пройдено, 1 legacy benchmark skipped; `:app` — 175/175 тестів пройдено).
+**Що зроблено:** злито гілку `feature/core-large-files` у `feature/core-large-files-optimization`, реалізовано `MemoryUsageSetting.setupMixed(16MB)` та прямий `File`-доступ у `PdfIo.kt`, збереження шифрування та `saveSafely` у `PdfBoxPageOperationsEngine.kt`, створено `PdfBoxPageOpsMemoryAndSecurityTest.kt` (5 тестів), проведено незалежний QA-аудит (п. 2.1 Конституції).
+**Що змінено:** `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/PdfIo.kt`, `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/PdfBoxPageOperationsEngine.kt`, `core-pdf/src/test/java/com/savoj/volumpdf/core/pdf/PdfBoxPageOpsMemoryAndSecurityTest.kt` (новий), `docs/governance/CURRENT_STATE.md`, `docs/governance/DECISIONS.md`, `docs/project_log.md`.
+
+
 
 ## 2026-11-12 — Керівник проєкту / Агент 0 + Незалежний QA / Агент 4 + Власник (`feature/qa-place-final`, підетап `3f`: фінальне приймання Етапу 3; `QA Verified` + `Owner Approved`)
 **Простими словами:**
