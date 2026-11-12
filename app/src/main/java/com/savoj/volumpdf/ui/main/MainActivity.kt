@@ -19,6 +19,7 @@ import com.savoj.volumpdf.core.ads.AdMobAdsManager
 import com.savoj.volumpdf.core.ads.AdsManager
 import com.savoj.volumpdf.data.model.SortOrder
 import com.savoj.volumpdf.databinding.ActivityMainBinding
+import com.savoj.volumpdf.ui.common.LicensesDialogHelper
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.ui.reader.ReaderActivity
@@ -205,6 +206,10 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.sort_by_size -> {
                 viewModel.setSortOrder(SortOrder.SIZE_DESC)
+                true
+            }
+            R.id.action_licenses -> {
+                LicensesDialogHelper.showLicensesDialog(this)
                 true
             }
             else -> super.onOptionsItemSelected(item)

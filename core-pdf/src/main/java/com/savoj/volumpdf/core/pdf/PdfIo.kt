@@ -146,11 +146,30 @@ internal object PdfIo {
         return a.toString() == b.toString()
     }
 
-    /** Для tree+document URI повертає id документа (не дерева). */
-    private fun documentIdOf(uri: Uri): String? = try {
-        android.provider.DocumentsContract.getDocumentId(uri)
-    } catch (_: Exception) {
-        null
+    /**
+     * Для tree+document або document URI повертає id документа (не дерева).
+     * Спочатку викликає системний [android.provider.DocumentsContract.getDocumentId].
+     * Якщо він недоступний (наприклад, у JVM-тестах) або дає збій — розбирає шлях вручну.
+     */
+    fun documentIdOf(uri: Uri): String? {
+        try {
+            val id = android.provider.DocumentsContract.getDocumentId(uri)
+            if (!id.isNullOrEmpty()) return id
+        } catch (_: Throwable) {
+            // системний виклик не вдався або виконується в JVM-середовищі
+        }
+        val path = uri.path ?: return null
+        val docMarker = "/document/"
+        val idx = path.indexOf(docMarker)
+        if (idx != -1) {
+            val rawId = path.substring(idx + docMarker.length)
+            return try {
+                java.net.URLDecoder.decode(rawId, "UTF-8")
+            } catch (_: Throwable) {
+                rawId
+            }
+        }
+        return null
     }
 
     fun copyEncryption(sourceDoc: PDDocument, targetDoc: PDDocument, password: String?) {

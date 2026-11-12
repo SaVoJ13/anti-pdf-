@@ -180,4 +180,6 @@
     <string name="copy_warning_message">The file is protected. The copy will be saved with the same password; the owner password and rights restrictions are not carried over.</string>
     <string name="copy_save">Save copy</string>
     <string name="place_copy_saved">Copy saved</string>
+    <string name="action_licenses">Open source licenses</string>
+    <string name="dialog_licenses_title">Open Source Licenses</string>
 </resources>
