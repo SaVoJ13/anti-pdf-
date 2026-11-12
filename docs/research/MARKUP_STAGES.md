@@ -125,8 +125,8 @@
 
 QA: об'єкти біля краю екрана; кламп чотирьох країв; мови крім uk; жести навігації.
 
-#### Після 3f: `feature/reading-progress` — ЗЛИТО (2026-11-12, `QA Verified`)
-Збереження й відновлення останньої прочитаної сторінки (`ReadingProgressLogic`, `PageRestorePlanner`, `PdfViewerBridge.restorePage`, `ReaderViewModel.updatePageProgress`, відображення «Стор. X з N» у `RecentsAdapter` та «Відомості»); модульні тести `app` 173/173, `core-pdf` 72/73. Живий прогін на пристрої — у межах 3f / Етапу 4. Після цього — Етап 4.
+#### Після 3f: `feature/reading-progress` — ЗЛИТО (2026-11-12, `QA Verified` + `Owner Approved`)
+Збереження й відновлення останньої прочитаної сторінки (`ReadingProgressLogic`, `PageRestorePlanner`, `PdfViewerBridge.restorePage`, `ReaderViewModel.updatePageProgress`, відображення «Стор. X з N» у `RecentsAdapter` та «Відомості»); модульні тести `app` 173/173, `core-pdf` 72/73. Живий прогін на телефоні Galaxy S24 Ultra підтверджено Власником (`Owner Approved`). Після цього — Етап 4.
 
 ### 4. QA і безпека (`feature/qa-markup`)
 Що робить: великі, скановані, зашифровані й пошкоджені файли; поворот; завершення процесу; бюджети продуктивності; емулятор API 28 і 30 (димовий тест: відкрити, поставити позначку, зберегти; якщо не працює, ховаємо розміщення на тих версіях).
