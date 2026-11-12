@@ -1,5 +1,7 @@
 package com.savoj.volumpdf.data.repository
 
+import android.content.Context
+import android.net.Uri
 import androidx.room.InvalidationTracker
 import com.savoj.volumpdf.data.db.AppDatabase
 import com.savoj.volumpdf.data.db.RecentDocument
@@ -11,6 +13,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.mockito.ArgumentMatchers.anyLong
+import org.mockito.ArgumentMatchers.eq
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
@@ -106,6 +110,37 @@ class DocumentRepositoryTest {
 
         assertTrue(newFav)
         verify(mockDao).setFavorite("content://pdf/1", true)
+    }
+
+    @Test
+    fun updateReadingProgress_updatesPageAndTimestampInDao() = runTest {
+        repository.updateReadingProgress("content://pdf/1", 12)
+
+        verify(mockDao).updateReadingProgress(eq("content://pdf/1"), eq(12), anyLong())
+    }
+
+    @Test
+    fun recordDocumentOpened_preservesExistingLastPageReadAndFavorite() = runTest {
+        val existing = RecentDocument(
+            "content://pdf/3",
+            "Beta Spec.pdf",
+            20,
+            1_000_000L,
+            2000L,
+            12,
+            true
+        )
+        `when`(mockDao.getByUri("content://pdf/3")).thenReturn(existing)
+        val mockUri = mock(Uri::class.java)
+        `when`(mockUri.toString()).thenReturn("content://pdf/3")
+        val mockContext = mock(Context::class.java)
+
+        val reopened = repository.recordDocumentOpened(mockContext, mockUri)
+
+        assertEquals(12, reopened.lastPageRead)
+        assertEquals(20, reopened.pageCount)
+        assertTrue(reopened.isFavorite)
+        verify(mockDao).upsert(reopened)
     }
 
     @Test

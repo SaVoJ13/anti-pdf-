@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.savoj.volumpdf.R
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.databinding.ItemRecentDocumentBinding
+import com.savoj.volumpdf.ui.reader.ReadingProgressLogic
 import com.savoj.volumpdf.util.SafUtils
 
 class RecentsAdapter(
@@ -42,11 +43,12 @@ class RecentsAdapter(
             binding.tvDocumentTitle.text = doc.title
 
             val sizeStr = SafUtils.formatFileSize(doc.fileSizeBytes)
-            val pagesStr = if (doc.pageCount > 0) {
-                context.getString(R.string.document_pages_count, doc.pageCount)
-            } else {
-                ""
-            }
+            val pagesStr = ReadingProgressLogic.formatPagesSubtitle(
+                pageCount = doc.pageCount,
+                lastPageRead = doc.lastPageRead,
+                formatCount = { count -> context.getString(R.string.document_pages_count, count) },
+                formatProgress = { current, total -> context.getString(R.string.document_page_progress, current, total) }
+            )
             val dateStr = SafUtils.formatTimestamp(doc.lastOpenedTimestamp)
 
             val subtitleParts = listOf(sizeStr, pagesStr, dateStr).filter { it.isNotBlank() }

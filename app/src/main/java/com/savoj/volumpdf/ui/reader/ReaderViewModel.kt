@@ -12,6 +12,7 @@ import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.data.db.copy
 import com.savoj.volumpdf.data.repository.DocumentRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,13 +35,47 @@ class ReaderViewModel(
     private val _isFavorite = MutableStateFlow(false)
     val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
 
+    @Volatile
+    private var pendingPageCount: Int = 0
+
+    @Volatile
+    private var pendingPageProgress: Int? = null
+
     fun initDocument(uri: Uri, titleHint: String?) {
         val uriString = uri.toString()
+        val prevUri = savedStateHandle.get<String>(KEY_URI)
+        if (prevUri != uriString) {
+            viewerOpened = false
+            progressSuppressed = true
+            pendingPageCount = 0
+            pendingPageProgress = null
+        }
         savedStateHandle[KEY_URI] = uriString
         loadPending(uriString)
 
         viewModelScope.launch {
-            val doc = repository.recordDocumentOpened(getApplication(), uri)
+            var doc = repository.recordDocumentOpened(
+                getApplication(),
+                uri,
+                pageCountOverride = pendingPageCount
+            )
+            val countOverride = pendingPageCount
+            if (countOverride > 0 && doc.pageCount != countOverride) {
+                doc = doc.copy(pageCount = countOverride)
+                repository.saveDocument(doc)
+            }
+            val progressOverride = pendingPageProgress
+            if (progressOverride != null &&
+                ReadingProgressLogic.shouldRecordPage(progressOverride, doc.lastPageRead, doc.pageCount)
+            ) {
+                doc = doc.copy(
+                    lastPageRead = progressOverride,
+                    lastOpenedTimestamp = System.currentTimeMillis()
+                )
+                repository.updateReadingProgress(doc.uri, progressOverride)
+            }
+            pendingPageCount = 0
+            pendingPageProgress = null
             _document.value = doc
             _isFavorite.value = doc.isFavorite
         }
@@ -51,33 +86,66 @@ class ReaderViewModel(
         viewModelScope.launch {
             val newFav = repository.toggleFavorite(currentDoc.uri)
             _isFavorite.value = newFav
-            _document.value = currentDoc.copy(isFavorite = newFav)
+            _document.value = (_document.value ?: currentDoc).copy(isFavorite = newFav)
         }
     }
 
     /**
-     * Поки переглядач відновлює положення після збереження, він на мить показує сторінку 0;
-     * такий стан не можна записувати як «остання прочитана сторінка».
+     * Поки переглядач відкриває документ (і відновлює збережену сторінку) або перезавантажується після збереження,
+     * він на мить показує сторінку 0; такий стан не можна записувати як «остання прочитана сторінка».
      */
     @Volatile
-    var progressSuppressed: Boolean = false
+    var progressSuppressed: Boolean = true
+
+    private val progressLock = Any()
+    private var pendingProgressToSave: Pair<String, Int>? = null
+    private var progressWriteJob: kotlinx.coroutines.Job? = null
 
     fun updatePageProgress(page: Int) {
-        if (progressSuppressed) return
-        val currentDoc = _document.value ?: return
-        viewModelScope.launch {
-            repository.updateReadingProgress(currentDoc.uri, page)
-            _document.value = currentDoc.copy(lastPageRead = page)
+        if (progressSuppressed || !viewerOpened) return
+        val currentDoc = _document.value
+        if (currentDoc == null) {
+            if (page >= 0) pendingPageProgress = page
+            return
+        }
+        if (!ReadingProgressLogic.shouldRecordPage(page, currentDoc.lastPageRead, currentDoc.pageCount)) return
+        val updated = currentDoc.copy(
+            lastPageRead = page,
+            lastOpenedTimestamp = System.currentTimeMillis()
+        )
+        _document.value = updated
+        enqueueProgressSave(updated.uri, page)
+    }
+
+    private fun enqueueProgressSave(uri: String, page: Int) {
+        synchronized(progressLock) {
+            pendingProgressToSave = uri to page
+            if (progressWriteJob?.isActive == true) return
+            progressWriteJob = viewModelScope.launch {
+                withContext(NonCancellable) {
+                    while (true) {
+                        val next = synchronized(progressLock) {
+                            pendingProgressToSave.also { pendingProgressToSave = null }
+                        } ?: break
+                        repository.updateReadingProgress(next.first, next.second)
+                    }
+                }
+            }
         }
     }
 
     fun updatePageCount(totalCount: Int) {
-        val currentDoc = _document.value ?: return
-        if (currentDoc.pageCount != totalCount && totalCount > 0) {
+        if (totalCount <= 0) return
+        val currentDoc = _document.value
+        if (currentDoc == null) {
+            pendingPageCount = totalCount
+            return
+        }
+        if (currentDoc.pageCount != totalCount) {
+            val updated = currentDoc.copy(pageCount = totalCount)
+            _document.value = updated
             viewModelScope.launch {
-                val updated = currentDoc.copy(pageCount = totalCount)
                 repository.saveDocument(updated)
-                _document.value = updated
             }
         }
     }
