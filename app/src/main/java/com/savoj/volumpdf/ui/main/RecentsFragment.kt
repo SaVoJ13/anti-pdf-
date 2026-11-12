@@ -112,9 +112,14 @@ class RecentsFragment : Fragment() {
     }
 
     private fun showDocumentDetails(doc: RecentDocument) {
-        val message = StringBuilder()
+        val sb = StringBuilder()
             .append(getString(R.string.details_title, doc.title)).append("\n\n")
             .append(getString(R.string.details_pages, doc.pageCount)).append("\n")
+        if (doc.pageCount > 0 && doc.lastPageRead > 0) {
+            val displayPage = (doc.lastPageRead + 1).coerceIn(1, doc.pageCount)
+            sb.append(getString(R.string.document_page_progress, displayPage, doc.pageCount)).append("\n")
+        }
+        val message = sb
             .append(getString(R.string.details_size, SafUtils.formatFileSize(doc.fileSizeBytes))).append("\n")
             .append(getString(R.string.details_last_opened, SafUtils.formatTimestamp(doc.lastOpenedTimestamp))).append("\n\n")
             .append(getString(R.string.details_uri, doc.uri))

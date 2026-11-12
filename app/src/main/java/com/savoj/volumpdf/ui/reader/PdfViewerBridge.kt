@@ -19,6 +19,7 @@ import androidx.pdf.PdfDocument
 import androidx.pdf.PdfPoint
 import androidx.pdf.view.PdfView
 import androidx.pdf.viewer.fragment.PdfViewerFragment
+import kotlin.math.abs
 
 // ЄДИНИЙ файл в app, де дозволено @ExperimentalPdfApi (MASTER_SPEC R10). Публічні сигнатури нижче
 // використовують лише власні типи й типи Android; androidx.pdf назовні не виходить.
@@ -26,8 +27,14 @@ import androidx.pdf.viewer.fragment.PdfViewerFragment
 /** Точка в просторі PageViewPoint (pt; початок — лівий верхній кут видимої області сторінки). */
 data class PageViewPoint(val pageIndex: Int, val x: Float, val y: Float)
 
-/** Знімок положення переглядача. */
-data class Viewport(val zoom: Float, val scrollX: Int, val scrollY: Int, val firstVisiblePage: Int)
+/** Знімок положення переглядача. [currentPage] — сторінка з найбільшою видимою площею у вікні. */
+data class Viewport(
+    val zoom: Float,
+    val scrollX: Int,
+    val scrollY: Int,
+    val firstVisiblePage: Int,
+    val currentPage: Int = firstVisiblePage
+)
 
 enum class RestoreOutcome { MATCHED, TIMED_OUT, INTERRUPTED, LOAD_FAILED }
 
@@ -39,11 +46,15 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
 
     private val handler = Handler(Looper.getMainLooper())
     private var pdfView: PdfView? = null
+    private var lastCurrentPage: Int? = null
 
     // --- viewport -------------------------------------------------------------------------------
 
     val viewport: Viewport?
-        get() = pdfView?.let { Viewport(it.zoom, it.scrollX, it.scrollY, it.firstVisiblePage) }
+        get() = pdfView?.let {
+            val first = it.firstVisiblePage
+            Viewport(it.zoom, it.scrollX, it.scrollY, first, lastCurrentPage ?: first)
+        }
 
     private val viewportListeners = mutableListOf<(Viewport) -> Unit>()
 
@@ -61,12 +72,17 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
             zoomLevel: Float
         ) {
             // pageLocations переробляються після виклику: копіюємо числа одразу.
-            if (zoomLevel > 0f) {
-                for (i in 0 until pageLocations.size()) {
-                    val r = pageLocations.valueAt(i)
-                    pageSizes.put(pageLocations.keyAt(i), PageSizePt(r.width() / zoomLevel, r.height() / zoomLevel))
+            val bounds = ArrayList<PageVerticalBounds>(pageLocations.size())
+            for (i in 0 until pageLocations.size()) {
+                val pageIdx = pageLocations.keyAt(i)
+                val r = pageLocations.valueAt(i)
+                if (zoomLevel > 0f) {
+                    pageSizes.put(pageIdx, PageSizePt(r.width() / zoomLevel, r.height() / zoomLevel))
                 }
+                bounds.add(PageVerticalBounds(pageIdx, r.top, r.bottom))
             }
+            val viewHeight = pdfView?.height ?: 0
+            lastCurrentPage = ReadingProgressLogic.primaryPage(firstVisiblePage, viewHeight, bounds)
             val v = viewport ?: return
             viewportListeners.toList().forEach { it(v) }
         }
@@ -195,6 +211,8 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
     private var pendingTarget: ViewportState? = null
     private var reloadStartedMs = 0L
     private var planner: ViewportRestorePlanner? = null
+    private var pagePlanner: PageRestorePlanner? = null
+    private var settledAtTargetPage = false
     private var tickRunnable: Runnable? = null
     private var watchdog: Runnable? = null
 
@@ -216,6 +234,7 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
         onRestoreFinished = onFinished
         isRestoring = true
         pageSizes.clear()
+        lastCurrentPage = null
         reloadStartedMs = SystemClock.uptimeMillis()
         userTouched = false
         v.alpha = 0f
@@ -223,6 +242,36 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
             handler.postDelayed(it, LOAD_WAIT_MS)
         }
         host.documentUri = newUri
+    }
+
+    /**
+     * Прокручує вже відкритий документ до [targetPage] (0-based) при відкритті читача,
+     * повторюючи спробу кожні 16 мс, доки сторінка не стабілізується (SPIKE_PAGE_COORDS 9.4).
+     */
+    fun restorePage(targetPage: Int, onFinished: ((RestoreOutcome) -> Unit)? = null) {
+        if (targetPage <= 0) {
+            onFinished?.invoke(RestoreOutcome.MATCHED)
+            return
+        }
+        val v = pdfView
+        if (v == null) {
+            onFinished?.invoke(RestoreOutcome.LOAD_FAILED)
+            return
+        }
+        if (pendingTarget != null) {
+            // reload має пріоритет над початковим переходом до сторінки
+            return
+        }
+        cancelRestore(reveal = false)
+        onRestoreFinished = onFinished
+        isRestoring = true
+        reloadStartedMs = SystemClock.uptimeMillis()
+        userTouched = false
+        settledAtTargetPage = false
+        v.alpha = 0f
+        pagePlanner = PageRestorePlanner(targetPage, startMs = reloadStartedMs)
+        // Запускаємо через post, щоб після onLoadDocumentSuccess фрагмент встиг присвоїти pdfView.pdfDocument.
+        tickRunnable = Runnable { tickPageRestore() }.also { handler.post(it) }
     }
 
     internal fun onDocumentLoaded() {
@@ -236,7 +285,7 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
     }
 
     internal fun onDocumentFailed() {
-        if (pendingTarget != null) finishRestore(RestoreOutcome.LOAD_FAILED)
+        if (pendingTarget != null || pagePlanner != null) finishRestore(RestoreOutcome.LOAD_FAILED)
     }
 
     private fun tick() {
@@ -256,9 +305,41 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
         }
     }
 
+    private fun tickPageRestore() {
+        val v = pdfView ?: return
+        val p = pagePlanner ?: return
+        val viewReady = v.width > 0 && v.height > 0 && v.pdfDocument != null
+        val current = viewport?.currentPage ?: v.firstVisiblePage
+        val targetVisible = pageSizes.get(p.targetPage) != null
+        when (p.onTick(SystemClock.uptimeMillis(), current, viewReady, userTouched, settledAtTargetPage && targetVisible)) {
+            RestoreDecision.MATCHED -> finishRestore(RestoreOutcome.MATCHED)
+            RestoreDecision.TIMED_OUT -> finishRestore(RestoreOutcome.TIMED_OUT)
+            RestoreDecision.INTERRUPTED -> finishRestore(RestoreOutcome.INTERRUPTED)
+            RestoreDecision.APPLY_AND_RETRY -> {
+                if (viewReady && current != p.targetPage) {
+                    val scrollYBefore = v.scrollY
+                    val zoomBefore = v.zoom
+                    val hadTargetLaidOut = v.pdfToViewPoint(PdfPoint(p.targetPage, 0f, 0f)) != null
+                    try {
+                        v.scrollToPage(p.targetPage)
+                    } catch (_: IllegalStateException) {
+                    } catch (_: IllegalArgumentException) {
+                    }
+                    settledAtTargetPage = hadTargetLaidOut &&
+                        pageSizes.get(p.targetPage) != null &&
+                        abs(v.scrollY - scrollYBefore) <= ViewportRestorePlanner.SCROLL_TOLERANCE_PX &&
+                        abs(v.zoom - zoomBefore) <= ViewportRestorePlanner.ZOOM_TOLERANCE
+                }
+                tickRunnable = Runnable { tickPageRestore() }.also {
+                    handler.postDelayed(it, ViewportRestorePlanner.TICK_MS)
+                }
+            }
+        }
+    }
+
     private fun finishRestore(outcome: RestoreOutcome) {
         val callback = onRestoreFinished
-        val target = pendingTarget
+        val target = pendingTarget ?: pagePlanner?.targetPage
         cancelRestore(reveal = true)
         Log.i(TAG, "restore finished: $outcome after=${SystemClock.uptimeMillis() - reloadStartedMs}ms target=$target now=$viewport")
         callback?.invoke(outcome)
@@ -270,6 +351,8 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
         tickRunnable = null
         watchdog = null
         planner = null
+        pagePlanner = null
+        settledAtTargetPage = false
         pendingTarget = null
         onRestoreFinished = null
         isRestoring = false
@@ -289,6 +372,7 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
         pdfView?.removeOnViewportChangedListener(viewportListener)
         pdfView?.alpha = 1f
         cancelRestore(reveal = false)
+        lastCurrentPage = null
         pdfView = null
         gestureDetector = null
     }
@@ -319,7 +403,7 @@ class VolumPdfViewerFragment : PdfViewerFragment() {
     }
 
     val currentPageIndex: Int
-        get() = bridge.viewport?.firstVisiblePage ?: 0
+        get() = bridge.viewport?.currentPage ?: 0
 
     /**
      * D6: на content:// бібліотека показує власну кнопку-олівець (toolbox, запуск зовнішнього

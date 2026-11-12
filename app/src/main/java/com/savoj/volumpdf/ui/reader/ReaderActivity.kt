@@ -67,6 +67,11 @@ class ReaderActivity : AppCompatActivity() {
         PdfBoxMarkupEngine({ applicationContext.assets.open(MarkupLayout.FONT_ASSET_PATH) })
     private var enteringPlaceMode = false
     private var savingPlace = false
+    private var initialPageRestored = false
+    private var loadedPageCount = 0
+    private val progressViewportListener: (Viewport) -> Unit = { v ->
+        viewModel.updatePageProgress(v.currentPage)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -125,9 +130,14 @@ class ReaderActivity : AppCompatActivity() {
             viewerFragment = fragment
         }
 
+        fragment.bridge.removeViewportListener(progressViewportListener)
+        fragment.bridge.addViewportListener(progressViewportListener)
+
         fragment.onDocumentLoadedListener = { count ->
+            loadedPageCount = count
             viewModel.viewerOpened = true
             viewModel.updatePageCount(count)
+            maybeRestoreInitialPage()
         }
 
         fragment.onDocumentErrorListener = { cause ->
@@ -141,6 +151,38 @@ class ReaderActivity : AppCompatActivity() {
         } else if (ViewerCopyCache.isViewCopy(cacheDir, shown) && !File(shown.path.orEmpty()).exists()) {
             // Система прибрала кеш, поки застосунок був вивантажений: повертаємося до оригіналу.
             fragment.documentUri = uri
+        }
+    }
+
+    /**
+     * Відновлює останню прочитану сторінку при відкритті документа, коли і переглядач завантажив PDF,
+     * і ViewModel отримав запис із Room. До завершення відновлення `progressSuppressed = true`, щоб
+     * стартові події зі сторінкою 0 не затерли збережений прогрес.
+     */
+    private fun maybeRestoreInitialPage() {
+        if (initialPageRestored) return
+        if (!viewModel.viewerOpened) return
+        val doc = viewModel.document.value ?: return
+        if (doc.uri != documentUri?.toString()) return
+        val fragment = viewerFragment ?: return
+
+        initialPageRestored = true
+        val pageCount = if (loadedPageCount > 0) loadedPageCount else doc.pageCount
+        val targetPage = ReadingProgressLogic.targetRestorePage(doc.lastPageRead, pageCount)
+        if (targetPage <= 0) {
+            viewModel.progressSuppressed = false
+            if (doc.lastPageRead != 0) {
+                viewModel.updatePageProgress(0)
+            }
+            return
+        }
+        viewModel.progressSuppressed = true
+        fragment.bridge.restorePage(targetPage) {
+            viewModel.progressSuppressed = false
+            val actualPage = fragment.bridge.viewport?.currentPage ?: targetPage
+            if (actualPage != doc.lastPageRead) {
+                viewModel.updatePageProgress(actualPage)
+            }
         }
     }
 
@@ -939,6 +981,7 @@ class ReaderActivity : AppCompatActivity() {
         documentTitle = SafUtils.queryDisplayName(this, newUri)
         intent.putExtra(EXTRA_DOCUMENT_TITLE, documentTitle)
         binding.toolbar.title = documentTitle
+        initialPageRestored = true // позицію копії відновлює reloadViewerDocument() нижче
         viewModel.initDocument(newUri, documentTitle) // запис у «Останніх» і порожнє незбережене нового ключа
         reloadViewerDocument()
         checkForFormFields(newUri)
@@ -1065,6 +1108,7 @@ class ReaderActivity : AppCompatActivity() {
             Log.i(TAG, "view copy: ${copy.bytes} bytes in ${copy.elapsedMs} ms (${copy.file.name})")
             fragment.bridge.reload(Uri.fromFile(copy.file)) {
                 viewModel.progressSuppressed = false
+                fragment.bridge.viewport?.let { v -> viewModel.updatePageProgress(v.currentPage) }
                 // Попередні копії видаляємо лише після того, як нова завантажена (або спроба провалена).
                 lifecycleScope.launch(Dispatchers.IO) {
                     ViewerCopyCache.purge(cacheDir, keep = copy.file)
@@ -1074,6 +1118,7 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        viewerFragment?.bridge?.removeViewportListener(progressViewportListener)
         super.onDestroy()
         if (isFinishing) {
             // Переглядач закривається назавжди: поточна копія більше не потрібна.
@@ -1096,6 +1141,9 @@ class ReaderActivity : AppCompatActivity() {
                 viewModel.document.collect { doc ->
                     if (doc != null && !doc.title.isNullOrBlank()) {
                         binding.toolbar.title = doc.title
+                    }
+                    if (doc != null) {
+                        maybeRestoreInitialPage()
                     }
                 }
             }
@@ -1176,6 +1224,13 @@ class ReaderActivity : AppCompatActivity() {
         val msg = StringBuilder()
             .append(getString(R.string.details_title, title)).append("\n\n")
             .append(getString(R.string.details_pages, pages)).append("\n")
+            .apply {
+                val lastRead = doc?.lastPageRead ?: 0
+                if (pages > 0 && lastRead > 0) {
+                    val displayPage = (lastRead + 1).coerceIn(1, pages)
+                    append(getString(R.string.document_page_progress, displayPage, pages)).append("\n")
+                }
+            }
             .append(getString(R.string.details_size, SafUtils.formatFileSize(size))).append("\n")
             .append(getString(R.string.details_last_opened, SafUtils.formatTimestamp(lastOpened))).append("\n\n")
             .append(getString(R.string.details_uri, uri.toString()))
