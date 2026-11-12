@@ -180,4 +180,6 @@
     <string name="copy_warning_message">Файл защищён. Копия будет сохранена с тем же паролем; пароль владельца и ограничения прав не переносятся.</string>
     <string name="copy_save">Сохранить копию</string>
     <string name="place_copy_saved">Копия сохранена</string>
+    <string name="action_licenses">Лицензии открытого ПО</string>
+    <string name="dialog_licenses_title">Лицензии открытого ПО</string>
 </resources>

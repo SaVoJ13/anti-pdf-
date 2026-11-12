@@ -180,4 +180,6 @@
     <string name="copy_warning_message">Файл захищено. Копію буде збережено з тим самим паролем; пароль власника й обмеження прав не переносяться.</string>
     <string name="copy_save">Зберегти копію</string>
     <string name="place_copy_saved">Копію збережено</string>
+    <string name="action_licenses">Ліцензії відкритого коду</string>
+    <string name="dialog_licenses_title">Ліцензії відкритого коду</string>
 </resources>
