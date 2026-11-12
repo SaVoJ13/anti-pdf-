@@ -5,10 +5,12 @@ import android.net.Uri
 import com.savoj.volumpdf.core.pdf.model.DocumentEditability
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.savoj.volumpdf.core.pdf.model.PdfPermissionException
+import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
 import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
 import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -28,11 +30,51 @@ internal object PdfIo {
         }
     }
 
-    /** Завантажує документ (PDFBox читає потік повністю, тому потік закривається тут). */
-    fun loadDocument(context: Context, uri: Uri, password: String?): PDDocument =
-        openInputStream(context, uri).use { stream ->
-            if (password != null) PDDocument.load(stream, password) else PDDocument.load(stream)
+    /**
+     * Стандартні налаштування пам'яті для завантаження документів PDFBox:
+     * змішаний режим пам'яті (до 16 МБ у купі, решта — у тимчасових файлах у кеші), що зменшує
+     * пікове споживання пам'яті на великих файлах у 2–6 разів.
+     */
+    fun defaultMemorySetting(context: Context): MemoryUsageSetting {
+        val setting = MemoryUsageSetting.setupMixed(16L * 1024 * 1024)
+        val tempDir = runCatching { context.cacheDir }.getOrNull()
+        if (tempDir != null && tempDir.exists()) {
+            setting.setTempDir(tempDir)
         }
+        return setting
+    }
+
+    /**
+     * Завантажує документ (PDFBox з MemoryUsageSetting.setupMixed(16MB)).
+     * Для file:// завантажується безпосередньо з File (випадковий доступ до файлу без повного зчитування в пам'ять).
+     */
+    fun loadDocument(context: Context, uri: Uri, password: String?): PDDocument {
+        val mem = defaultMemorySetting(context)
+        if (uri.scheme == "file") {
+            val path = uri.path
+            if (path != null) {
+                val file = File(path)
+                if (file.exists() && file.isFile) {
+                    return if (password != null) PDDocument.load(file, password, mem)
+                    else PDDocument.load(file, mem)
+                }
+            }
+        }
+        return openInputStream(context, uri).use { stream ->
+            if (password != null) PDDocument.load(stream, password, mem)
+            else PDDocument.load(stream, mem)
+        }
+    }
+
+    /**
+     * AcroForm документа. Стандартний `getAcroForm()` застосовує fixup, що перебудовує appearance полів при
+     * NeedAppearances=true, і падає на деяких (багатоядкових) полях; тоді читаємо форму без fixup (F1).
+     */
+    fun acroForm(doc: PDDocument): PDAcroForm? = try {
+        doc.documentCatalog.acroForm
+    } catch (_: RuntimeException) {
+        doc.documentCatalog.getAcroForm(null)
+    }
 
     /** Права поточного відкриття: пароль власника дає все. */
     fun editability(doc: PDDocument): DocumentEditability {
@@ -111,19 +153,23 @@ internal object PdfIo {
         null
     }
 
+    fun copyEncryption(sourceDoc: PDDocument, targetDoc: PDDocument, password: String?) {
+        if (!sourceDoc.isEncrypted) return
+        val pw = password ?: ""
+        val keyLength = sourceDoc.encryption?.length?.takeIf { it == 40 || it == 128 || it == 256 } ?: 128
+        val policy = StandardProtectionPolicy(pw, pw, AccessPermission())
+        policy.encryptionKeyLength = keyLength
+        policy.isPreferAES = keyLength >= 128
+        targetDoc.protect(policy)
+    }
+
     /**
      * PDFBox не зберігає завантажений зашифрований документ без політики захисту. Копія шифрується
      * паролем, яким відкрито джерело (user = owner), з повними правами: пароль власника й обмеження
      * прав не переносяться. Рівень алгоритму зберігається (RC4-128 → AES-128 допустимо).
      */
     fun keepEncryption(doc: PDDocument, password: String?) {
-        if (!doc.isEncrypted) return
-        val pw = password ?: ""
-        val keyLength = doc.encryption?.length?.takeIf { it == 40 || it == 128 || it == 256 } ?: 128
-        val policy = StandardProtectionPolicy(pw, pw, AccessPermission())
-        policy.encryptionKeyLength = keyLength
-        policy.isPreferAES = keyLength >= 128
-        doc.protect(policy)
+        copyEncryption(doc, doc, password)
     }
 
     /** Збереження через проміжний файл: оригінал не пошкоджується, якщо збереження не вдалося. */

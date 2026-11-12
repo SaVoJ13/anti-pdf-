@@ -1,10 +1,10 @@
 # CURRENT_STATE — знімок проєкту Volum PDF
 
-> За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-12 (`main`, після злиття й приймання Власником Етапу 3 включно з `3f` та `feature/reading-progress`, репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
+> За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-12 (`main`, після злиття й верифікації Кроку 4.1 `feature/core-large-files-optimization`, репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
 ## Етап
-Етап 3 («Поставити» на сторінці, **3a–3f** + **`feature/reading-progress`**) **ПОВНІСТЮ ЗАВЕРШЕНО** (`QA Verified` + `Owner Approved`). Переходимо до **Етапу 4** (`feature/core-large-files` + `feature/qa-markup`). Паралельно на гілці `feature/core-large-files` (`71e027e`) підготовлено JVM-полігон великих/пошкоджених файлів і виправлення F4/F5 для Етапу 4.
+Етап 3 («Поставити» на сторінці, **3a–3f** + **`feature/reading-progress`**) **ПОВНІСТЮ ЗАВЕРШЕНО** (`QA Verified` + `Owner Approved`). Крок 4.1 (`feature/core-large-files-optimization`) верифіковано незалежним QA (`QA Verified`) і злито в `main`. Наступний крок: **Етап 4 (`feature/qa-markup`)** — тестування великих файлів на Galaxy S24 Ultra та сумісності з Android 9–11 (API 28/30).
 
 ## Стан
 | Підетап | Гілка | Стан |
@@ -15,9 +15,9 @@
 | 3d форми й єдине «Зберегти» | `feature/place-forms-save` | ЗЛИТО (PR #23 код, #24 QA) |
 | 3e захищені документи (R15) | `feature/place-protected-docs` | ЗЛИТО (PR #27 код `2605245`, PR #28 QA `154d055`) |
 | **прогрес читання** | `feature/reading-progress` | **ЗЛИТО** (2026-11-12, `QA Verified`: `:app` 173/173, `:core-pdf` 72/73; **живий прогін на телефоні S24 Ultra підтверджено Власником — `Owner Approved`**) |
-| Ядро: великі й пошкоджені файли | `feature/core-large-files` (`71e027e`) | Код і звіт готові (F4 і F5 виправлено, 78/78 тестів JVM); чекає рішень Архітектора за F1/F2/F6/F7 і QA Етапу 4 на пристрої |
+| **Ядро: великі файли та оптимізація** | `feature/core-large-files-optimization` | **ЗЛИТО** (2026-11-12, `QA Verified`: F1/F2 MemoryUsageSetting, F4 багаторядкові поля, F5 OOM, F6 шифрування, F7 saveSafely; `:core-pdf` 85/86 тестів, `:app` 175/175) |
 | **3f приймання** | `feature/qa-place-final` | **ЗЛИТО** (2026-11-12, `QA Verified` + **`Owner Approved` на S24 Ultra**: S Pen, щипок, другий палець, непідтримувані символи, 4 краї, 120 стор., 4 мови) |
-| **Етап 4 QA і безпека** | `feature/qa-markup` | **НАСТУПНИЙ** (разом із злиттям `feature/core-large-files`) |
+| **Етап 4 QA і безпека** | `feature/qa-markup` | **НАСТУПНИЙ** (тести на пристрої S24 Ultra та емуляторах API 28/30) |
 | Підготовка до публікації | — | після Етапу 4 |
 
 ## Процес і середовище (оновлено 2026-11-12)
@@ -36,9 +36,9 @@
 - Технічних блокерів немає.
 
 ## Наступні 3 кроки
-1. **Рішення та злиття `feature/core-large-files`:** злити фікси F4/F5 та ухвалити рішення щодо F1/F2 (`MemoryUsageSetting.setupMixed`) і F6/F7.
-2. **Рішення за `feature/core-large-files`:** злити фікси F4/F5 та ухвалити рішення щодо F1/F2/F6/F7.
-3. **Етап 4 (`feature/qa-markup`):** повний QA на пристрої (великі, скановані, зашифровані, пошкоджені файли) й емуляторах API 28/30.
+1. **Етап 4 (`feature/qa-markup`):** стрес-тести великих файлів (60–324 МБ) на телефоні S24 Ultra та димовий тест на емуляторах Android 9–11 (API 28/30).
+2. **Етап 5 (Підготовка до публікації в Google Play):** екран ліцензій OFL/Apache, перевірка збірки release/ProGuard/R8 та підписаного AAB.
+3. **Запуск закритого тестування в Google Play Console (12×14 днів).**
 
 ## НЕ ПЕРЕВІРЕНО (перенесено з джерел)
 `PdfView` на Android 9–11 (API 28, 30); інкрементальне збереження зашифрованих у pdfbox-android 2.0.27.0; екран ліцензій OFL/Apache; транзитивність `recyclerview` і `viewpager2`; великі файли (60–324 МБ) і `imagesToPdf` на реальному пристрої (ART).
