@@ -1,5 +1,24 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-12 — Керівник проєкту / Агент 0 + Незалежний QA / Агент 4 (`feature/reading-progress`: запам'ятовування і відновлення останньої прочитаної сторінки, відображення прогресу в «Останніх документах»; `QA Verified`)
+**Простими словами:**
+- Тепер застосунок запам'ятовує сторінку, на якій зупинився читач, і під час наступного відкриття PDF автоматично повертає до неї.
+- Поки документ відкривається або перезавантажується після збереження правок, стартовий показ першої сторінки не затирає збережене місце в базі.
+- На високих екранах (як-от Galaxy S24 Ultra) поточна сторінка визначається за тією, що займає найбільшу видиму частину екрана, тож коректно фіксується навіть остання сторінка документа.
+- Під час плавного гортання однієї сторінки або швидкого прокручування база Room не перевантажується дублікатами записів.
+- У списку «Останні документи» та у вікні «Відомості» тепер показується поточна сторінка («Стор. X з N» усіма 4 мовами), якщо читач просунувся далі першої сторінки.
+- Незалежний QA-субагент перевірив код, тести й збірку та поставив статус **`QA Verified`**.
+**Що зроблено:** створено гілку `feature/reading-progress` від `main` (`fc2e4a7`), виділено чисту логіку визначення поточної сторінки й відновлення (`ReadingProgressLogic`, `PageRestorePlanner`), підключено `restorePage` у `PdfViewerBridge` (під `@ExperimentalPdfApi`, R10), оновлено `ReaderViewModel`, `ReaderActivity`, `RecentsAdapter`, `RecentsFragment`, написано модульні тести, зібрано `app-debug.apk` та проведено незалежний QA-аудит через окремого субагента (п. 2.1 Конституції).
+**Що змінено:** `app/src/main/java/com/savoj/volumpdf/ui/reader/ReadingProgressLogic.kt` (новий), `app/src/main/java/com/savoj/volumpdf/ui/reader/PdfViewerBridge.kt`, `app/src/main/java/com/savoj/volumpdf/ui/reader/ReaderViewModel.kt`, `app/src/main/java/com/savoj/volumpdf/ui/reader/ReaderActivity.kt`, `app/src/main/java/com/savoj/volumpdf/ui/main/RecentsAdapter.kt`, `app/src/main/java/com/savoj/volumpdf/ui/main/RecentsFragment.kt`, `app/src/test/java/com/savoj/volumpdf/ui/reader/ReadingProgressLogicTest.kt` (новий), `app/src/test/java/com/savoj/volumpdf/data/repository/DocumentRepositoryTest.kt`, `docs/research/MARKUP_STAGES.md`, `docs/governance/CURRENT_STATE.md`, `docs/project_log.md`.
+**Тести та збірка (з XML-звітів, JDK 21 `jbr-21.0.11`):**
+- `:app:assembleDebug` — BUILD SUCCESSFUL (`app-debug.apk`, 51 998 878 байтів).
+- `:app:testDebugUnitTest` — **17 файлів, 173 тести, 173 пройшло, 0 failures, 0 errors, 0 skipped** (зокрема `ReadingProgressLogicTest` — 12/12, `DocumentRepositoryTest` — 8/8).
+- `:core-pdf:testDebugUnitTest` — **8 файлів, 73 тести, 72 пройшло, 0 failures, 0 errors, 1 skipped** (штатно вимкнений бенчмарк).
+**Незалежний QA-вердикт (Агент 4):** **`QA Verified`** (R10 дотримано — `@ExperimentalPdfApi` і `androidx.pdf.*` лише в `PdfViewerBridge.kt`; гонитви між `onLoadDocumentSuccess` і `recordDocumentOpened` усунуто; дедуплікація та коалесценція записів у Room під час скролу працюють; локалізація `document_page_progress` наявна для `en`, `uk`, `de`, `ru`).
+**Перевірка перезапису (п. 5.5):** маркерів конфлікту (`<<<<<<<`) немає; усі попередні записи журналу збережено.
+**Що передати далі:** злити `feature/reading-progress` у `main` і запушити в `origin` (`anti-pdf-`); наступні кроки — **3f (`feature/qa-place-final`)**, рішення за `feature/core-large-files` та **Етап 4 (`feature/qa-markup`)**.
+**НЕ ПЕРЕВІРЕНО:** живий прогін відновлення сторінки на фізичному Samsung Galaxy S24 Ultra (Android 17) та емуляторах API 28/30 (пристрій не був підключений у цій сесії; заплановано на перевірку на пристрої під час 3f / Етапу 4).
+
 ## 2026-11-12 — Керівник проєкту / Агент 0 (оновлення робочої папки за 12.11, перехід на новий репозиторій `anti-pdf-` у середовищі Antigravity, документи після 3e)
 **Простими словами:**
 - Робочу папку проєкту в середовищі Antigravity (`C:\Users\cocro\.gemini\antigravity\scratch\pdf-reader-android`) повністю оновлено до актуальної версії від 11–12.11 (`main` `154d055` + усі гілки, включно з `feature/core-large-files` `71e027e`).
