@@ -9,7 +9,7 @@ android {
     compileSdkExtension = 19
 
     defaultConfig {
-        applicationId = "com.savoj.volumpdf"
+        applicationId = "com.savoj.volumpdf.anti"
         minSdk = 28
         targetSdk = 36
         versionCode = 1

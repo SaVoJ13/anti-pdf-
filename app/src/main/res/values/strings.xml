@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Volum PDF</string>
-    <string name="app_full_name">Volum PDF: Reader &amp; Tools</string>
+    <string name="app_name">Anti PDF</string>
+    <string name="app_full_name">Anti PDF: Reader &amp; Tools</string>
 
     <!-- Navigation & Tabs -->
     <string name="tab_recents">Recent Documents</string>

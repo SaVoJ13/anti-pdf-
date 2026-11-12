@@ -1,5 +1,13 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-12 — Керівник проєкту / Агент 0 (окремий ярлик `Anti PDF` з синьою іконкою та встановлення на телефон Samsung Galaxy S24 Ultra)
+**Простими словами:**
+- За дорученням Власника зроблено окремий пакет застосунку (`com.savoj.volumpdf.anti`), назву ярлика **`Anti PDF`** та синій фон іконки (`#1565C0`), щоб нова гілка розробки не затирала й не плуталася з основним застосунком `Volum PDF` (червона іконка, `com.savoj.volumpdf`).
+- Нову версію зібрано та встановлено прямо на підключений телефон Власника (Samsung Galaxy S24 Ultra `SM_S928B`, `RZCX326349A`) для основного профілю (`--user 0`), не зачіпаючи встановлений `Volum PDF`.
+**Що зроблено:** у `app/build.gradle.kts` змінено `applicationId = "com.savoj.volumpdf.anti"` (`namespace` залишено `"com.savoj.volumpdf"`), у `strings.xml` (`values`, `values-uk`, `values-de`, `values-ru`) змінено `app_name` на `Anti PDF`, у `ic_launcher_background.xml` змінено колір фону іконки на синій `#1565C0`, виконано `:app:assembleDebug :app:testDebugUnitTest` та встановлено APK через `adb -s RZCX326349A install --user 0 -r`.
+**Що змінено:** `app/build.gradle.kts`, `app/src/main/res/drawable/ic_launcher_background.xml`, `app/src/main/res/values/strings.xml`, `app/src/main/res/values-uk/strings.xml`, `app/src/main/res/values-de/strings.xml`, `app/src/main/res/values-ru/strings.xml`, `docs/governance/DECISIONS.md`, `docs/project_log.md`.
+**Перевірка на пристрої:** на телефоні `SM_S928B` одночасно присутні обидва пакети (`package:com.savoj.volumpdf` та `package:com.savoj.volumpdf.anti`), запущено `com.savoj.volumpdf.anti/com.savoj.volumpdf.ui.main.MainActivity`.
+
 ## 2026-11-12 — Керівник проєкту / Агент 0 + Незалежний QA / Агент 4 (`feature/reading-progress`: запам'ятовування і відновлення останньої прочитаної сторінки, відображення прогресу в «Останніх документах»; `QA Verified`)
 **Простими словами:**
 - Тепер застосунок запам'ятовує сторінку, на якій зупинився читач, і під час наступного відкриття PDF автоматично повертає до неї.
