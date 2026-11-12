@@ -9,7 +9,6 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
-import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -18,16 +17,11 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 
 /**
  * Реалізація [PageOperationsEngine] на основі бібліотеки PdfBox-Android.
  * Виконує операції зі сторінками: злиття, спліт (вилучення), поворот, видалення та конвертацію зображень у PDF.
+ * Використовує оптимізацію пам'яті (MemoryUsageSetting) та безпечне атомарне збереження (saveSafely).
  */
 class PdfBoxPageOperationsEngine : PageOperationsEngine {
 
@@ -57,22 +51,18 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
             "Для злиття потрібно щонайменше 2 PDF-документи (отримано: ${sourceUris.size})"
         }
 
-        val targetDoc = PDDocument()
+        val targetDoc = PDDocument(PdfIo.defaultMemorySetting(context))
         try {
             val merger = PDFMergerUtility()
             for ((index, uri) in sourceUris.withIndex()) {
                 emit(PdfOperationResult.Progress(currentStep = index + 1, totalSteps = sourceUris.size))
 
-                openInputStream(context, uri).use { inStream ->
-                    PDDocument.load(inStream).use { srcDoc ->
-                        merger.appendDocument(targetDoc, srcDoc)
-                    }
+                PdfIo.loadDocument(context, uri, null).use { srcDoc ->
+                    merger.appendDocument(targetDoc, srcDoc)
                 }
             }
 
-            openOutputStream(context, outputUri).use { outStream ->
-                targetDoc.save(outStream)
-            }
+            PdfIo.saveSafely(context, targetDoc, outputUri)
 
             val totalPages = targetDoc.numberOfPages
             emit(PdfOperationResult.Success(outputUri = outputUri, pagesCount = totalPages))
@@ -97,35 +87,31 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
             "Список сторінок для вилучення не може бути порожнім"
         }
 
-        openInputStream(context, sourceUri).use { inStream ->
-            val srcDoc = loadDocument(inStream, password)
-            srcDoc.use { doc ->
-                val totalPages = doc.numberOfPages
-                for (index in pageIndices) {
-                    if (index !in 0 until totalPages) {
-                        throw IndexOutOfBoundsException(
-                            "Індекс сторінки $index виходить за межі [0, ${totalPages - 1}]"
-                        )
-                    }
+        PdfIo.loadDocument(context, sourceUri, password).use { doc ->
+            val totalPages = doc.numberOfPages
+            for (index in pageIndices) {
+                if (index !in 0 until totalPages) {
+                    throw IndexOutOfBoundsException(
+                        "Індекс сторінки $index виходить за межі [0, ${totalPages - 1}]"
+                    )
+                }
+            }
+
+            val targetDoc = PDDocument(PdfIo.defaultMemorySetting(context))
+            try {
+                for ((step, index) in pageIndices.withIndex()) {
+                    emit(PdfOperationResult.Progress(currentStep = step + 1, totalSteps = pageIndices.size))
+                    val page = doc.getPage(index)
+                    targetDoc.importPage(page)
                 }
 
-                val targetDoc = PDDocument()
-                try {
-                    for ((step, index) in pageIndices.withIndex()) {
-                        emit(PdfOperationResult.Progress(currentStep = step + 1, totalSteps = pageIndices.size))
-                        val page = doc.getPage(index)
-                        targetDoc.importPage(page)
-                    }
+                PdfIo.copyEncryption(doc, targetDoc, password)
+                PdfIo.saveSafely(context, targetDoc, outputUri)
 
-                    openOutputStream(context, outputUri).use { outStream ->
-                        targetDoc.save(outStream)
-                    }
-
-                    val savedPages = targetDoc.numberOfPages
-                    emit(PdfOperationResult.Success(outputUri = outputUri, pagesCount = savedPages))
-                } finally {
-                    targetDoc.close()
-                }
+                val savedPages = targetDoc.numberOfPages
+                emit(PdfOperationResult.Success(outputUri = outputUri, pagesCount = savedPages))
+            } finally {
+                targetDoc.close()
             }
         }
     }.catch { cause ->
@@ -151,29 +137,26 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                 "Кут повороту має бути кратним 90 градусам (отримано: $degrees)"
             }
 
-            openInputStream(context, sourceUri).use { inStream ->
-                val doc = loadDocument(inStream, password)
-                doc.use {
-                    val totalPages = it.numberOfPages
-                    for (index in pageIndices) {
-                        if (index !in 0 until totalPages) {
-                            throw IndexOutOfBoundsException(
-                                "Індекс сторінки $index виходить за межі [0, ${totalPages - 1}]"
-                            )
-                        }
-                        val page = it.getPage(index)
-                        val currentRotation = page.rotation
-                        var newRotation = (currentRotation + degrees) % 360
-                        if (newRotation < 0) newRotation += 360
-                        page.rotation = newRotation
+            val doc = PdfIo.loadDocument(context, sourceUri, password)
+            doc.use {
+                val totalPages = it.numberOfPages
+                for (index in pageIndices) {
+                    if (index !in 0 until totalPages) {
+                        throw IndexOutOfBoundsException(
+                            "Індекс сторінки $index виходить за межі [0, ${totalPages - 1}]"
+                        )
                     }
-
-                    openOutputStream(context, outputUri).use { outStream ->
-                        it.save(outStream)
-                    }
-
-                    PdfOperationResult.Success(outputUri = outputUri, pagesCount = totalPages)
+                    val page = it.getPage(index)
+                    val currentRotation = page.rotation
+                    var newRotation = (currentRotation + degrees) % 360
+                    if (newRotation < 0) newRotation += 360
+                    page.rotation = newRotation
                 }
+
+                PdfIo.keepEncryption(it, password)
+                PdfIo.saveSafely(context, it, outputUri)
+
+                PdfOperationResult.Success(outputUri = outputUri, pagesCount = totalPages)
             }
         } catch (cause: Throwable) {
             if (cause is CancellationException) throw cause
@@ -195,37 +178,34 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                 "Список сторінок для видалення не може бути порожнім"
             }
 
-            openInputStream(context, sourceUri).use { inStream ->
-                val doc = loadDocument(inStream, password)
-                doc.use {
-                    val totalPages = it.numberOfPages
-                    val distinctToDelete = pageIndicesToDelete.distinct().sortedDescending()
+            val doc = PdfIo.loadDocument(context, sourceUri, password)
+            doc.use {
+                val totalPages = it.numberOfPages
+                val distinctToDelete = pageIndicesToDelete.distinct().sortedDescending()
 
-                    for (index in distinctToDelete) {
-                        if (index !in 0 until totalPages) {
-                            throw IndexOutOfBoundsException(
-                                "Індекс сторінки $index виходить за межі [0, ${totalPages - 1}]"
-                            )
-                        }
-                    }
-
-                    if (distinctToDelete.size >= totalPages) {
-                        throw IllegalArgumentException(
-                            "Неможливо видалити всі сторінки. Документ має містити щонайменше 1 сторінку (всього: $totalPages, до видалення: ${distinctToDelete.size})"
+                for (index in distinctToDelete) {
+                    if (index !in 0 until totalPages) {
+                        throw IndexOutOfBoundsException(
+                            "Індекс сторінки $index виходить за межі [0, ${totalPages - 1}]"
                         )
                     }
-
-                    for (index in distinctToDelete) {
-                        it.removePage(index)
-                    }
-
-                    val remainingPages = it.numberOfPages
-                    openOutputStream(context, outputUri).use { outStream ->
-                        it.save(outStream)
-                    }
-
-                    PdfOperationResult.Success(outputUri = outputUri, pagesCount = remainingPages)
                 }
+
+                if (distinctToDelete.size >= totalPages) {
+                    throw IllegalArgumentException(
+                        "Неможливо видалити всі сторінки. Документ має містити щонайменше 1 сторінку (всього: $totalPages, до видалення: ${distinctToDelete.size})"
+                    )
+                }
+
+                for (index in distinctToDelete) {
+                    it.removePage(index)
+                }
+
+                val remainingPages = it.numberOfPages
+                PdfIo.keepEncryption(it, password)
+                PdfIo.saveSafely(context, it, outputUri)
+
+                PdfOperationResult.Success(outputUri = outputUri, pagesCount = remainingPages)
             }
         } catch (cause: Throwable) {
             if (cause is CancellationException) throw cause
@@ -245,10 +225,10 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                 "Список зображень для конвертації не може бути порожнім"
             }
 
-            val doc = PDDocument()
+            val doc = PDDocument(PdfIo.defaultMemorySetting(context))
             try {
                 for ((index, imageUri) in imageUris.withIndex()) {
-                    val imageBytes = openInputStream(context, imageUri).use { it.readBytes() }
+                    val imageBytes = PdfIo.openInputStream(context, imageUri).use { it.readBytes() }
                     require(imageBytes.isNotEmpty()) {
                         "Зображення за індексом $index ($imageUri) порожнє"
                     }
@@ -288,9 +268,7 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                     }
                 }
 
-                openOutputStream(context, outputUri).use { outStream ->
-                    doc.save(outStream)
-                }
+                PdfIo.saveSafely(context, doc, outputUri)
 
                 val pagesCount = doc.numberOfPages
                 PdfOperationResult.Success(outputUri = outputUri, pagesCount = pagesCount)
@@ -340,36 +318,6 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
         return null
     }
 
-    private fun loadDocument(inputStream: InputStream, password: String?): PDDocument {
-        return if (password.isNullOrEmpty()) {
-            PDDocument.load(inputStream)
-        } else {
-            PDDocument.load(inputStream, password)
-        }
-    }
-
-    private fun openInputStream(context: Context, uri: Uri): InputStream {
-        return if (uri.scheme == "file") {
-            val path = uri.path ?: throw IllegalArgumentException("Некоректний file URI: $uri")
-            FileInputStream(File(path))
-        } else {
-            context.contentResolver.openInputStream(uri)
-                ?: throw FileNotFoundException("Неможливо відкрити файл: $uri")
-        }
-    }
-
-    private fun openOutputStream(context: Context, uri: Uri): OutputStream {
-        return if (uri.scheme == "file") {
-            val path = uri.path ?: throw IllegalArgumentException("Некоректний file URI: $uri")
-            val file = File(path)
-            file.parentFile?.mkdirs()
-            FileOutputStream(file)
-        } else {
-            context.contentResolver.openOutputStream(uri)
-                ?: throw FileNotFoundException("Неможливо створити вихідний файл: $uri")
-        }
-    }
-
     private fun mapToPdfError(cause: Throwable, defaultMessage: String): PdfOperationResult.Error =
-        PdfIo.mapToPdfError(cause, defaultMessage) // єдине відображення помилок (OOM, права, пароль)
+        PdfIo.mapToPdfError(cause, defaultMessage)
 }
