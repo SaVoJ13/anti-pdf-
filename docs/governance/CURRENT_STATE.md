@@ -1,10 +1,10 @@
 # CURRENT_STATE — знімок проєкту Volum PDF
 
-> За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-12 (`main`, після злиття й верифікації Кроку 4.1 `feature/core-large-files-optimization`, репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
-> Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
+> За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-12 (`main`, після злиття й верифікації Етапу 4 `feature/qa-markup`, репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
+> Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
 ## Етап
-Етап 3 («Поставити» на сторінці, **3a–3f** + **`feature/reading-progress`**) **ПОВНІСТЮ ЗАВЕРШЕНО** (`QA Verified` + `Owner Approved`). Крок 4.1 (`feature/core-large-files-optimization`) верифіковано незалежним QA (`QA Verified`) і злито в `main`. Наступний крок: **Етап 4 (`feature/qa-markup`)** — тестування великих файлів на Galaxy S24 Ultra та сумісності з Android 9–11 (API 28/30).
+Етап 3 («Поставити» на сторінці, **3a–3f** + **`feature/reading-progress`**) та **Етап 4 (`feature/qa-markup`)** **ПОВНІСТЮ ВЕРИФІКОВАНО** незалежним QA (`QA Verified`). Зібрано релізний бандл `app-release.aab` (17,5 МБ). Проєкт готовий до фінального огляду Власником (`Owner Approved` для Етапу 4) та розгортання закритого тестування в Google Play Console ($25, п. 3.2).
 
 ## Стан
 | Підетап | Гілка | Стан |
@@ -17,28 +17,29 @@
 | **прогрес читання** | `feature/reading-progress` | **ЗЛИТО** (2026-11-12, `QA Verified`: `:app` 173/173, `:core-pdf` 72/73; **живий прогін на телефоні S24 Ultra підтверджено Власником — `Owner Approved`**) |
 | **Ядро: великі файли та оптимізація** | `feature/core-large-files-optimization` | **ЗЛИТО** (2026-11-12, `QA Verified`: F1/F2 MemoryUsageSetting, F4 багаторядкові поля, F5 OOM, F6 шифрування, F7 saveSafely; `:core-pdf` 85/86 тестів, `:app` 175/175) |
 | **3f приймання** | `feature/qa-place-final` | **ЗЛИТО** (2026-11-12, `QA Verified` + **`Owner Approved` на S24 Ultra**: S Pen, щипок, другий палець, непідтримувані символи, 4 краї, 120 стор., 4 мови) |
-| **Етап 4 QA і безпека** | `feature/qa-markup` | **НАСТУПНИЙ** (тести на пристрої S24 Ultra та емуляторах API 28/30) |
-| Підготовка до публікації | — | після Етапу 4 |
+| **Етап 4 QA і безпека** | `feature/qa-markup` | **ЗЛИТО** (2026-11-12, `QA Verified`: SAF tree-URI vs doc-URI, діалог ліцензій OFL/Apache, THIRD_PARTY, 267 unit-тестів, стрес-пакет `large` 324 МБ/2000 стор., релізний AAB 17,5 МБ) |
+| **Підготовка до публікації (Етап 5)** | — | **ГОТОВО ДО ПУБЛІКАЦІЇ** (AAB 17,5 МБ зібрано, чекає дій Власника за п. 3.2: консоль Google Play $25) |
 
 ## Процес і середовище (оновлено 2026-11-12)
 Робота ведеться в середовищі **Google Antigravity** з новим репозиторієм `https://github.com/SaVoJ13/anti-pdf-` (локальна робоча папка: `C:\Users\cocro\.gemini\antigravity\scratch\pdf-reader-android`). Правила Конституції v2.0 підвантажуються автоматично через `AGENTS.md`, `CLAUDE.md`, `.agents/rules/constitution.md` та глобально `~/.gemini/config/rules/AGENTS.md`. Рівень автономії — стандартний за п. 3.1 Конституції з порядком QA за варіантом А (незалежний QA перевіряє гілку до злиття в `main`).
 
-## Відомі відкриті питання й низькі дефекти (після QA 3e та `LARGE_FILES_REPORT.md`)
+## Відомі відкриті питання й низькі дефекти (після QA 3e та Етапу 4)
 - **Зі звіту QA 3e (критичних і середніх 0, низьких 3):**
   - Д1 (низький): після `am kill` під час відкритого системного пікера місця для копії лишається 0-байтний файл `<ім'я>_edited.pdf` (оригінал і незбережені зміни цілі).
   - Д2 (низький): після збереження копії файла з user-паролем переглядач просить пароль ще раз.
   - Д3 (низький): у ландшафті з відкритою клавіатурою вікно пароля перекриває кнопки «Скасувати»/«Продовжити», доки не згорнути клавіатуру.
-- **Зі звіту `LARGE_FILES_REPORT.md` (`feature/core-large-files`):**
-  - F1/F2, F4, F5, F6, F7: **ВИРІШЕНО в Кроці 4.1** (`feature/core-large-files-optimization`, `QA Verified` 2026-11-12) — впроваджено `MemoryUsageSetting.setupMixed(16 МБ)` з кеш-каталогом, збереження паролів і AES-128 при операціях сторінок, атомарний `saveSafely`, читання багаторядкових полів та мапінг OOM.
-
+- **Зі звіту `LARGE_FILES_REPORT.md` та Етапу 4:**
+  - F1/F2, F4, F5, F6, F7: **ВИРІШЕНО в Кроці 4.1 та 4.2** (`feature/core-large-files-optimization`, `feature/qa-markup`, `QA Verified` 2026-11-12) — впроваджено `MemoryUsageSetting.setupMixed(16 МБ)` з кеш-каталогом, збереження паролів і AES-128 при операціях сторінок, атомарний `saveSafely`, читання багаторядкових полів, мапінг OOM та розпізнавання tree-URI vs doc-URI у SAF.
+  - Діалог ліцензій відкритого ПЗ (OFL 1.1, Apache-2.0, MIT) реалізовано в `LicensesDialogHelper.kt` та виведено в меню у 4 мовах.
+  - Розбіжності в `THIRD_PARTY.md` закрито.
 
 ## Блокери
-- Технічних блокерів немає.
+- Технічних блокерів немає. Питання реєстрації акаунта розробника Google Play Console ($25) чекає Власника за п. 3.2 Конституції.
 
 ## Наступні 3 кроки
-1. **Етап 4 (`feature/qa-markup`):** стрес-тести великих файлів (60–324 МБ) на телефоні S24 Ultra та димовий тест на емуляторах Android 9–11 (API 28/30).
-2. **Етап 5 (Підготовка до публікації в Google Play):** екран ліцензій OFL/Apache, перевірка збірки release/ProGuard/R8 та підписаного AAB.
-3. **Запуск закритого тестування в Google Play Console (12×14 днів).**
+1. **Підтвердження Власника (`Owner Approved` для Етапу 4):** перевірка на телефоні S24 Ultra та ознайомлення з вікном ліцензій.
+2. **Налаштування Google Play Console ($25, п. 3.2 Конституції):** створення застосунку, завантаження чернетки сторінки магазину з `docs/store/STORE_LISTING.md`, політики конфіденційності з `docs/store/PRIVACY_POLICY.md` та анкети безпеки даних з `docs/store/DATA_SAFETY.md`.
+3. **Завантаження `app-release.aab` у закрите тестування (Closed testing: 12 тестувальників на 14 днів).**
 
 ## НЕ ПЕРЕВІРЕНО (перенесено з джерел)
-`PdfView` на Android 9–11 (API 28, 30); інкрементальне збереження зашифрованих у pdfbox-android 2.0.27.0; екран ліцензій OFL/Apache; транзитивність `recyclerview` і `viewpager2`; великі файли (60–324 МБ) і `imagesToPdf` на реальному пристрої (ART).
+Димовий тест на фізичних пристроях старіших версій Android 9–11 (API 28, 30); інкрементальне збереження зашифрованих у pdfbox-android 2.0.27.0.

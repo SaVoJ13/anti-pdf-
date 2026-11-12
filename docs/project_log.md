@@ -1,5 +1,17 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-12 — Керівник проєкту / Агент 0 + Незалежний QA / Агент 4 (`feature/qa-markup`, Етап 4: QA, безпека, відповідність ліцензій та підготовка до релізу; `QA Verified`)
+**Простими словами:**
+- Реалізовано надійне розпізнавання однакових файлів у SAF (`isSameTarget` / `documentIdOf`): запис у `tree-URI` та `document-URI` для одного файлу коректно зіставляються, виключаючи перезапис зашифрованих файлів чи некоректне поводження з копіями. Додано 5 модульних тестів `PdfIoSameTargetTest.kt`.
+- Впроваджено діалог ліцензій відкритого ПЗ (`LicensesDialogHelper`) через нове меню «Ліцензії відкритого коду» у 4 мовах (`uk`, `en`, `de`, `ru`) з повними текстами/умовами Apache 2.0, SIL Open Font License 1.1 (Roboto) та MIT (Bouncy Castle).
+- Закрито всі розбіжності реєстру `THIRD_PARTY.md`: внесено `androidx.recyclerview` (1.3.2) та `androidx.viewpager2` (1.0.0), оновлено стовпці використання по модулях.
+- Підтверджено успішне проходження повного стрес-пакету `large` на великих документах: 324 МБ скан `scan200` оброблено за 2,8–3,9 с із піком пам'яті лише 110–140 МБ (без OOM), 2000 сторінок — за 90 мс / 37–50 МБ, зашифровані та пошкоджені файли опрацьовано без збоїв.
+- Повністю верифіковано збірку релізних пакетів під Google Play: `app-release-unsigned.apk` (35,3 МБ) та `app-release.aab` (17,5 МБ).
+- Незалежний QA-субагент підтвердив виконання критеріїв і видав вердикт **`QA Verified`** (`:core-pdf` — 90/91 тестів пройдено, 1 legacy benchmark skipped; `:app` — 176/176 тестів пройдено; разом 267 тестів).
+**Що зроблено:** створено гілку `feature/qa-markup`, доопрацьовано `PdfIo.kt`, створено `LicensesDialogHelper.kt`, оновлено меню `MainActivity` та 4 локалі `strings.xml`, додано тести `PdfIoSameTargetTest.kt` та `LicensesDialogHelperTest.kt`, оновлено `THIRD_PARTY.md`, проведено стрес-тести великих файлів та перевірку релізних артефактів, отримано `QA Verified`.
+**Що змінено:** `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/PdfIo.kt`, `core-pdf/src/test/java/com/savoj/volumpdf/core/pdf/PdfIoSameTargetTest.kt`, `app/src/main/java/com/savoj/volumpdf/ui/common/LicensesDialogHelper.kt`, `app/src/main/java/com/savoj/volumpdf/ui/main/MainActivity.kt`, `app/src/main/res/menu/menu_main.xml`, `app/src/main/res/values/strings.xml`, `app/src/main/res/values-uk/strings.xml`, `app/src/main/res/values-de/strings.xml`, `app/src/main/res/values-ru/strings.xml`, `app/src/test/java/com/savoj/volumpdf/ui/common/LicensesDialogHelperTest.kt`, `docs/THIRD_PARTY.md`, `docs/project_log.md`.
+
+
 ## 2026-11-12 — Керівник проєкту / Агент 0 + Незалежний QA / Агент 4 (`feature/core-large-files-optimization`, Крок 4.1: оптимізація пам'яті PDF-ядра, безпека операцій F1, F2, F4, F5, F6, F7; `QA Verified`)
 **Простими словами:**
 - Злито доробок дослідження великих і пошкоджених файлів (`feature/core-large-files`): виправлення F4 (багаторядкові текстові поля AcroForm тепер коректно читаються й зберігаються) та F5 (помилки браку пам'яті OOM тепер мають зрозумілий текст «Файл завеликий для редагування»).
