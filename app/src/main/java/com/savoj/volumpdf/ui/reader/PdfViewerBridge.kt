@@ -48,6 +48,15 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
     private var pdfView: PdfView? = null
     private var lastCurrentPage: Int? = null
 
+    // --- пошук тексту (ТОП-6) -------------------------------------------------------------------
+
+    /** Керування панеллю пошуку тексту в документі. */
+    var isTextSearchActive: Boolean
+        get() = try { host.isTextSearchActive } catch (_: Throwable) { false }
+        set(value) {
+            try { host.isTextSearchActive = value } catch (_: Throwable) {}
+        }
+
     // --- viewport -------------------------------------------------------------------------------
 
     val viewport: Viewport?
