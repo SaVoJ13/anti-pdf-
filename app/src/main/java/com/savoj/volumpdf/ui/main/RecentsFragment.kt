@@ -17,6 +17,9 @@ import com.savoj.volumpdf.R
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.databinding.FragmentRecentsBinding
 import com.savoj.volumpdf.ui.reader.ReaderActivity
+import com.savoj.volumpdf.ui.reader.ReadingProgressLogic
+import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
+import com.savoj.volumpdf.util.PdfThumbnailLoader
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.launch
 
@@ -47,12 +50,16 @@ class RecentsFragment : Fragment() {
             (activity as? MainActivity)?.launchSafOpenDocument()
         }
         binding.btnEmptyScan.setOnClickListener {
-            com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(requireContext())
+            ScanDocumentActivity.start(requireContext())
+        }
+        binding.btnClearSearch.setOnClickListener {
+            (activity as? MainActivity)?.clearSearchQuery()
         }
     }
 
     private fun setupRecyclerView() {
         adapter = RecentsAdapter(
+            scope = viewLifecycleOwner.lifecycleScope,
             onItemClicked = { doc ->
                 openDocumentInReader(doc.uri, doc.title)
             },
@@ -80,23 +87,78 @@ class RecentsFragment : Fragment() {
                 viewModel.recentDocuments.collect { documents ->
                     adapter.submitList(documents)
                     val isEmpty = documents.isEmpty()
-                    binding.layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
-                    binding.recyclerViewRecents.visibility = if (isEmpty) View.GONE else View.VISIBLE
+                    val hasSearch = viewModel.searchQuery.value.isNotBlank()
 
-                    if (isEmpty && viewModel.searchQuery.value.isNotBlank()) {
+                    binding.layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                    binding.scrollLibraryContent.visibility = if (isEmpty) View.GONE else View.VISIBLE
+
+                    if (!isEmpty) {
+                        binding.tvSectionRecentsCount.text = documents.size.toString()
+                        val continueDoc = if (!hasSearch) {
+                            documents.maxByOrNull { it.lastOpenedTimestamp }
+                        } else {
+                            null
+                        }
+                        bindContinueReadingCard(continueDoc)
+                    } else if (hasSearch) {
+                        binding.ivEmptyIcon.setImageResource(R.drawable.ic_search)
                         binding.tvEmptyTitle.setText(R.string.empty_search_title)
                         binding.tvEmptyDesc.setText(R.string.empty_search_desc)
                         binding.btnEmptyOpen.visibility = View.GONE
                         binding.btnEmptyScan.visibility = View.GONE
-                    } else if (isEmpty) {
+                        binding.btnClearSearch.visibility = View.VISIBLE
+                    } else {
+                        binding.ivEmptyIcon.setImageResource(R.drawable.ic_empty_recents)
                         binding.tvEmptyTitle.setText(R.string.empty_recents_title)
                         binding.tvEmptyDesc.setText(R.string.empty_recents_desc)
                         binding.btnEmptyOpen.visibility = View.VISIBLE
                         binding.btnEmptyScan.visibility = View.VISIBLE
+                        binding.btnClearSearch.visibility = View.GONE
                     }
                 }
             }
         }
+    }
+
+    private fun bindContinueReadingCard(doc: RecentDocument?) {
+        if (doc == null) {
+            binding.cardContinueReading.visibility = View.GONE
+            return
+        }
+        binding.cardContinueReading.visibility = View.VISIBLE
+        binding.tvContinueTitle.text = doc.title
+
+        val context = requireContext()
+        val totalPages = doc.pageCount.coerceAtLeast(1)
+        val current1Based = (doc.lastPageRead + 1).coerceIn(1, totalPages)
+        val percent = ReadingProgressLogic.progressPercent(
+            lastPageRead = doc.lastPageRead,
+            pageCount = totalPages,
+            alwaysShowFirstPage = true
+        )
+
+        val pageLabel = if (doc.pageCount > 0) {
+            context.getString(R.string.document_page_progress, current1Based, doc.pageCount) + " • $percent%"
+        } else {
+            SafUtils.formatTimestamp(doc.lastOpenedTimestamp)
+        }
+        binding.tvContinuePageInfo.text = pageLabel
+        binding.progressContinueReading.progress = percent
+
+        PdfThumbnailLoader.bindThumbnail(
+            context = context,
+            scope = viewLifecycleOwner.lifecycleScope,
+            imageView = binding.ivContinueThumbnail,
+            uriString = doc.uri,
+            pageIndex = doc.lastPageRead.coerceAtLeast(0),
+            targetWidthPx = 180
+        )
+
+        val openAction = View.OnClickListener {
+            openDocumentInReader(doc.uri, doc.title)
+        }
+        binding.cardContinueReading.setOnClickListener(openAction)
+        binding.btnContinueReading.setOnClickListener(openAction)
     }
 
     private fun openDocumentInReader(uriString: String, title: String) {

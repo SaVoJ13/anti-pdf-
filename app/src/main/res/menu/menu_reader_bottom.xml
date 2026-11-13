@@ -3,16 +3,34 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_place"
+        android:icon="@drawable/ic_edit"
+        android:title="@string/action_place"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search"
+        android:title="@string/action_search"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_reading_theme"
+        android:icon="@drawable/ic_night_mode"
+        android:title="@string/action_reading_theme"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_organize_pages"
+        android:icon="@drawable/ic_organize_pages"
+        android:title="@string/action_organize_pages"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/action_forms"
         android:icon="@drawable/ic_forms"
         android:title="@string/action_forms"
         android:visible="false"
-        app:showAsAction="always" />
-
-    <item
-        android:id="@+id/action_place"
-        android:icon="@drawable/ic_edit"
-        android:title="@string/action_place"
         app:showAsAction="always" />
 
 </menu>

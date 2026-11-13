@@ -13,7 +13,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.google.android.material.tabs.TabLayoutMediator
+import androidx.viewpager2.widget.ViewPager2
 import com.savoj.volumpdf.R
 import com.savoj.volumpdf.core.ads.AdMobAdsManager
 import com.savoj.volumpdf.core.ads.AdsManager
@@ -23,12 +23,14 @@ import com.savoj.volumpdf.ui.common.LicensesDialogHelper
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.ui.reader.ReaderActivity
+import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
     private lateinit var adsManager: AdsManager
+    private var searchMenuItem: MenuItem? = null
 
     private val openDocumentLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -48,8 +50,8 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         applyWindowInsets()
 
-        setupViewPagerAndTabs()
-        setupFab()
+        setupViewPagerAndBottomNav()
+        setupActionButtons()
         setupAds()
 
         handleIntent(intent)
@@ -57,45 +59,52 @@ class MainActivity : AppCompatActivity() {
 
     private var bottomInsetPx = 0
 
-    /** Edge-to-edge: тулбар під рядком стану, вміст і FAB над навігаційною панеллю, без заходу під виріз. */
+    /** Edge-to-edge: тулбар під рядком стану, вміст і FAB над нижньою навігацією та системною панеллю. */
     private fun applyWindowInsets() {
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val e = SystemEdges.from(insets)
             bottomInsetPx = e.bottom
             binding.mainContent.setPadding(e.left, 0, e.right, e.bottom)
             WindowInsetsHelper.applyAppBarTopInset(binding.appBarLayout, e.top)
-            val fab = binding.fabOpenPdf.layoutParams as? CoordinatorLayout.LayoutParams
-            if (fab != null) {
-                val base = (76 * resources.displayMetrics.density).toInt()
-                val banner = if (binding.bannerContainer.visibility == View.VISIBLE) binding.bannerContainer.height else 0
-                fab.bottomMargin = base + banner + e.bottom
-                fab.rightMargin = (20 * resources.displayMetrics.density).toInt() + e.right
-                binding.fabOpenPdf.layoutParams = fab
-            }
+            updateFabClusterMargin(e.right)
             androidx.core.view.WindowInsetsCompat.CONSUMED
         }
         androidx.core.view.ViewCompat.requestApplyInsets(binding.root)
     }
 
+    private fun updateFabClusterMargin(rightInset: Int = 0) {
+        val params = binding.fabCluster.layoutParams as? CoordinatorLayout.LayoutParams ?: return
+        val navHeight = if (binding.bottomNavigation.height > 0) {
+            binding.bottomNavigation.height
+        } else {
+            (80 * resources.displayMetrics.density).toInt()
+        }
+        val bannerHeight = if (binding.bannerContainer.visibility == View.VISIBLE) {
+            binding.bannerContainer.height
+        } else {
+            0
+        }
+        val basePadding = (16 * resources.displayMetrics.density).toInt()
+        val targetBottom = basePadding + navHeight + bannerHeight + bottomInsetPx
+        if (params.bottomMargin != targetBottom) {
+            params.bottomMargin = targetBottom
+        }
+        if (rightInset > 0) {
+            params.rightMargin = basePadding + rightInset
+        }
+        binding.fabCluster.layoutParams = params
+    }
+
     private fun setupAds() {
-        // Запит згоди UMP (GDPR) та ініціалізація реклами
         adsManager.requestConsentAndInit(this) {
             adsManager.bindAdaptiveBanner(this, binding.bannerContainer)
         }
 
-        // Динамічне коригування положення FAB при появі або зникненні банера (комфортна зона Galaxy S24 Ultra)
         binding.bannerContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            val bannerHeight = binding.bannerContainer.height
-            val isBannerVisible = binding.bannerContainer.visibility == View.VISIBLE
-            val params = binding.fabOpenPdf.layoutParams as? CoordinatorLayout.LayoutParams
-            if (params != null) {
-                val baseMargin = (76 * resources.displayMetrics.density).toInt() + bottomInsetPx
-                val targetMargin = if (isBannerVisible) baseMargin + bannerHeight else baseMargin
-                if (params.bottomMargin != targetMargin) {
-                    params.bottomMargin = targetMargin
-                    binding.fabOpenPdf.layoutParams = params
-                }
-            }
+            updateFabClusterMargin()
+        }
+        binding.bottomNavigation.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            updateFabClusterMargin()
         }
     }
 
@@ -132,7 +141,14 @@ class MainActivity : AppCompatActivity() {
         openDocumentLauncher.launch(arrayOf("application/pdf"))
     }
 
-    private fun setupViewPagerAndTabs() {
+    fun clearSearchQuery() {
+        viewModel.setSearchQuery("")
+        val searchView = searchMenuItem?.actionView as? SearchView
+        searchView?.setQuery("", false)
+        searchMenuItem?.collapseActionView()
+    }
+
+    private fun setupViewPagerAndBottomNav() {
         binding.viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount(): Int = 2
 
@@ -144,23 +160,41 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
-            when (position) {
-                0 -> {
-                    tab.setText(R.string.tab_recents)
-                    tab.setIcon(R.drawable.ic_tab_recents)
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_library -> {
+                    if (binding.viewPager.currentItem != 0) {
+                        binding.viewPager.setCurrentItem(0, true)
+                    }
+                    true
                 }
-                1 -> {
-                    tab.setText(R.string.tab_tools)
-                    tab.setIcon(R.drawable.ic_tab_tools)
+                R.id.nav_tools -> {
+                    if (binding.viewPager.currentItem != 1) {
+                        binding.viewPager.setCurrentItem(1, true)
+                    }
+                    true
                 }
+                else -> false
             }
-        }.attach()
+        }
+
+        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                val targetNavId = if (position == 0) R.id.nav_library else R.id.nav_tools
+                if (binding.bottomNavigation.selectedItemId != targetNavId) {
+                    binding.bottomNavigation.selectedItemId = targetNavId
+                }
+                binding.fabCluster.visibility = if (position == 0) View.VISIBLE else View.GONE
+            }
+        })
     }
 
-    private fun setupFab() {
+    private fun setupActionButtons() {
         binding.fabOpenPdf.setOnClickListener {
             launchSafOpenDocument()
+        }
+        binding.fabScanPdf.setOnClickListener {
+            ScanDocumentActivity.start(this)
         }
     }
 
@@ -168,6 +202,7 @@ class MainActivity : AppCompatActivity() {
         menuInflater.inflate(R.menu.menu_main, menu)
 
         val searchItem = menu.findItem(R.id.action_search)
+        searchMenuItem = searchItem
         val searchView = searchItem?.actionView as? SearchView
         searchView?.queryHint = getString(R.string.search_hint)
         searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -188,7 +223,7 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_scan -> {
-                com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
+                ScanDocumentActivity.start(this)
                 true
             }
             R.id.action_filter_favorites -> {

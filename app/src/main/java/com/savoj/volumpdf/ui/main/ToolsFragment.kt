@@ -1,5 +1,6 @@
 package com.savoj.volumpdf.ui.main
 
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,9 +8,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.savoj.volumpdf.databinding.FragmentToolsBinding
 import com.savoj.volumpdf.ui.organizer.PageOrganizerActivity
+import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
 import com.savoj.volumpdf.ui.tools.ToolType
 import com.savoj.volumpdf.ui.tools.ToolsActivity
 import com.savoj.volumpdf.ui.tools.ToolsAdapter
@@ -45,13 +48,19 @@ class ToolsFragment : Fragment() {
             onToolSelected(toolType)
         }
 
-        binding.recyclerViewTools.layoutManager = LinearLayoutManager(requireContext())
+        val config = resources.configuration
+        val isWide = config.screenWidthDp >= 600 || config.orientation == Configuration.ORIENTATION_LANDSCAPE
+        binding.recyclerViewTools.layoutManager = if (isWide) {
+            GridLayoutManager(requireContext(), 2)
+        } else {
+            LinearLayoutManager(requireContext())
+        }
         binding.recyclerViewTools.adapter = adapter
     }
 
     private fun onToolSelected(toolType: ToolType) {
         if (toolType == ToolType.SCAN_DOCUMENT) {
-            com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(requireContext())
+            ScanDocumentActivity.start(requireContext())
             return
         }
         if (toolType == ToolType.ORGANIZE_PAGES) {

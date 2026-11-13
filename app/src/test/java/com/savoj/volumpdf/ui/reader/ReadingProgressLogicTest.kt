@@ -104,6 +104,23 @@ class ReadingProgressLogicTest {
         assertEquals("Стор. 10 з 10", ReadingProgressLogic.formatPagesSubtitle(10, 25, countFmt, progFmt))
     }
 
+    @Test
+    fun `progressPercent - computes percentage for Continue Reading card and list items`() {
+        assertEquals(0, ReadingProgressLogic.progressPercent(0, 0, alwaysShowFirstPage = true))
+        assertEquals(0, ReadingProgressLogic.progressPercent(-1, 10, alwaysShowFirstPage = true))
+        // List item at page 0 of 10 -> 0% (no progress bar needed yet)
+        assertEquals(0, ReadingProgressLogic.progressPercent(0, 10, alwaysShowFirstPage = false))
+        // Continue Reading card at page 0 of 10 -> 10% (page 1 of 10)
+        assertEquals(10, ReadingProgressLogic.progressPercent(0, 10, alwaysShowFirstPage = true))
+        // Page 5 (index 4) of 20 -> 25%
+        assertEquals(25, ReadingProgressLogic.progressPercent(4, 20, alwaysShowFirstPage = false))
+        assertEquals(25, ReadingProgressLogic.progressPercent(4, 20, alwaysShowFirstPage = true))
+        // Last page (index 19) of 20 -> 100%
+        assertEquals(100, ReadingProgressLogic.progressPercent(19, 20, alwaysShowFirstPage = false))
+        // Single-page document -> 100%
+        assertEquals(100, ReadingProgressLogic.progressPercent(0, 1, alwaysShowFirstPage = false))
+    }
+
     // --- PageRestorePlanner ---------------------------------------------------------------------
 
     @Test

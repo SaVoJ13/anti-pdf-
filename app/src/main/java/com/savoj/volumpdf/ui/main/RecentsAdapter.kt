@@ -11,9 +11,12 @@ import com.savoj.volumpdf.R
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.databinding.ItemRecentDocumentBinding
 import com.savoj.volumpdf.ui.reader.ReadingProgressLogic
+import com.savoj.volumpdf.util.PdfThumbnailLoader
 import com.savoj.volumpdf.util.SafUtils
+import kotlinx.coroutines.CoroutineScope
 
 class RecentsAdapter(
+    private val scope: CoroutineScope,
     private val onItemClicked: (RecentDocument) -> Unit,
     private val onFavoriteToggled: (RecentDocument) -> Unit,
     private val onShareClicked: (RecentDocument) -> Unit,
@@ -43,16 +46,43 @@ class RecentsAdapter(
             binding.tvDocumentTitle.text = doc.title
 
             val sizeStr = SafUtils.formatFileSize(doc.fileSizeBytes)
+            val dateStr = SafUtils.formatTimestamp(doc.lastOpenedTimestamp)
+            val subtitleParts = listOf(sizeStr, dateStr).filter { it.isNotBlank() }
+            binding.tvDocumentSubtitle.text = subtitleParts.joinToString(" • ")
+
             val pagesStr = ReadingProgressLogic.formatPagesSubtitle(
                 pageCount = doc.pageCount,
                 lastPageRead = doc.lastPageRead,
                 formatCount = { count -> context.getString(R.string.document_pages_count, count) },
                 formatProgress = { current, total -> context.getString(R.string.document_page_progress, current, total) }
             )
-            val dateStr = SafUtils.formatTimestamp(doc.lastOpenedTimestamp)
+            if (pagesStr.isNotBlank()) {
+                binding.layoutReadingProgress.visibility = View.VISIBLE
+                binding.tvReadingProgress.text = pagesStr
+                val percent = ReadingProgressLogic.progressPercent(
+                    lastPageRead = doc.lastPageRead,
+                    pageCount = doc.pageCount,
+                    alwaysShowFirstPage = false
+                )
+                if (percent > 0) {
+                    binding.progressReading.visibility = View.VISIBLE
+                    binding.progressReading.progress = percent
+                } else {
+                    binding.progressReading.visibility = View.GONE
+                }
+            } else {
+                binding.layoutReadingProgress.visibility = View.GONE
+            }
 
-            val subtitleParts = listOf(sizeStr, pagesStr, dateStr).filter { it.isNotBlank() }
-            binding.tvDocumentSubtitle.text = subtitleParts.joinToString(" • ")
+            // Асинхронне рендерення мініатюри 1-ї сторінки (фолбек — іконка PDF)
+            PdfThumbnailLoader.bindThumbnail(
+                context = context,
+                scope = scope,
+                imageView = binding.ivPdfIcon,
+                uriString = doc.uri,
+                pageIndex = 0,
+                targetWidthPx = 144
+            )
 
             if (doc.isFavorite) {
                 binding.ivFavorite.setImageResource(R.drawable.ic_star_filled)
@@ -76,8 +106,15 @@ class RecentsAdapter(
         private fun showPopupMenu(anchor: View, doc: RecentDocument) {
             val popup = PopupMenu(anchor.context, anchor)
             popup.inflate(R.menu.menu_document_item)
+            val favItem = popup.menu.findItem(R.id.action_favorite)
+            favItem?.setTitle(if (doc.isFavorite) R.string.action_unfavorite else R.string.action_favorite)
+
             popup.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
+                    R.id.action_favorite -> {
+                        onFavoriteToggled(doc)
+                        true
+                    }
                     R.id.action_share -> {
                         onShareClicked(doc)
                         true

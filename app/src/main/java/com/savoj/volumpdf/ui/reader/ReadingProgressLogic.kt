@@ -102,6 +102,23 @@ object ReadingProgressLogic {
         }
     }
 
+    /**
+     * Обчислює відсоток прогресу читання (0..100) для візуального індикатора:
+     * - для картки «Продовжити читання» (`alwaysShowFirstPage = true`): навіть на сторінці 0 показує прогрес 1-ї сторінки;
+     * - для елементів списку (`alwaysShowFirstPage = false`): показує > 0 лише якщо користувач просунувся далі 1-ї сторінки
+     *   або якщо документ односторінковий.
+     */
+    fun progressPercent(
+        lastPageRead: Int,
+        pageCount: Int,
+        alwaysShowFirstPage: Boolean = false
+    ): Int {
+        if (pageCount <= 0 || lastPageRead < 0) return 0
+        if (lastPageRead == 0 && !alwaysShowFirstPage && pageCount > 1) return 0
+        val current1Based = (lastPageRead + 1).coerceIn(1, pageCount)
+        return ((current1Based * 100f) / pageCount).toInt().coerceIn(1, 100)
+    }
+
     private const val TIE_EPSILON_PX = 0.5f
 }
 

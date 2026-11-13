@@ -126,6 +126,11 @@ class ToolsActivity : AppCompatActivity() {
 
         // Прив'язка банера внизу ToolsActivity
         adsManager.bindAdaptiveBanner(this, binding.bannerContainer)
+
+        // Дії, для яких потрібен файл, одразу пропонують вибрати PDF при вході
+        if (savedInstanceState == null && viewModel.selectedFiles.value.isEmpty()) {
+            launchFilePickerForCurrentTool()
+        }
     }
 
     private fun setupToolUi() {
@@ -211,15 +216,7 @@ class ToolsActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         binding.btnSelectFiles.setOnClickListener {
-            when (toolType) {
-                ToolType.SCAN_DOCUMENT -> {
-                    com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
-                    finish()
-                }
-                ToolType.MERGE -> openMultiplePdfLauncher.launch(arrayOf("application/pdf"))
-                ToolType.ORGANIZE_PAGES, ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES, ToolType.WATERMARK, ToolType.PAGE_NUMBERS, ToolType.COMPRESS -> openSinglePdfLauncher.launch(arrayOf("application/pdf"))
-                ToolType.IMAGES_TO_PDF -> openMultipleImagesLauncher.launch(arrayOf("image/jpeg", "image/png", "image/*"))
-            }
+            launchFilePickerForCurrentTool()
         }
 
         binding.chipCopy.setOnClickListener { binding.etWatermarkText.setText(getString(R.string.watermark_preset_copy)) }
@@ -229,6 +226,19 @@ class ToolsActivity : AppCompatActivity() {
 
         binding.btnProcessAndSave.setOnClickListener {
             validateAndRequestOutputFile()
+        }
+    }
+
+    private fun launchFilePickerForCurrentTool() {
+        when (toolType) {
+            ToolType.SCAN_DOCUMENT -> {
+                com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
+                finish()
+            }
+            ToolType.MERGE -> openMultiplePdfLauncher.launch(arrayOf("application/pdf"))
+            ToolType.ORGANIZE_PAGES, ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES, ToolType.WATERMARK, ToolType.PAGE_NUMBERS, ToolType.COMPRESS ->
+                openSinglePdfLauncher.launch(arrayOf("application/pdf"))
+            ToolType.IMAGES_TO_PDF -> openMultipleImagesLauncher.launch(arrayOf("image/jpeg", "image/png", "image/*"))
         }
     }
 

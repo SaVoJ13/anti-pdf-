@@ -5,8 +5,19 @@
 
     <!-- Navigation & Tabs -->
     <string name="tab_recents">Недавние документы</string>
+    <string name="tab_library">Библиотека</string>
     <string name="tab_tools">Инструменты</string>
     <string name="action_open_pdf">Открыть PDF</string>
+    <string name="action_scan_short">Сканировать</string>
+    <string name="continue_reading_title">Продолжить чтение</string>
+    <string name="action_continue_reading">Продолжить</string>
+    <string name="section_recent_documents">Недавние</string>
+    <string name="action_clear_search">Сбросить поиск</string>
+    <string name="dialog_jump_to_page_title">Перейти к странице</string>
+    <string name="dialog_jump_to_page_hint">Страница (1–%1$d)</string>
+    <string name="action_go">Перейти</string>
+    <string name="place_tool_hand_short">Рука</string>
+    <string name="tools_hub_subtitle">Выберите нужное действие — приложение сразу предложит выбрать PDF-файл.</string>
     <string name="action_search">Поиск</string>
     <string name="search_hint">Поиск документов…</string>
     <string name="action_sort">Сортировка</string>

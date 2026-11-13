@@ -74,6 +74,7 @@ class ReaderActivity : AppCompatActivity() {
     private lateinit var readingPreferences: ReadingPreferences
     private val progressViewportListener: (Viewport) -> Unit = { v ->
         viewModel.updatePageProgress(v.currentPage)
+        updateReaderHud(v.currentPage, v.zoom)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,6 +144,9 @@ class ReaderActivity : AppCompatActivity() {
             loadedPageCount = count
             viewModel.viewerOpened = true
             viewModel.updatePageCount(count)
+            val curPage = fragment.bridge.viewport?.currentPage ?: 0
+            val curZoom = fragment.bridge.zoom
+            updateReaderHud(curPage, curZoom)
             maybeRestoreInitialPage()
         }
 
@@ -203,9 +207,90 @@ class ReaderActivity : AppCompatActivity() {
                     enterPlaceMode()
                     false
                 }
+                R.id.action_search -> {
+                    val bridge = viewerFragment?.bridge
+                    if (bridge != null) {
+                        bridge.isTextSearchActive = !bridge.isTextSearchActive
+                    }
+                    false
+                }
+                R.id.action_reading_theme -> {
+                    showReadingThemeDialog()
+                    false
+                }
+                R.id.action_organize_pages -> {
+                    val uri = documentUri ?: return@setOnItemSelectedListener false
+                    com.savoj.volumpdf.ui.organizer.PageOrganizerActivity.start(this, uri)
+                    false
+                }
                 else -> false
             }
         }
+
+        binding.btnHudPage.setOnClickListener {
+            showJumpToPageDialog()
+        }
+        binding.btnHudZoom.setOnClickListener {
+            val nextZoom = viewerFragment?.bridge?.cycleOrResetZoom() ?: 1f
+            val curPage = viewerFragment?.bridge?.viewport?.currentPage ?: 0
+            updateReaderHud(curPage, nextZoom)
+        }
+        binding.btnHudSearch.setOnClickListener {
+            val bridge = viewerFragment?.bridge
+            if (bridge != null) {
+                bridge.isTextSearchActive = !bridge.isTextSearchActive
+            }
+        }
+    }
+
+    private fun updateReaderHud(currentPageZeroBased: Int, zoom: Float) {
+        val total = if (loadedPageCount > 0) loadedPageCount else (viewModel.document.value?.pageCount ?: 0)
+        if (total > 0) {
+            val cur1Based = (currentPageZeroBased + 1).coerceIn(1, total)
+            binding.btnHudPage.text = getString(R.string.document_page_progress, cur1Based, total)
+        } else {
+            binding.btnHudPage.text = "${currentPageZeroBased + 1}"
+        }
+        val zoomPct = (zoom * 100f).toInt().coerceIn(25, 500)
+        binding.btnHudZoom.text = "$zoomPct%"
+    }
+
+    private fun showJumpToPageDialog() {
+        val total = if (loadedPageCount > 0) loadedPageCount else (viewModel.document.value?.pageCount ?: 0)
+        if (total <= 1) return
+        val cur1Based = ((viewerFragment?.bridge?.viewport?.currentPage ?: 0) + 1).coerceIn(1, total)
+
+        val pad = dp(20)
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, dp(8), pad, 0)
+        }
+        val til = com.google.android.material.textfield.TextInputLayout(this).apply {
+            hint = getString(R.string.dialog_jump_to_page_hint, total)
+        }
+        val et = com.google.android.material.textfield.TextInputEditText(til.context).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setText(cur1Based.toString())
+            setSelection(text?.length ?: 0)
+        }
+        til.addView(et)
+        container.addView(til)
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_jump_to_page_title)
+            .setView(container)
+            .setPositiveButton(R.string.action_go) { _, _ ->
+                val target1Based = et.text?.toString()?.trim()?.toIntOrNull()
+                if (target1Based != null) {
+                    val target0Based = (target1Based - 1).coerceIn(0, total - 1)
+                    viewerFragment?.bridge?.restorePage(target0Based) {
+                        viewModel.updatePageProgress(target0Based)
+                        updateReaderHud(target0Based, viewerFragment?.bridge?.zoom ?: 1f)
+                    }
+                }
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
     }
 
     private fun checkForFormFields(uri: Uri) {
@@ -689,6 +774,7 @@ class ReaderActivity : AppCompatActivity() {
         viewerFragment?.bridge?.isTextSearchActive = false
         Thread { safeUnsupported("a") }.start() // прогрів кешу шрифту: перша перевірка тексту без затримки
         binding.placePanelCard.visibility = View.VISIBLE
+        binding.cardReaderHud.visibility = View.GONE
         binding.bottomActionBar.visibility = View.GONE
         binding.unsavedBar.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(true) { point -> onPageTapped(point) }
@@ -704,6 +790,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.selectionBarCard.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(false)
         binding.placePanelCard.visibility = View.GONE
+        binding.cardReaderHud.visibility = View.VISIBLE
         binding.bottomActionBar.visibility = View.VISIBLE
         renderUnsavedUi()
     }

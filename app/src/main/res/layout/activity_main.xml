@@ -16,7 +16,8 @@
             android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?attr/colorSurface">
+            android:background="?attr/colorSurface"
+            app:elevation="0dp">
 
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
@@ -24,17 +25,15 @@
                 android:layout_height="?attr/actionBarSize"
                 app:title="@string/app_name"
                 app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge"
+                app:titleTextColor="?attr/colorOnSurface"
                 app:navigationIcon="@drawable/ic_pdf_document"
-                app:navigationIconTint="@color/pdf_badge_color" />
+                app:navigationIconTint="?attr/colorPrimary" />
 
-            <com.google.android.material.tabs.TabLayout
-                android:id="@+id/tabLayout"
+            <!-- Тонкий розділювач під верхньою панеллю -->
+            <View
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:tabIndicatorColor="?attr/colorPrimary"
-                app:tabSelectedTextColor="?attr/colorPrimary"
-                app:tabTextColor="?attr/colorOnSurfaceVariant"
-                app:tabMode="fixed" />
+                android:layout_height="1dp"
+                android:background="?attr/colorOutlineVariant" />
 
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -44,26 +43,65 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- Banner Container at Bottom of MainActivity -->
+        <!-- Banner Container above Bottom Navigation -->
         <FrameLayout
             android:id="@+id/bannerContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:visibility="gone" />
 
+        <!-- Тонкий розділювач над нижньою навігацією -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?attr/colorOutlineVariant" />
+
+        <!-- Нижня навігація: «Бібліотека» та «Інструменти» -->
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorSurface"
+            app:elevation="0dp"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/menu_main_bottom" />
+
     </LinearLayout>
 
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fabOpenPdf"
+    <!-- Блок швидких головних дій: «Сканувати» (другорядна світла індіго) та «Відкрити PDF» (основна індіго) -->
+    <LinearLayout
+        android:id="@+id/fabCluster"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="76dp"
-        android:text="@string/action_open_pdf"
-        app:icon="@drawable/ic_open_pdf"
-        app:backgroundTint="?attr/colorPrimary"
-        app:iconTint="?attr/colorOnPrimary"
-        android:textColor="?attr/colorOnPrimary" />
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="92dp"
+        android:gravity="end|center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/fabScanPdf"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:text="@string/action_scan_short"
+            android:textColor="?attr/colorOnPrimaryContainer"
+            app:backgroundTint="?attr/colorPrimaryContainer"
+            app:elevation="3dp"
+            app:icon="@drawable/ic_camera_scan"
+            app:iconTint="?attr/colorOnPrimaryContainer" />
+
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/fabOpenPdf"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/action_open_pdf"
+            android:textColor="?attr/colorOnPrimary"
+            app:backgroundTint="?attr/colorPrimary"
+            app:elevation="4dp"
+            app:icon="@drawable/ic_open_pdf"
+            app:iconTint="?attr/colorOnPrimary" />
+
+    </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
