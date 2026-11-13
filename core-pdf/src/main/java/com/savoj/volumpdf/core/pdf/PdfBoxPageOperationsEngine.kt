@@ -629,6 +629,129 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
         }
     }
 
+    override suspend fun createBlankPdf(
+        context: Context,
+        outputUri: Uri,
+        pageCount: Int
+    ): PdfOperationResult = withContext(Dispatchers.IO) {
+        try {
+            init(context)
+            val doc = PDDocument(PdfIo.defaultMemorySetting(context))
+            try {
+                val count = pageCount.coerceAtLeast(1)
+                for (i in 0 until count) {
+                    doc.addPage(PDPage(PDRectangle.A4))
+                }
+                PdfIo.saveSafely(context, doc, outputUri)
+                PdfOperationResult.Success(outputUri = outputUri, pagesCount = count)
+            } finally {
+                doc.close()
+            }
+        } catch (cause: Throwable) {
+            if (cause is CancellationException) throw cause
+            mapToPdfError(cause, "Помилка створення нового PDF")
+        }
+    }
+
+    override suspend fun appendBlankPages(
+        context: Context,
+        sourceUri: Uri,
+        count: Int,
+        outputUri: Uri,
+        password: String?
+    ): PdfOperationResult = withContext(Dispatchers.IO) {
+        try {
+            init(context)
+            val doc = PdfIo.loadDocument(context, sourceUri, password)
+            try {
+                val pagesToAdd = count.coerceAtLeast(1)
+                for (i in 0 until pagesToAdd) {
+                    doc.addPage(PDPage(PDRectangle.A4))
+                }
+                PdfIo.saveSafely(context, doc, outputUri)
+                PdfOperationResult.Success(outputUri = outputUri, pagesCount = doc.numberOfPages)
+            } finally {
+                doc.close()
+            }
+        } catch (cause: Throwable) {
+            if (cause is CancellationException) throw cause
+            mapToPdfError(cause, "Помилка додавання сторінки до PDF")
+        }
+    }
+
+    override suspend fun appendFiles(
+        context: Context,
+        sourceUri: Uri,
+        additionalUris: List<Uri>,
+        outputUri: Uri,
+        password: String?
+    ): PdfOperationResult = withContext(Dispatchers.IO) {
+        try {
+            init(context)
+            if (additionalUris.isEmpty()) {
+                val msg = "Не вибрано жодного файлу для додавання"
+                return@withContext PdfOperationResult.Error(IllegalArgumentException(msg), msg)
+            }
+            val targetDoc = PdfIo.loadDocument(context, sourceUri, password)
+            try {
+                val merger = PDFMergerUtility()
+                for ((index, uri) in additionalUris.withIndex()) {
+                    val mimeType = try { context.contentResolver?.getType(uri).orEmpty() } catch (_: Throwable) { "" }
+                    val uriStr = uri.toString().lowercase()
+                    val uriPath = uri.path?.lowercase().orEmpty()
+                    val isImage = mimeType.startsWith("image/") ||
+                            listOf(".jpg", ".jpeg", ".png", ".webp").any { uriStr.endsWith(it) || uriPath.endsWith(it) }
+
+                    if (isImage) {
+                        val imageBytes = PdfIo.openInputStream(context, uri).use { it.readBytes() }
+                        if (imageBytes.isNotEmpty()) {
+                            val parsedDim = extractImageDimensions(imageBytes)
+                            val imgX = PDImageXObject.createFromByteArray(
+                                targetDoc,
+                                imageBytes,
+                                "append_img_${index}_${System.currentTimeMillis()}"
+                            )
+                            val imgWidth = when {
+                                imgX.width > 0 -> imgX.width
+                                parsedDim != null && parsedDim.first > 0 -> {
+                                    imgX.width = parsedDim.first
+                                    parsedDim.first
+                                }
+                                else -> PDRectangle.A4.width.toInt()
+                            }.toFloat()
+                            val imgHeight = when {
+                                imgX.height > 0 -> imgX.height
+                                parsedDim != null && parsedDim.second > 0 -> {
+                                    imgX.height = parsedDim.second
+                                    parsedDim.second
+                                }
+                                else -> PDRectangle.A4.height.toInt()
+                            }.toFloat()
+
+                            val page = PDPage(PDRectangle(imgWidth, imgHeight))
+                            targetDoc.addPage(page)
+                            PDPageContentStream(targetDoc, page).use { cs ->
+                                cs.drawImage(imgX, 0f, 0f, imgWidth, imgHeight)
+                            }
+                        }
+                    } else {
+                        // PDF документ
+                        PdfIo.loadDocument(context, uri, null).use { srcDoc ->
+                            merger.appendDocument(targetDoc, srcDoc)
+                        }
+                    }
+                }
+                PdfIo.saveSafely(context, targetDoc, outputUri)
+                PdfOperationResult.Success(outputUri = outputUri, pagesCount = targetDoc.numberOfPages)
+            } finally {
+                targetDoc.close()
+            }
+        } catch (cause: Throwable) {
+            if (cause is CancellationException) throw cause
+            mapToPdfError(cause, "Помилка додавання файлів до PDF")
+        }
+    }
+
     private fun getFileSize(context: Context, uri: Uri): Long {
         if (uri.scheme == "file") {
             uri.path?.let { p ->

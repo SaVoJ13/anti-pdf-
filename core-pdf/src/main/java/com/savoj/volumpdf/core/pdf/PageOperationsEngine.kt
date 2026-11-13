@@ -79,4 +79,29 @@ interface PageOperationsEngine {
         outputUri: Uri,
         password: String? = null
     ): PdfOperationResult
+
+    // Створення нового порожнього PDF із заданою кількістю сторінок (типово 1 сторінка A4)
+    suspend fun createBlankPdf(
+        context: Context,
+        outputUri: Uri,
+        pageCount: Int = 1
+    ): PdfOperationResult
+
+    // Додавання порожніх сторінок до наявного документа
+    suspend fun appendBlankPages(
+        context: Context,
+        sourceUri: Uri,
+        count: Int = 1,
+        outputUri: Uri,
+        password: String? = null
+    ): PdfOperationResult
+
+    // Додавання файлів (PDF або зображень) до наявного документа
+    suspend fun appendFiles(
+        context: Context,
+        sourceUri: Uri,
+        additionalUris: List<Uri>,
+        outputUri: Uri,
+        password: String? = null
+    ): PdfOperationResult
 }

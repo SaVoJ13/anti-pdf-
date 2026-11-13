@@ -235,4 +235,64 @@ class PdfBoxPageOperationsEngineTest {
         val imageResult = engine.imagesToPdf(mockContext, emptyList(), outUri)
         assertTrue(imageResult is PdfOperationResult.Error)
     }
+
+    @Test
+    fun testCreateBlankPdf() = runBlocking {
+        val outputFile = tempFolder.newFile("blank_output.pdf")
+        val outputUri = createMockUri(outputFile)
+
+        val result = engine.createBlankPdf(mockContext, outputUri, pageCount = 2)
+
+        assertTrue(result is PdfOperationResult.Success)
+        val success = result as PdfOperationResult.Success
+        assertEquals(2, success.pagesCount)
+
+        PDDocument.load(outputFile).use { doc ->
+            assertEquals(2, doc.numberOfPages)
+            assertEquals(PDRectangle.A4.width, doc.getPage(0).mediaBox.width, 0.1f)
+            assertEquals(PDRectangle.A4.height, doc.getPage(0).mediaBox.height, 0.1f)
+        }
+    }
+
+    @Test
+    fun testAppendBlankPages() = runBlocking {
+        val pdf = createTestPdf(1, "source_1page.pdf")
+        val outputFile = tempFolder.newFile("appended_blank.pdf")
+        val sourceUri = createMockUri(pdf)
+        val outputUri = createMockUri(outputFile)
+
+        val result = engine.appendBlankPages(mockContext, sourceUri, count = 2, outputUri)
+
+        assertTrue(result is PdfOperationResult.Success)
+        val success = result as PdfOperationResult.Success
+        assertEquals(3, success.pagesCount)
+
+        PDDocument.load(outputFile).use { doc ->
+            assertEquals(3, doc.numberOfPages)
+        }
+    }
+
+    @Test
+    fun testAppendFiles() = runBlocking {
+        val basePdf = createTestPdf(1, "base.pdf")
+        val extraPdf = createTestPdf(2, "extra.pdf")
+        val extraImg = createTestJpeg("extra.jpg")
+        val outputFile = tempFolder.newFile("appended_files.pdf")
+
+        val baseUri = createMockUri(basePdf)
+        val extraPdfUri = createMockUri(extraPdf)
+        val extraImgUri = createMockUri(extraImg)
+        val outputUri = createMockUri(outputFile)
+
+        val result = engine.appendFiles(mockContext, baseUri, listOf(extraPdfUri, extraImgUri), outputUri)
+
+        assertTrue(result is PdfOperationResult.Success)
+        val success = result as PdfOperationResult.Success
+        // 1 base + 2 extra pdf + 1 image = 4 pages
+        assertEquals(4, success.pagesCount)
+
+        PDDocument.load(outputFile).use { doc ->
+            assertEquals(4, doc.numberOfPages)
+        }
+    }
 }

@@ -251,4 +251,21 @@
     <string name="place_copy_saved">Kopie gespeichert</string>
     <string name="action_licenses">Open-Source-Lizenzen</string>
     <string name="dialog_licenses_title">Open-Source-Lizenzen</string>
+    <string name="action_create_pdf">PDF erstellen</string>
+    <string name="tool_create_blank_title">PDF erstellen</string>
+    <string name="tool_create_blank_desc">Neues leeres Dokument für Notizen und Text erstellen</string>
+    <string name="tool_add_page">+ Seite</string>
+    <string name="tool_add_page_desc">Leere Seite zum Dokument hinzufügen</string>
+    <string name="tool_insert_file">Datei hinzufügen</string>
+    <string name="tool_insert_file_desc">Seiten aus PDF oder Bildern anfügen</string>
+    <string name="action_tools">Werkzeuge</string>
+    <string name="tools_sheet_title">Dokumentwerkzeuge</string>
+    <string name="tools_group_pages">Seiten und Dateien</string>
+    <string name="tools_group_effects">Design und Optimierung</string>
+    <string name="tools_group_quick">Schnellaktionen</string>
+    <string name="text_pages_added">%d neue Seiten für Text hinzugefügt</string>
+    <string name="new_document_default_title">Neues Dokument</string>
+    <string name="action_print">Drucken</string>
+    <string name="page_added_successfully">Neue Seite hinzugefügt</string>
+    <string name="files_added_successfully">Dateien erfolgreich hinzugefügt</string>
 </resources>

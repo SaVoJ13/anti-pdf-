@@ -251,4 +251,21 @@
     <string name="place_copy_saved">Копия сохранена</string>
     <string name="action_licenses">Лицензии открытого ПО</string>
     <string name="dialog_licenses_title">Лицензии открытого ПО</string>
+    <string name="action_create_pdf">Создать PDF</string>
+    <string name="tool_create_blank_title">Создать PDF</string>
+    <string name="tool_create_blank_desc">Создать новый пустой документ для заметок и текста</string>
+    <string name="tool_add_page">+ Стр.</string>
+    <string name="tool_add_page_desc">Добавить пустую страницу к документу</string>
+    <string name="tool_insert_file">Добавить файл</string>
+    <string name="tool_insert_file_desc">Добавить страницы из PDF или изображений</string>
+    <string name="action_tools">Инструменты</string>
+    <string name="tools_sheet_title">Инструменты документа</string>
+    <string name="tools_group_pages">Страницы и файлы</string>
+    <string name="tools_group_effects">Оформление и оптимизация</string>
+    <string name="tools_group_quick">Быстрые действия</string>
+    <string name="text_pages_added">Добавлено %d новых стр. для текста</string>
+    <string name="new_document_default_title">Новый документ</string>
+    <string name="action_print">Печать</string>
+    <string name="page_added_successfully">Новая страница добавлена</string>
+    <string name="files_added_successfully">Файлы успешно добавлены</string>
 </resources>

@@ -21,10 +21,10 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/action_organize_pages"
-        android:icon="@drawable/ic_organize_pages"
-        android:title="@string/action_organize_pages"
-        app:showAsAction="ifRoom" />
+        android:id="@+id/action_tools"
+        android:icon="@drawable/ic_tab_tools"
+        android:title="@string/action_tools"
+        app:showAsAction="always" />
 
     <item
         android:id="@+id/action_forms"
