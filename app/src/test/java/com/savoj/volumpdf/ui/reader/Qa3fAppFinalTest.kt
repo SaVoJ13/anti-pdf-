@@ -106,7 +106,18 @@ class Qa3fAppFinalTest {
             "copy_warning_title",
             "copy_warning_message",
             "copy_save",
-            "place_copy_saved"
+            "place_copy_saved",
+            "tab_library",
+            "continue_reading_title",
+            "action_continue_reading",
+            "section_recent_documents",
+            "action_scan_short",
+            "action_clear_search",
+            "dialog_jump_to_page_title",
+            "dialog_jump_to_page_hint",
+            "action_go",
+            "place_tool_hand_short",
+            "tools_hub_subtitle"
         )
 
         for (dir in locales) {

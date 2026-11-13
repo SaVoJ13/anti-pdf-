@@ -5,36 +5,38 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="1dp"
-    app:strokeWidth="1dp"
-    app:strokeColor="?attr/colorOutlineVariant"
+    android:layout_marginHorizontal="4dp"
+    android:layout_marginBottom="10dp"
     android:clickable="true"
     android:focusable="true"
-    android:foreground="?attr/selectableItemBackground">
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="?attr/colorSurface"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0.5dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="14dp">
 
         <FrameLayout
             android:id="@+id/iconContainer"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:background="@drawable/ic_launcher_background"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_tool_icon_container"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:id="@+id/ivToolIcon"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_merge"
-                app:tint="@android:color/white" />
+                app:tint="?attr/colorPrimary" />
 
         </FrameLayout>
 
@@ -42,12 +44,13 @@
             android:id="@+id/tvToolTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="14dp"
             android:layout_marginEnd="8dp"
-            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
             android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/ivToolChevron"
             app:layout_constraintStart_toEndOf="@id/iconContainer"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Merge PDFs" />
 
@@ -55,16 +58,28 @@
             android:id="@+id/tvToolDescription"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="4dp"
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="3dp"
             android:layout_marginEnd="8dp"
-            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
             android:textColor="?attr/colorOnSurfaceVariant"
-            app:layout_constraintStart_toEndOf="@id/iconContainer"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvToolTitle"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/ivToolChevron"
+            app:layout_constraintStart_toEndOf="@id/iconContainer"
+            app:layout_constraintTop_toBottomOf="@id/tvToolTitle"
             tools:text="Combine two or more PDF files into a single document." />
+
+        <ImageView
+            android:id="@+id/ivToolChevron"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_chevron_right"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="?attr/colorOutline" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

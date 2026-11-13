@@ -110,6 +110,19 @@ class PdfViewerBridge internal constructor(private val host: VolumPdfViewerFragm
     val zoom: Float
         get() = pdfView?.zoom ?: 1f
 
+    /** Перемикає масштаб між 100%, 150% та 200% або скидає до 100% за потреби. */
+    fun cycleOrResetZoom(): Float {
+        val v = pdfView ?: return 1f
+        val current = v.zoom
+        val next = when {
+            current < 1.25f -> 1.5f
+            current < 1.85f -> 2.0f
+            else -> 1.0f
+        }
+        v.zoom = next
+        return next
+    }
+
     /**
      * Зсув початку PdfView відносно [target] у пікселях (x, y): додається до [pageToView], щоб
      * малювати в системі координат іншого в'ю (оверлей). null, якщо переглядача ще немає.

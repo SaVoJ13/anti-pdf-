@@ -5,8 +5,19 @@
 
     <!-- Navigation & Tabs -->
     <string name="tab_recents">Zuletzt geöffnet</string>
+    <string name="tab_library">Bibliothek</string>
     <string name="tab_tools">Werkzeuge</string>
     <string name="action_open_pdf">PDF öffnen</string>
+    <string name="action_scan_short">Scannen</string>
+    <string name="continue_reading_title">Weiterlesen</string>
+    <string name="action_continue_reading">Weiter</string>
+    <string name="section_recent_documents">Zuletzt</string>
+    <string name="action_clear_search">Suche zurücksetzen</string>
+    <string name="dialog_jump_to_page_title">Gehe zu Seite</string>
+    <string name="dialog_jump_to_page_hint">Seite (1–%1$d)</string>
+    <string name="action_go">Los</string>
+    <string name="place_tool_hand_short">Hand</string>
+    <string name="tools_hub_subtitle">Wählen Sie ein Werkzeug aus, um direkt eine PDF-Datei zu öffnen.</string>
     <string name="action_search">Suchen</string>
     <string name="search_hint">Dokumente durchsuchen…</string>
     <string name="action_sort">Sortieren nach</string>

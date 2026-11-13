@@ -147,7 +147,7 @@ class MarkupOverlayView @JvmOverloads constructor(
     }
     private val handleHaloPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = 0x261565C0.toInt()
+        color = 0x263949AB.toInt()
     }
 
     /** Стан ресайзу вікна тексту за маркери ширини. */
@@ -639,7 +639,7 @@ class MarkupOverlayView @JvmOverloads constructor(
     }
 
     private companion object {
-        const val FRAME_COLOR = 0xFF1565C0.toInt()
+        const val FRAME_COLOR = 0xFF3949AB.toInt()
         /** Дотики ближчі за це (px) до попередньої точки живого штриха пропускаємо. */
         const val MIN_LIVE_STEP_PX = 0.5f
     }
