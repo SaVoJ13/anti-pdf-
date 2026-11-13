@@ -1,5 +1,17 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-13 — Керівник проєкту / Агент 0 + Незалежний QA / Агент 4 (`feature/ui-pencil-and-blue-theme`: оновлення іконки олівця та синьої теми; `QA Verified`)
+**Простими словами:**
+- На прохання Власника режим додавання анотацій («Поставити») оновлено на інтуїтивну іконку олівця (`@drawable/ic_edit`) замість штампа у верхньому та нижньому меню переглядача (`menu_reader.xml`, `menu_reader_bottom.xml`).
+- Назву дії оновлено в усіх 4 локалях: українська — «Редагувати», англійська — «Edit», німецька — «Bearbeiten», російська — «Редактировать».
+- Внутрішню палітру Material 3 застосунку повністю гармонізовано з кольором ярлика запуску (`#1565C0` — Deep Blue): оновлено первинні та контейнерні кольори світлої та темної тем (`colors.xml`), колір бейджа PDF у списку файлів адаптовано під брендовий синій.
+- Успішно пройдено повний набір із 267 модульних тестів (`:core-pdf` 90/91, 1 skipped; `:app` 176/176).
+- Збірку перевірено та встановлено на фізичний пристрій Samsung Galaxy S24 Ultra (`SM_S928B`, `RZCX326349A`).
+- Незалежний QA-субагент підтвердив відповідність критеріям без регресій та видав вердикт **`QA Verified`**.
+**Що зроблено:** створено гілку `feature/ui-pencil-and-blue-theme`, замінено іконку та рядки меню `action_place`, оновлено палітру Material 3 `colors.xml`, проведено модульні тести, встановлено APK на телефон Власника, отримано `QA Verified`.
+**Що змінено:** `app/src/main/res/menu/menu_reader.xml`, `app/src/main/res/menu/menu_reader_bottom.xml`, `app/src/main/res/values/colors.xml`, `app/src/main/res/values/strings.xml`, `app/src/main/res/values-uk/strings.xml`, `app/src/main/res/values-de/strings.xml`, `app/src/main/res/values-ru/strings.xml`, `docs/project_log.md`.
+
+
 ## 2026-11-13 — Керівник проєкту / Агент 0 + Власник (приймання Етапу 4 на Samsung Galaxy S24 Ultra; `Owner Approved`)
 **Простими словами:**
 - Власник особисто перевірив свіжу збірку `Anti PDF` на телефоні Samsung Galaxy S24 Ultra (`SM_S928B`, `RZCX326349A`): меню застосунку та роботу діалогового вікна «Ліцензії відкритого коду» з повними текстами умов Apache 2.0, SIL Open Font License 1.1 (Roboto) та MIT (Bouncy Castle).
