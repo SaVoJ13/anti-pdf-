@@ -154,6 +154,122 @@ object PlaceMarkupLogic {
         return Pair(sx.coerceIn(0f, maxX), sy.coerceIn(0f, maxY))
     }
 
+    /**
+     * Максимальна ширина рядка тексту (pt), щоб не виходити за поля сторінки.
+     * Якщо xPt лежить у лівій половині сторінки — зберігаються симетричні поля: праве поле дорівнює лівому (щонайменше 36 pt).
+     * Якщо xPt у правій половині сторінки — праве поле береться стандартним (36 pt).
+     * Якщо розмір сторінки невідомий — береться стандартна ширина сторінки A4 (595.28 pt).
+     */
+    fun maxTextLineWidthPt(xPt: Float, page: PageSizePt?): Float {
+        val pageWidth = page?.widthPt ?: 595.28f
+        val rightMargin = if (xPt <= pageWidth / 2f) maxOf(xPt, 36f) else 36f
+        val rawWidth = pageWidth - xPt - rightMargin
+        return rawWidth.coerceAtLeast(60f)
+    }
+
+    /**
+     * Оцінка ширини рядка для Roboto-Regular (pt) без Android-класів (для JVM-тестів).
+     */
+    fun estimateTextWidthPt(text: String, fontSizePt: Float): Float {
+        var w = 0f
+        for (ch in text) {
+            val factor = when (ch) {
+                ' ', '.', ',', ':', ';', '!', '\'', '|', 'i', 'l', 'j' -> 0.28f
+                'f', 'r', 't', '(', ')', '[', ']', 'I' -> 0.35f
+                'm', 'w', 'M', 'W', 'Ж', 'Ш', 'Щ', 'Ю', 'ж', 'ш', 'щ', 'ю', '@', '%' -> 0.85f
+                in 'A'..'Z', in 'А'..'Я' -> 0.65f
+                else -> 0.53f
+            }
+            w += factor * fontSizePt
+        }
+        return w
+    }
+
+    /**
+     * Переносить довгий текст на наступний рядок ('\n'), зберігаючи поля сторінки (не виходить за межі).
+     * - Зберігає явні абзаци користувача ('\n').
+     * - Розриває слова за пробілами, коли рядок перевищує [maxWidthPt] (обчислений через [maxTextLineWidthPt]).
+     * - Якщо окреме слово ширше за [maxWidthPt], розбиває його по символах, щоб не вилазити за поля.
+     * - [measureWidthPt] — функція точного вимірювання (Paint на Android); якщо null — [estimateTextWidthPt].
+     */
+    fun wrapText(
+        rawText: String,
+        xPt: Float,
+        fontSizePt: Float,
+        page: PageSizePt?,
+        measureWidthPt: ((String) -> Float)? = null
+    ): String {
+        if (rawText.isEmpty()) return rawText
+        val maxWidth = maxTextLineWidthPt(xPt, page)
+        val measure: (String) -> Float = measureWidthPt ?: { str -> estimateTextWidthPt(str, fontSizePt) }
+
+        val paragraphs = rawText.replace("\r", "").split('\n')
+        val wrappedParagraphs = paragraphs.map { paragraph ->
+            wrapParagraph(paragraph, maxWidth, measure)
+        }
+        return wrappedParagraphs.joinToString("\n")
+    }
+
+    private fun wrapParagraph(paragraph: String, maxWidthPt: Float, measure: (String) -> Float): String {
+        if (paragraph.isBlank()) return paragraph
+        if (measure(paragraph) <= maxWidthPt) return paragraph
+
+        val words = paragraph.split(' ')
+        val lines = ArrayList<String>()
+        var currentLine = StringBuilder()
+
+        for (word in words) {
+            if (currentLine.isEmpty()) {
+                if (measure(word) <= maxWidthPt) {
+                    currentLine.append(word)
+                } else {
+                    var chunk = StringBuilder()
+                    for (ch in word) {
+                        if (measure(chunk.toString() + ch) <= maxWidthPt) {
+                            chunk.append(ch)
+                        } else {
+                            if (chunk.isNotEmpty()) {
+                                lines.add(chunk.toString())
+                                chunk = StringBuilder()
+                            }
+                            chunk.append(ch)
+                        }
+                    }
+                    currentLine = chunk
+                }
+            } else {
+                val candidate = currentLine.toString() + " " + word
+                if (measure(candidate) <= maxWidthPt) {
+                    currentLine.append(" ").append(word)
+                } else {
+                    lines.add(currentLine.toString())
+                    currentLine = StringBuilder()
+                    if (measure(word) <= maxWidthPt) {
+                        currentLine.append(word)
+                    } else {
+                        var chunk = StringBuilder()
+                        for (ch in word) {
+                            if (measure(chunk.toString() + ch) <= maxWidthPt) {
+                                chunk.append(ch)
+                            } else {
+                                if (chunk.isNotEmpty()) {
+                                    lines.add(chunk.toString())
+                                    chunk = StringBuilder()
+                                }
+                                chunk.append(ch)
+                            }
+                        }
+                        currentLine = chunk
+                    }
+                }
+            }
+        }
+        if (currentLine.isNotEmpty()) {
+            lines.add(currentLine.toString())
+        }
+        return lines.joinToString("\n")
+    }
+
     /** Порожній (лише пробіли й розриви) — Empty; символи, яких немає у шрифті, — Unsupported. */
     fun checkText(rawText: String, unsupported: String): TextVerdict = when {
         rawText.isBlank() -> TextVerdict.Empty
@@ -170,17 +286,22 @@ object PlaceMarkupLogic {
     /**
      * Текст: лівий верхній кут — у точці тапу. Порожній (лише пробіли й розриви) — не додається;
      * символи, яких немає у шрифті ([unsupported] від MarkupEngine.findUnsupportedChars), — не додається.
+     * За наявності [page] довгий текст автоматично переноситься на наступні рядки зі збереженням полів сторінки.
      */
     fun textFromTap(
         id: String, pageIndex: Int, x: Float, y: Float,
-        rawText: String, sizePt: Float, color: Int, unsupported: String
+        rawText: String, sizePt: Float, color: Int, unsupported: String,
+        page: PageSizePt? = null,
+        measureWidthPt: ((String) -> Float)? = null
     ): TextCheck {
         when (val v = checkText(rawText, unsupported)) {
             TextVerdict.Empty -> return TextCheck.Empty
             is TextVerdict.Unsupported -> return TextCheck.Unsupported(v.chars)
             TextVerdict.Ok -> Unit
         }
-        return TextCheck.Ok(PendingMarkup(id, PlaceTool.TEXT, pageIndex, x, y, rawText, clampSize(PlaceTool.TEXT, sizePt), color))
+        val clampedSize = clampSize(PlaceTool.TEXT, sizePt)
+        val finalText = if (page != null) wrapText(rawText, x, clampedSize, page, measureWidthPt) else rawText
+        return TextCheck.Ok(PendingMarkup(id, PlaceTool.TEXT, pageIndex, x, y, finalText, clampedSize, color))
     }
 
     /** [signatureBitmap] — картинка підпису за id об'єкта (лише для SIGNATURE); без неї підпис не перетворити. */
@@ -259,8 +380,20 @@ object PlaceMarkupLogic {
      * Нова опорна точка після перетягування з урахуванням меж. Для ✓/✗, тексту й підпису — опорна точка в межах
      * сторінки ([clampToPage]); для штриха — зсув такий, щоб охоплювальний прямокутник точок лишився на сторінці
      * щонайменше на [INK_MIN_VISIBLE_PT] (двигун відхиляє об'єкт, що цілком поза сторінкою).
+     * Для тексту права межа не дозволяє витягнути блок тексту за межі сторінки.
      */
-    fun clampedAnchor(item: PendingMarkup, x: Float, y: Float, page: PageSizePt?): Pair<Float, Float> {
+    fun clampedAnchor(
+        item: PendingMarkup, x: Float, y: Float, page: PageSizePt?,
+        measureWidthPt: ((String) -> Float)? = null
+    ): Pair<Float, Float> {
+        if (item.tool == PlaceTool.TEXT && page != null) {
+            val (baseX, baseY) = clampToPage(x, y, page)
+            val measure = measureWidthPt ?: { str -> estimateTextWidthPt(str, item.sizePt) }
+            val lines = item.text.replace("\r", "").split('\n')
+            val maxLineW = lines.maxOfOrNull { measure(it) } ?: 0f
+            val maxX = (page.widthPt - PAGE_EDGE_MARGIN_PT - maxLineW).coerceAtLeast(0f)
+            return Pair(baseX.coerceIn(0f, maxX), baseY)
+        }
         if (item.tool != PlaceTool.INK || item.ink == null) return clampToPage(x, y, page)
         val sx = if (x.isNaN()) item.x else x
         val sy = if (y.isNaN()) item.y else y
