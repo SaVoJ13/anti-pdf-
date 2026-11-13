@@ -11,6 +11,7 @@ import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.data.db.copy
 import com.savoj.volumpdf.data.repository.DocumentRepository
+import com.savoj.volumpdf.util.ImageRotationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -248,8 +249,12 @@ class ReaderViewModel(
                     val f = store.imageFile(key, p.id)
                     val bmp = try { android.graphics.BitmapFactory.decodeFile(f.path) } catch (_: Throwable) { null }
                     if (bmp != null) {
-                        signatureBitmaps[p.id] = bmp
                         originalBitmaps[p.id] = bmp
+                        if (p.rotationDeg != 0 && p.tool == PlaceTool.IMAGE) {
+                            signatureBitmaps[p.id] = ImageRotationHelper.rotate(bmp, p.rotationDeg)
+                        } else {
+                            signatureBitmaps[p.id] = bmp
+                        }
                     }
                 }
                 // Підпис чи зображення без картинки показати й зберегти не вдасться — такий об'єкт відкидаємо.
@@ -290,7 +295,7 @@ class ReaderViewModel(
                     val snap = synchronized(persistLock) { latestSnapshot.also { latestSnapshot = null } } ?: break
                     try {
                         store.save(key, snap.items, snap.forms) { id, target ->
-                            val bmp = signatureBitmaps[id]
+                            val bmp = originalBitmaps[id] ?: signatureBitmaps[id]
                             if (bmp != null) target.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
                         }
                     } catch (_: Exception) {

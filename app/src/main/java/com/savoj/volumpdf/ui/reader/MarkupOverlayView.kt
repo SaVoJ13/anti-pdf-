@@ -628,14 +628,20 @@ class MarkupOverlayView @JvmOverloads constructor(
         val y = dragY
         val targetPage = dragPageIndex
         val below = isDragBelowDocument
+        val outside = isOutsideAllowedBounds
         dragId = null
         dragPageIndex = null
         isDragBelowDocument = false
+        isOutsideAllowedBounds = false
         moved = false
         invalidate()
         if (!commit) return
         if (wasMoved) {
-            if (below) {
+            if (outside && !below) {
+                // Відпускання за межами сторінки: Snap-back повертає об'єкт у початкову позицію
+                editListener?.onItemMoved(id, startPageIndex, startX, startY)
+                editListener?.onItemDragSnappedBack(id)
+            } else if (below) {
                 editListener?.onItemMovedBelowDocument(id, x, y)
             } else if (targetPage != null) {
                 editListener?.onItemMoved(id, targetPage, x, y)
@@ -803,6 +809,27 @@ class MarkupOverlayView @JvmOverloads constructor(
             }
         }
         if (live) drawLiveStroke(canvas, zoom)
+
+        // Візуальні межі сторінки безпечного перетягування (DEF-03)
+        if (moved && dragId != null) {
+            val currPageIdx = dragPageIndex ?: startPageIndex
+            val pagePt = b.pageSizePt(currPageIdx)
+            if (pagePt != null) {
+                val tl = b.pageToView(PageViewPoint(currPageIdx, 0f, 0f))
+                val br = b.pageToView(PageViewPoint(currPageIdx, pagePt.widthPt, pagePt.heightPt))
+                if (tl != null && br != null) {
+                    safeBoundsRectF.set(
+                        tl.x + offset[0],
+                        tl.y + offset[1],
+                        br.x + offset[0],
+                        br.y + offset[1]
+                    )
+                    val guidePaint = if (isOutsideAllowedBounds) pageOutsideGuidePaint else pageSafeGuidePaint
+                    canvas.drawRect(safeBoundsRectF, guidePaint)
+                }
+            }
+        }
+
         val sel = selectedId?.let { id -> list.firstOrNull { it.id == id } }
         if (sel != null) {
             val activeSel = if (isResizing && sel.id == resizeId) {
