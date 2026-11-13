@@ -338,6 +338,11 @@ class ReaderActivity : AppCompatActivity() {
     private fun setupBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                val bridge = viewerFragment?.bridge
+                if (bridge != null && bridge.isTextSearchActive) {
+                    bridge.isTextSearchActive = false
+                    return
+                }
                 if (viewModel.placeModeActive) {
                     leavePlaceThen { }
                 } else if (viewModel.hasUnsaved.value) {
@@ -681,6 +686,7 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showPlaceUi() {
         viewModel.placeModeActive = true
+        viewerFragment?.bridge?.isTextSearchActive = false
         Thread { safeUnsupported("a") }.start() // прогрів кешу шрифту: перша перевірка тексту без затримки
         binding.placePanelCard.visibility = View.VISIBLE
         binding.bottomActionBar.visibility = View.GONE
@@ -1237,6 +1243,13 @@ class ReaderActivity : AppCompatActivity() {
             }
             R.id.action_place -> {
                 enterPlaceMode()
+                true
+            }
+            R.id.action_search -> {
+                val bridge = viewerFragment?.bridge
+                if (bridge != null) {
+                    bridge.isTextSearchActive = !bridge.isTextSearchActive
+                }
                 true
             }
             R.id.action_toggle_favorite -> {
