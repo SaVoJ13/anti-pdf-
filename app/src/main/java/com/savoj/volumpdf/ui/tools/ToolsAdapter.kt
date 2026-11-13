@@ -15,7 +15,8 @@ enum class ToolType {
     DELETE_PAGES,
     IMAGES_TO_PDF,
     WATERMARK,
-    PAGE_NUMBERS
+    PAGE_NUMBERS,
+    COMPRESS
 }
 
 data class ToolDefinition(
@@ -71,6 +72,12 @@ class ToolsAdapter(
             titleRes = R.string.tool_page_numbers_title,
             descRes = R.string.tool_page_numbers_desc,
             iconRes = R.drawable.ic_page_numbers
+        ),
+        ToolDefinition(
+            type = ToolType.COMPRESS,
+            titleRes = R.string.tool_compress_title,
+            descRes = R.string.tool_compress_desc,
+            iconRes = R.drawable.ic_compress
         )
     )
 

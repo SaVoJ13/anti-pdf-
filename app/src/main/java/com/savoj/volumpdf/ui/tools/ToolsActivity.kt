@@ -168,6 +168,13 @@ class ToolsActivity : AppCompatActivity() {
                 binding.btnSelectFiles.setText(R.string.action_select_file)
                 binding.containerPageNumbersParams.visibility = View.VISIBLE
             }
+            ToolType.COMPRESS -> {
+                binding.toolbar.setTitle(R.string.tool_compress_title)
+                binding.tvToolHeaderTitle.setText(R.string.tool_compress_title)
+                binding.tvToolHeaderDesc.setText(R.string.tool_compress_desc)
+                binding.btnSelectFiles.setText(R.string.action_select_file)
+                binding.containerCompressParams.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -183,7 +190,7 @@ class ToolsActivity : AppCompatActivity() {
         binding.btnSelectFiles.setOnClickListener {
             when (toolType) {
                 ToolType.MERGE -> openMultiplePdfLauncher.launch(arrayOf("application/pdf"))
-                ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES, ToolType.WATERMARK, ToolType.PAGE_NUMBERS -> openSinglePdfLauncher.launch(arrayOf("application/pdf"))
+                ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES, ToolType.WATERMARK, ToolType.PAGE_NUMBERS, ToolType.COMPRESS -> openSinglePdfLauncher.launch(arrayOf("application/pdf"))
                 ToolType.IMAGES_TO_PDF -> openMultipleImagesLauncher.launch(arrayOf("image/jpeg", "image/png", "image/*"))
             }
         }
@@ -265,6 +272,13 @@ class ToolsActivity : AppCompatActivity() {
                 }
                 getString(R.string.filename_numbered)
             }
+            ToolType.COMPRESS -> {
+                if (files.isEmpty()) {
+                    showError(getString(R.string.error_select_source_file))
+                    return
+                }
+                getString(R.string.filename_compressed)
+            }
         }
 
         createDocumentLauncher.launch(defaultName)
@@ -304,6 +318,14 @@ class ToolsActivity : AppCompatActivity() {
                 }
                 val pagesInput = binding.etPageNumbersPages.text?.toString()
                 viewModel.executePageNumbers(this, formatPattern, pagesInput, outputUri)
+            }
+            ToolType.COMPRESS -> {
+                val level = when (binding.rgCompressLevel.checkedRadioButtonId) {
+                    R.id.rbCompressHigh -> com.savoj.volumpdf.core.pdf.model.CompressionLevel.HIGH
+                    R.id.rbCompressLow -> com.savoj.volumpdf.core.pdf.model.CompressionLevel.LOW
+                    else -> com.savoj.volumpdf.core.pdf.model.CompressionLevel.MEDIUM
+                }
+                viewModel.executeCompress(this, level, outputUri)
             }
         }
     }
@@ -357,7 +379,12 @@ class ToolsActivity : AppCompatActivity() {
                             binding.btnSelectFiles.isEnabled = true
                             // Показ Interstitial з кулдауном 5 хвилин перед показом діалогу результату
                             adsManager.showActionInterstitial(this@ToolsActivity) {
-                                showSuccessDialog(state.outputUri, state.pagesCount)
+                                showSuccessDialog(
+                                    state.outputUri,
+                                    state.pagesCount,
+                                    state.originalSizeBytes,
+                                    state.newSizeBytes
+                                )
                             }
                         }
                         is OperationUiState.Error -> {
@@ -372,10 +399,30 @@ class ToolsActivity : AppCompatActivity() {
         }
     }
 
-    private fun showSuccessDialog(outputUri: Uri, pagesCount: Int) {
+    private fun showSuccessDialog(
+        outputUri: Uri,
+        pagesCount: Int,
+        originalBytes: Long = 0L,
+        newBytes: Long = 0L
+    ) {
+        val baseMsg = getString(R.string.operation_success_message, pagesCount)
+        val finalMsg = if (originalBytes > 0L && newBytes > 0L) {
+            val savedRatio = (originalBytes - newBytes).toFloat() / originalBytes
+            val savedPercent = (savedRatio * 100).toInt().coerceAtLeast(0)
+            val stats = getString(
+                R.string.compress_success_stats,
+                savedPercent,
+                SafUtils.formatFileSize(originalBytes),
+                SafUtils.formatFileSize(newBytes)
+            )
+            "$baseMsg\n\n$stats"
+        } else {
+            baseMsg
+        }
+
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.operation_success_title)
-            .setMessage(getString(R.string.operation_success_message, pagesCount))
+            .setMessage(finalMsg)
             .setIcon(R.drawable.ic_check_circle)
             .setPositiveButton(R.string.action_open_result) { _, _ ->
                 val readerIntent = Intent(this, ReaderActivity::class.java).apply {
@@ -390,7 +437,7 @@ class ToolsActivity : AppCompatActivity() {
             }
             .setCancelable(false)
             .show()
-        }
+    }
 
     private fun showError(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.savoj.volumpdf.VolumPdfApp
 import com.savoj.volumpdf.core.pdf.PageOperationsEngine
 import com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine
+import com.savoj.volumpdf.core.pdf.model.CompressionLevel
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.savoj.volumpdf.data.repository.DocumentRepository
 import com.savoj.volumpdf.util.PageRangeParser
@@ -20,7 +21,12 @@ import kotlinx.coroutines.launch
 sealed interface OperationUiState {
     data object Idle : OperationUiState
     data class Loading(val currentStep: Int, val totalSteps: Int) : OperationUiState
-    data class Success(val outputUri: Uri, val pagesCount: Int) : OperationUiState
+    data class Success(
+        val outputUri: Uri,
+        val pagesCount: Int,
+        val originalSizeBytes: Long = 0L,
+        val newSizeBytes: Long = 0L
+    ) : OperationUiState
     data class Error(val message: String) : OperationUiState
 }
 
@@ -216,6 +222,20 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun executeCompress(context: Context, level: CompressionLevel, outputUri: Uri) {
+        val source = _selectedFiles.value.firstOrNull()
+        if (source == null) {
+            _uiState.value = OperationUiState.Error("Виберіть документ")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = OperationUiState.Loading(1, 1)
+            val result = engine.compressPdf(context, source.uri, level, outputUri)
+            handleEngineResult(context, result)
+        }
+    }
+
     private suspend fun handleEngineResult(context: Context, result: PdfOperationResult) {
         when (result) {
             is PdfOperationResult.Progress -> {
@@ -224,7 +244,12 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
             is PdfOperationResult.Success -> {
                 SafUtils.takePersistableUriPermissionSafe(context, result.outputUri)
                 repository.recordDocumentOpened(context, result.outputUri, result.pagesCount)
-                _uiState.value = OperationUiState.Success(result.outputUri, result.pagesCount)
+                _uiState.value = OperationUiState.Success(
+                    result.outputUri,
+                    result.pagesCount,
+                    result.originalSizeBytes,
+                    result.newSizeBytes
+                )
             }
             is PdfOperationResult.Error -> {
                 _uiState.value = OperationUiState.Error(result.userMessage)

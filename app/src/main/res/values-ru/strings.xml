@@ -87,6 +87,15 @@
     <string name="filename_numbered">С_нумерацией.pdf</string>
     <string name="error_empty_watermark">Введите текст водяного знака</string>
 
+    <string name="tool_compress_title">Сжать PDF</string>
+    <string name="tool_compress_desc">Оптимизация и уменьшение размера файла для удобной отправки.</string>
+    <string name="compress_level_label">Уровень сжатия:</string>
+    <string name="compress_level_medium">Сбалансированное (Рекомендуется)</string>
+    <string name="compress_level_high">Максимальное сжатие (Наименьший размер)</string>
+    <string name="compress_level_low">Минимальное сжатие (Высокое качество)</string>
+    <string name="filename_compressed">Сжатый.pdf</string>
+    <string name="compress_success_stats">Размер уменьшен на %1$d%% (%2$s → %3$s)</string>
+
     <!-- Tools Flow -->
     <string name="action_select_files">Выбрать файлы</string>
     <string name="action_select_file">Выбрать файл</string>
