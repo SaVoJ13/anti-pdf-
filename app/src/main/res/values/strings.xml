@@ -138,7 +138,7 @@
     <string name="form_select_option">Select an option</string>
 
     <!-- Place on page (stage 3a) -->
-    <string name="action_place">Place</string>
+    <string name="action_place">Edit</string>
     <string name="place_tool_check">Checkmark</string>
     <string name="place_tool_cross">Cross</string>
     <string name="place_tool_text">Text</string>

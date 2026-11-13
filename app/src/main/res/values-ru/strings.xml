@@ -138,7 +138,7 @@
     <string name="form_select_option">Выберите вариант</string>
 
     <!-- Place on page (stage 3a) -->
-    <string name="action_place">Поставить</string>
+    <string name="action_place">Редактировать</string>
     <string name="place_tool_check">Галочка</string>
     <string name="place_tool_cross">Крестик</string>
     <string name="place_tool_text">Текст</string>
