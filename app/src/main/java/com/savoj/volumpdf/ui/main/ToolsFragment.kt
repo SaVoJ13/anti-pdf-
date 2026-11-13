@@ -50,6 +50,10 @@ class ToolsFragment : Fragment() {
     }
 
     private fun onToolSelected(toolType: ToolType) {
+        if (toolType == ToolType.SCAN_DOCUMENT) {
+            com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(requireContext())
+            return
+        }
         if (toolType == ToolType.ORGANIZE_PAGES) {
             openDocumentForOrganizeLauncher.launch(arrayOf("application/pdf"))
             return

@@ -46,6 +46,9 @@ class RecentsFragment : Fragment() {
         binding.btnEmptyOpen.setOnClickListener {
             (activity as? MainActivity)?.launchSafOpenDocument()
         }
+        binding.btnEmptyScan.setOnClickListener {
+            com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(requireContext())
+        }
     }
 
     private fun setupRecyclerView() {
@@ -84,10 +87,12 @@ class RecentsFragment : Fragment() {
                         binding.tvEmptyTitle.setText(R.string.empty_search_title)
                         binding.tvEmptyDesc.setText(R.string.empty_search_desc)
                         binding.btnEmptyOpen.visibility = View.GONE
+                        binding.btnEmptyScan.visibility = View.GONE
                     } else if (isEmpty) {
                         binding.tvEmptyTitle.setText(R.string.empty_recents_title)
                         binding.tvEmptyDesc.setText(R.string.empty_recents_desc)
                         binding.btnEmptyOpen.visibility = View.VISIBLE
+                        binding.btnEmptyScan.visibility = View.VISIBLE
                     }
                 }
             }

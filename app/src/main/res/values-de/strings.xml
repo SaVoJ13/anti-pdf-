@@ -110,6 +110,14 @@
     <string name="organize_min_pages_warning">Das Dokument muss mindestens eine Seite enthalten</string>
     <string name="filename_organized">Organisiert.pdf</string>
     <string name="loading_document">Dokument wird geladen…</string>
+
+    <!-- Document Scanner Strings (ТОП-1) -->
+    <string name="tool_scan_title">Dokument scannen</string>
+    <string name="tool_scan_desc">Kamera-Scanner: Automatische Randerkennung, Perspektivkorrektur, sauberes PDF ohne Wasserzeichen.</string>
+    <string name="scan_error_unavailable">Google Dokument-Scanner ist auf diesem Gerät nicht verfügbar.</string>
+    <string name="scan_processing">Gescannter Dokument wird verarbeitet…</string>
+    <string name="filename_scanned">Scan_%1$s.pdf</string>
+    <string name="scan_empty_action">Dokument scannen</string>
     <string name="compress_success_stats">Größe um %1$d%% reduziert (%2$s → %3$s)</string>
 
     <!-- Tools Flow -->

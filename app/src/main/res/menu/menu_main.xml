@@ -10,6 +10,12 @@
         app:actionViewClass="androidx.appcompat.widget.SearchView" />
 
     <item
+        android:id="@+id/action_scan"
+        android:icon="@drawable/ic_camera_scan"
+        android:title="@string/tool_scan_title"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/action_filter_favorites"
         android:icon="@drawable/ic_star_outline"
         android:title="@string/filter_favorites"

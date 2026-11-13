@@ -57,6 +57,15 @@
             android:text="@string/action_open_pdf"
             app:icon="@drawable/ic_open_pdf" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEmptyScan"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/scan_empty_action"
+            app:icon="@drawable/ic_camera_scan" />
+
     </LinearLayout>
 
 </FrameLayout>
