@@ -138,7 +138,7 @@
     <string name="form_select_option">Option auswählen</string>
 
     <!-- Place on page (stage 3a) -->
-    <string name="action_place">Setzen</string>
+    <string name="action_place">Bearbeiten</string>
     <string name="place_tool_check">Häkchen</string>
     <string name="place_tool_cross">Kreuz</string>
     <string name="place_tool_text">Text</string>
