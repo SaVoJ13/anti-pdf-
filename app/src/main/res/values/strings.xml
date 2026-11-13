@@ -66,6 +66,26 @@
     <string name="tool_delete_desc">Remove unwanted pages from your document.</string>
     <string name="tool_images_to_pdf_title">Images to PDF</string>
     <string name="tool_images_to_pdf_desc">Convert JPEG and PNG images into a clean PDF document.</string>
+    <string name="tool_watermark_title">Watermark</string>
+    <string name="tool_watermark_desc">Overlay a translucent diagonal stamp: COPY, SAMPLE, or custom text.</string>
+    <string name="tool_page_numbers_title">Page Numbers</string>
+    <string name="tool_page_numbers_desc">Insert clean numbering at the bottom of each page.</string>
+
+    <string name="watermark_text_label">Watermark text</string>
+    <string name="watermark_text_hint">Enter text (e.g. COPY, CONFIDENTIAL)</string>
+    <string name="watermark_preset_copy">COPY</string>
+    <string name="watermark_preset_sample">SAMPLE</string>
+    <string name="watermark_preset_confidential">CONFIDENTIAL</string>
+    <string name="watermark_preset_draft">DRAFT</string>
+
+    <string name="page_numbers_format_label">Numbering format</string>
+    <string name="page_numbers_format_1">Page %1$d of %2$d</string>
+    <string name="page_numbers_format_2">%1$d / %2$d</string>
+    <string name="page_numbers_format_3">%1$d</string>
+
+    <string name="filename_watermarked">Watermarked.pdf</string>
+    <string name="filename_numbered">Numbered.pdf</string>
+    <string name="error_empty_watermark">Please enter watermark text</string>
 
     <!-- Tools Flow -->
     <string name="action_select_files">Select Files</string>

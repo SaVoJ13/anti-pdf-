@@ -39,4 +39,24 @@ interface PageOperationsEngine {
 
     // Створення PDF із зображень (JPEG/PNG)
     suspend fun imagesToPdf(context: Context, imageUris: List<Uri>, outputUri: Uri): PdfOperationResult
+
+    // Додавання водяного знака на сторінки (ТОП-4)
+    suspend fun addWatermark(
+        context: Context,
+        sourceUri: Uri,
+        watermarkText: String,
+        outputUri: Uri,
+        password: String? = null,
+        pageIndices: List<Int>? = null
+    ): PdfOperationResult
+
+    // Додавання нумерації сторінок (ТОП-4)
+    suspend fun addPageNumbers(
+        context: Context,
+        sourceUri: Uri,
+        formatPattern: String = "Сторінка %d з %d",
+        outputUri: Uri,
+        password: String? = null,
+        pageIndices: List<Int>? = null
+    ): PdfOperationResult
 }

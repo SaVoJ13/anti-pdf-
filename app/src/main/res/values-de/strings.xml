@@ -66,6 +66,26 @@
     <string name="tool_delete_desc">Unerwünschte Seiten aus dem Dokument entfernen.</string>
     <string name="tool_images_to_pdf_title">Bilder zu PDF</string>
     <string name="tool_images_to_pdf_desc">JPEG- und PNG-Bilder in ein sauberes PDF-Dokument umwandeln.</string>
+    <string name="tool_watermark_title">Wasserzeichen</string>
+    <string name="tool_watermark_desc">Halbtransparenten Stempel hinzufügen: KOPIE, MUSTER oder eigener Text.</string>
+    <string name="tool_page_numbers_title">Seitennummerierung</string>
+    <string name="tool_page_numbers_desc">Seitenzahlen unten auf jeder Seite einfügen.</string>
+
+    <string name="watermark_text_label">Wasserzeichen-Text</string>
+    <string name="watermark_text_hint">Text eingeben (z. B. KOPIE, VERTRAULICH)</string>
+    <string name="watermark_preset_copy">KOPIE</string>
+    <string name="watermark_preset_sample">MUSTER</string>
+    <string name="watermark_preset_confidential">VERTRAULICH</string>
+    <string name="watermark_preset_draft">ENTWURF</string>
+
+    <string name="page_numbers_format_label">Nummerierungsformat</string>
+    <string name="page_numbers_format_1">Seite %1$d von %2$d</string>
+    <string name="page_numbers_format_2">%1$d / %2$d</string>
+    <string name="page_numbers_format_3">%1$d</string>
+
+    <string name="filename_watermarked">Wasserzeichen.pdf</string>
+    <string name="filename_numbered">Nummeriert.pdf</string>
+    <string name="error_empty_watermark">Bitte Wasserzeichen-Text eingeben</string>
 
     <!-- Tools Flow -->
     <string name="action_select_files">Dateien auswählen</string>

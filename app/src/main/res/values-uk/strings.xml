@@ -66,6 +66,26 @@
     <string name="tool_delete_desc">Вилучення непотрібних сторінок із документа.</string>
     <string name="tool_images_to_pdf_title">Зображення в PDF</string>
     <string name="tool_images_to_pdf_desc">Конвертація фото JPEG та PNG у якісний PDF-документ.</string>
+    <string name="tool_watermark_title">Водяний знак</string>
+    <string name="tool_watermark_desc">Накласти напівпрозорий напис: КОПІЯ, ЗРАЗОК або свій текст.</string>
+    <string name="tool_page_numbers_title">Нумерація сторінок</string>
+    <string name="tool_page_numbers_desc">Вставити акуратні номери сторінок внизу документа.</string>
+
+    <string name="watermark_text_label">Текст водяного знака</string>
+    <string name="watermark_text_hint">Введіть напис (наприклад, КОПІЯ, ЗРАЗОК)</string>
+    <string name="watermark_preset_copy">КОПІЯ</string>
+    <string name="watermark_preset_sample">ЗРАЗОК</string>
+    <string name="watermark_preset_confidential">КОНФІДЕНЦІЙНО</string>
+    <string name="watermark_preset_draft">ЧЕРНЕТКА</string>
+
+    <string name="page_numbers_format_label">Формат номерів</string>
+    <string name="page_numbers_format_1">Сторінка %1$d з %2$d</string>
+    <string name="page_numbers_format_2">%1$d / %2$d</string>
+    <string name="page_numbers_format_3">%1$d</string>
+
+    <string name="filename_watermarked">З_водяним_знаком.pdf</string>
+    <string name="filename_numbered">З_нумерацією.pdf</string>
+    <string name="error_empty_watermark">Введіть текст водяного знака</string>
 
     <!-- Tools Flow -->
     <string name="action_select_files">Вибрати файли</string>

@@ -66,6 +66,26 @@
     <string name="tool_delete_desc">Удаление ненужных страниц из документа.</string>
     <string name="tool_images_to_pdf_title">Изображения в PDF</string>
     <string name="tool_images_to_pdf_desc">Конвертация фото JPEG и PNG в аккуратный PDF-документ.</string>
+    <string name="tool_watermark_title">Водяной знак</string>
+    <string name="tool_watermark_desc">Наложить полупрозрачную надпись: КОПИЯ, ОБРАЗЕЦ или свой текст.</string>
+    <string name="tool_page_numbers_title">Нумерация страниц</string>
+    <string name="tool_page_numbers_desc">Вставить аккуратные номера страниц внизу документа.</string>
+
+    <string name="watermark_text_label">Текст водяного знака</string>
+    <string name="watermark_text_hint">Введите текст (например, КОПИЯ, ОБРАЗЕЦ)</string>
+    <string name="watermark_preset_copy">КОПИЯ</string>
+    <string name="watermark_preset_sample">ОБРАЗЕЦ</string>
+    <string name="watermark_preset_confidential">КОНФИДЕНЦИАЛЬНО</string>
+    <string name="watermark_preset_draft">ЧЕРНОВИК</string>
+
+    <string name="page_numbers_format_label">Формат номеров</string>
+    <string name="page_numbers_format_1">Страница %1$d из %2$d</string>
+    <string name="page_numbers_format_2">%1$d / %2$d</string>
+    <string name="page_numbers_format_3">%1$d</string>
+
+    <string name="filename_watermarked">С_водяным_знаком.pdf</string>
+    <string name="filename_numbered">С_нумерацией.pdf</string>
+    <string name="error_empty_watermark">Введите текст водяного знака</string>
 
     <!-- Tools Flow -->
     <string name="action_select_files">Выбрать файлы</string>

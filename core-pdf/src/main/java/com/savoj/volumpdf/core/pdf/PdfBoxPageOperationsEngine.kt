@@ -10,6 +10,11 @@ import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
+import com.tom_roush.pdfbox.pdmodel.font.PDFont
+import com.tom_roush.pdfbox.pdmodel.font.PDType0Font
+import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
+import com.tom_roush.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState
+import com.tom_roush.pdfbox.util.Matrix
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +22,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * Реалізація [PageOperationsEngine] на основі бібліотеки PdfBox-Android.
@@ -316,6 +322,176 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
             if (w > 0 && h > 0) return Pair(w, h)
         }
         return null
+    }
+
+    private fun loadFont(doc: PDDocument, context: Context): PDFont {
+        try {
+            val stream = try {
+                context.assets?.open(MarkupLayout.FONT_ASSET_PATH)
+            } catch (_: Throwable) {
+                null
+            } ?: run {
+                val f1 = File("src/main/assets/${MarkupLayout.FONT_ASSET_PATH}")
+                val f2 = File("core-pdf/src/main/assets/${MarkupLayout.FONT_ASSET_PATH}")
+                when {
+                    f1.exists() -> f1.inputStream()
+                    f2.exists() -> f2.inputStream()
+                    else -> null
+                }
+            }
+            if (stream != null) {
+                return stream.use { PDType0Font.load(doc, it) }
+            }
+        } catch (_: Throwable) {}
+        return PDType1Font.HELVETICA_BOLD
+    }
+
+    override suspend fun addWatermark(
+        context: Context,
+        sourceUri: Uri,
+        watermarkText: String,
+        outputUri: Uri,
+        password: String?,
+        pageIndices: List<Int>?
+    ): PdfOperationResult = withContext(Dispatchers.IO) {
+        try {
+            init(context)
+            require(watermarkText.isNotBlank()) {
+                "Текст водяного знака не може бути порожнім"
+            }
+
+            val doc = PdfIo.loadDocument(context, sourceUri, password)
+            doc.use { targetDoc ->
+                val totalPages = targetDoc.numberOfPages
+                val font = loadFont(targetDoc, context)
+                val targetPages = pageIndices ?: (0 until totalPages).toList()
+
+                val cos45 = 0.70710678f
+                val sin45 = 0.70710678f
+
+                for (pageIndex in targetPages) {
+                    if (pageIndex !in 0 until totalPages) continue
+                    val page = targetDoc.getPage(pageIndex)
+                    val g = PageGeometry.of(page)
+
+                    val centerX = g.visibleWidth / 2f
+                    val centerY = g.visibleHeight / 2f
+
+                    val fontSize = (minOf(g.visibleWidth, g.visibleHeight) * 0.10f).coerceIn(24f, 56f)
+                    val textWidth = try {
+                        font.getStringWidth(watermarkText) / 1000f * fontSize
+                    } catch (_: Throwable) {
+                        watermarkText.length * fontSize * 0.5f
+                    }
+
+                    val x0 = centerX - (textWidth / 2f) * cos45
+                    val y0 = centerY + (textWidth / 2f) * sin45
+
+                    val p0 = g.toUser(x0, y0)
+                    val px = g.toUser(x0 + cos45, y0 - sin45)
+                    val py = g.toUser(x0 - sin45, y0 - cos45)
+
+                    val a = px.x - p0.x
+                    val b = px.y - p0.y
+                    val c = py.x - p0.x
+                    val d = py.y - p0.y
+                    val e = p0.x
+                    val f = p0.y
+
+                    val cs = PDPageContentStream(targetDoc, page, PDPageContentStream.AppendMode.APPEND, true, true)
+                    cs.use { stream ->
+                        stream.saveGraphicsState()
+
+                        val gs = PDExtendedGraphicsState().apply {
+                            nonStrokingAlphaConstant = 0.25f
+                        }
+                        stream.setGraphicsStateParameters(gs)
+                        stream.setNonStrokingColor(128, 128, 128)
+
+                        stream.beginText()
+                        stream.setFont(font, fontSize)
+                        stream.setTextMatrix(Matrix(a, b, c, d, e, f))
+                        stream.showText(watermarkText)
+                        stream.endText()
+
+                        stream.restoreGraphicsState()
+                    }
+                }
+
+                PdfIo.keepEncryption(targetDoc, password)
+                PdfIo.saveSafely(context, targetDoc, outputUri)
+                PdfOperationResult.Success(outputUri = outputUri, pagesCount = totalPages)
+            }
+        } catch (cause: Throwable) {
+            if (cause is CancellationException) throw cause
+            mapToPdfError(cause, "Помилка додавання водяного знака")
+        }
+    }
+
+    override suspend fun addPageNumbers(
+        context: Context,
+        sourceUri: Uri,
+        formatPattern: String,
+        outputUri: Uri,
+        password: String?,
+        pageIndices: List<Int>?
+    ): PdfOperationResult = withContext(Dispatchers.IO) {
+        try {
+            init(context)
+            val doc = PdfIo.loadDocument(context, sourceUri, password)
+            doc.use { targetDoc ->
+                val totalPages = targetDoc.numberOfPages
+                val font = loadFont(targetDoc, context)
+                val targetPages = pageIndices ?: (0 until totalPages).toList()
+                val fontSize = 10f
+
+                for (pageIndex in targetPages) {
+                    if (pageIndex !in 0 until totalPages) continue
+                    val page = targetDoc.getPage(pageIndex)
+                    val g = PageGeometry.of(page)
+
+                    val pageNum = pageIndex + 1
+                    val label = try {
+                        String.format(formatPattern, pageNum, totalPages)
+                    } catch (_: Exception) {
+                        "$pageNum / $totalPages"
+                    }
+
+                    val textWidth = try {
+                        font.getStringWidth(label) / 1000f * fontSize
+                    } catch (_: Throwable) {
+                        label.length * fontSize * 0.5f
+                    }
+
+                    val centerX = g.visibleWidth / 2f
+                    val baselineY = g.visibleHeight - 24f
+                    val textX = centerX - textWidth / 2f
+
+                    val m = g.contentMatrix(textX, baselineY)
+
+                    val cs = PDPageContentStream(targetDoc, page, PDPageContentStream.AppendMode.APPEND, true, true)
+                    cs.use { stream ->
+                        stream.saveGraphicsState()
+                        stream.setNonStrokingColor(64, 64, 64)
+
+                        stream.beginText()
+                        stream.setFont(font, fontSize)
+                        stream.setTextMatrix(Matrix(m[0], m[1], m[2], m[3], m[4], m[5]))
+                        stream.showText(label)
+                        stream.endText()
+
+                        stream.restoreGraphicsState()
+                    }
+                }
+
+                PdfIo.keepEncryption(targetDoc, password)
+                PdfIo.saveSafely(context, targetDoc, outputUri)
+                PdfOperationResult.Success(outputUri = outputUri, pagesCount = totalPages)
+            }
+        } catch (cause: Throwable) {
+            if (cause is CancellationException) throw cause
+            mapToPdfError(cause, "Помилка додавання нумерації сторінок")
+        }
     }
 
     private fun mapToPdfError(cause: Throwable, defaultMessage: String): PdfOperationResult.Error =
