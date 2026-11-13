@@ -74,6 +74,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun clearHistory(keepFavorites: Boolean = false) {
+        viewModelScope.launch {
+            repository.clearHistory(keepFavorites)
+        }
+    }
+
     fun onDocumentSelected(context: Context, uri: Uri, onReady: (RecentDocument) -> Unit) {
         viewModelScope.launch {
             SafUtils.takePersistableUriPermissionSafe(context, uri)

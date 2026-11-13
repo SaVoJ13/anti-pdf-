@@ -172,12 +172,26 @@
                     android:id="@+id/tvSectionRecentsCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
                     android:background="@drawable/bg_tool_icon_container"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="3dp"
                     android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
                     android:textColor="?attr/colorOnPrimaryContainer"
                     tools:text="4" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClearHistory"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="0dp"
+                    android:text="@string/action_clear_history_short"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="13sp" />
 
             </LinearLayout>
 

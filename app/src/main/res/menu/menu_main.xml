@@ -40,6 +40,11 @@
     </item>
 
     <item
+        android:id="@+id/action_clear_history"
+        android:title="@string/action_clear_history"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_licenses"
         android:title="@string/action_licenses"
         app:showAsAction="never" />

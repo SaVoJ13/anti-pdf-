@@ -58,6 +58,9 @@ class RecentsFragment : Fragment() {
         binding.btnClearSearch.setOnClickListener {
             (activity as? MainActivity)?.clearSearchQuery()
         }
+        binding.btnClearHistory.setOnClickListener {
+            (activity as? MainActivity)?.showClearHistoryConfirmationDialog()
+        }
     }
 
     private fun setupRecyclerView() {

@@ -117,7 +117,11 @@ class Qa3fAppFinalTest {
             "dialog_jump_to_page_hint",
             "action_go",
             "place_tool_hand_short",
-            "tools_hub_subtitle"
+            "tools_hub_subtitle",
+            "action_clear_history",
+            "dialog_clear_history_title",
+            "dialog_clear_history_message",
+            "history_cleared_message"
         )
 
         for (dir in locales) {

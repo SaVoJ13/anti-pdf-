@@ -35,7 +35,7 @@ interface DocumentRepository {
 
     suspend fun deleteDocument(uri: String)
 
-    suspend fun clearHistory()
+    suspend fun clearHistory(keepFavorites: Boolean = false)
 }
 
 class DocumentRepositoryImpl(
@@ -147,7 +147,11 @@ class DocumentRepositoryImpl(
         recentDocumentDao.deleteByUri(uri)
     }
 
-    override suspend fun clearHistory() = withContext(Dispatchers.IO) {
-        recentDocumentDao.clearAll()
+    override suspend fun clearHistory(keepFavorites: Boolean) = withContext(Dispatchers.IO) {
+        if (keepFavorites) {
+            recentDocumentDao.clearNonFavorites()
+        } else {
+            recentDocumentDao.clearAll()
+        }
     }
 }

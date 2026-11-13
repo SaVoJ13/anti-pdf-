@@ -237,6 +237,13 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        super.onPrepareOptionsMenu(menu)
+        val hasDocs = viewModel.recentDocuments.value.isNotEmpty()
+        menu.findItem(R.id.action_clear_history)?.isEnabled = hasDocs
+        return true
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_scan -> {
@@ -264,11 +271,35 @@ class MainActivity : AppCompatActivity() {
                 viewModel.setSortOrder(SortOrder.SIZE_DESC)
                 true
             }
+            R.id.action_clear_history -> {
+                showClearHistoryConfirmationDialog()
+                true
+            }
             R.id.action_licenses -> {
                 LicensesDialogHelper.showLicensesDialog(this)
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    fun showClearHistoryConfirmationDialog() {
+        val hasFavorites = viewModel.recentDocuments.value.any { it.isFavorite }
+        val dialogView = layoutInflater.inflate(R.layout.dialog_clear_history, null)
+        val cbKeepFavorites = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbKeepFavorites)
+        cbKeepFavorites.visibility = if (hasFavorites) View.VISIBLE else View.GONE
+        cbKeepFavorites.isChecked = true
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_clear_history_title)
+            .setView(dialogView)
+            .setPositiveButton(R.string.action_clear_all) { _, _ ->
+                val keepFav = hasFavorites && cbKeepFavorites.isChecked
+                viewModel.clearHistory(keepFavorites = keepFav)
+                com.savoj.volumpdf.util.PdfThumbnailLoader.clearCache()
+                Toast.makeText(this, R.string.history_cleared_message, Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
     }
 }

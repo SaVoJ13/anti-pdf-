@@ -278,4 +278,10 @@
     <string name="scan_added_to_new_page">Scan added to a new page</string>
     <string name="page_added_and_moved">Created new page and moved object</string>
     <string name="page_number_item">Page %1$d</string>
+    <string name="action_clear_history">Clear history</string>
+    <string name="action_clear_history_short">Clear</string>
+    <string name="dialog_clear_history_title">Clear opening history?</string>
+    <string name="dialog_clear_history_message">The list of recently opened documents will be cleared. Your PDF files on this device will not be deleted.</string>
+    <string name="dialog_clear_history_keep_favorites">Keep favorite documents</string>
+    <string name="history_cleared_message">Opening history cleared</string>
 </resources>

@@ -278,4 +278,10 @@
     <string name="scan_added_to_new_page">Скан добавлен на новую страницу</string>
     <string name="page_added_and_moved">Создана новая страница и перемещен объект</string>
     <string name="page_number_item">Страница %1$d</string>
+    <string name="action_clear_history">Очистить историю</string>
+    <string name="action_clear_history_short">Очистить</string>
+    <string name="dialog_clear_history_title">Очистить историю открытия?</string>
+    <string name="dialog_clear_history_message">Список недавних документов будет очищен. Сами PDF-файлы на вашем устройстве останутся без изменений.</string>
+    <string name="dialog_clear_history_keep_favorites">Сохранить избранные документы</string>
+    <string name="history_cleared_message">История открытия очищена</string>
 </resources>

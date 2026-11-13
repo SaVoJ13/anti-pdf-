@@ -46,4 +46,7 @@ public interface RecentDocumentDao {
 
     @Query("DELETE FROM recent_documents")
     void clearAll();
+
+    @Query("DELETE FROM recent_documents WHERE isFavorite = 0")
+    void clearNonFavorites();
 }

@@ -278,4 +278,10 @@
     <string name="scan_added_to_new_page">Скан додано на нову сторінку</string>
     <string name="page_added_and_moved">Створено нову сторінку та переміщено об’єкт</string>
     <string name="page_number_item">Сторінка %1$d</string>
+    <string name="action_clear_history">Очистити історію</string>
+    <string name="action_clear_history_short">Очистити</string>
+    <string name="dialog_clear_history_title">Очистити історію відкривання?</string>
+    <string name="dialog_clear_history_message">Список нещодавніх документів буде очищено. Самі PDF-файли на вашому пристрої залишаться без змін.</string>
+    <string name="dialog_clear_history_keep_favorites">Зберегти обрані документи</string>
+    <string name="history_cleared_message">Історію відкривання очищено</string>
 </resources>

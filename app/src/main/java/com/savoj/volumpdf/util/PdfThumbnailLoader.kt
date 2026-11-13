@@ -24,6 +24,10 @@ object PdfThumbnailLoader {
 
     private val memoryCache = object : LruCache<String, Bitmap>(24) {}
 
+    fun clearCache() {
+        memoryCache.evictAll()
+    }
+
     fun bindThumbnail(
         context: Context,
         scope: CoroutineScope,

@@ -150,8 +150,14 @@ class DocumentRepositoryTest {
     }
 
     @Test
-    fun clearHistory_callsDaoClear() = runTest {
-        repository.clearHistory()
+    fun clearHistory_all_callsDaoClearAll() = runTest {
+        repository.clearHistory(keepFavorites = false)
         verify(mockDao).clearAll()
+    }
+
+    @Test
+    fun clearHistory_keepFavorites_callsDaoClearNonFavorites() = runTest {
+        repository.clearHistory(keepFavorites = true)
+        verify(mockDao).clearNonFavorites()
     }
 }
