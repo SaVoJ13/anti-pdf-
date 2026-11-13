@@ -1,5 +1,18 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-13 — Керівник проєкту / Агент 0 + Незалежний QA / Агент 4 (`feature/place-text-wrapping`: автоматичне перенесення великого тексту зі збереженням полів сторінки; `QA Verified`)
+**Простими словами:**
+- На вимогу Власника реалізовано автоматичне перенесення тексту на наступний рядок (`\n`) при додаванні та редагуванні великих фрагментів тексту, зі збереженням полів сторінки (текст більше не вилазить за краї аркуша).
+- У `PlaceMarkupLogic.kt` впроваджено розрахунок ширини рядка `maxTextLineWidthPt`: для лівої половини сторінки створюються симетричні поля (`rightMargin = maxOf(xPt, 36f)`), для правої — стандартне поле 36 pt. Функція `wrapText` акуратно розбиває текст по словах, зберігає абзаци користувача (`\n\n`) і розбиває довгі нерозривні слова/URL.
+- Доопрацьовано `clampedAnchor`: при перетягуванні блок тексту тепер неможливо витягнути за межі видимої сторінки праворуч.
+- У `ReaderActivity.kt` підключено попіксельний вимірювач `measureTextPt` через `Paint` зі шрифтом Roboto-Regular. Перенесення тексту автоматично застосовується при вставці (`textFromTap`), повторному редагуванні (`editSelected`) та зміні кеглю шрифту кнопками `+`/`-` (`changePlaceSize`).
+- У `dialog_place_text.xml` збільшено `maxLines` до 8 для зручного перегляду довгих текстів.
+- Додано 8 нових модульних тестів у `PlaceMarkupLogicTest.kt`. Усі 276 тестів (`:core-pdf` 91/91, 1 skipped; `:app` 185/185) зелені.
+- Незалежний QA-субагент (Агент 4) провів повний аудит гілки `feature/place-text-wrapping` і видав вердикт **`QA Verified`**.
+**Що зроблено:** створено гілку `feature/place-text-wrapping`, реалізовано `maxTextLineWidthPt`, `wrapText`, `estimateTextWidthPt`, оновлено `textFromTap` та `clampedAnchor` у `PlaceMarkupLogic.kt`, підключено вимірювання та автоперенесення в `ReaderActivity.kt`, збільшено `maxLines` у `dialog_place_text.xml`, додано 8 тестів у `PlaceMarkupLogicTest.kt`, пройдено аудит QA.
+**Що змінено:** `app/src/main/java/com/savoj/volumpdf/ui/reader/PlaceMarkupLogic.kt`, `app/src/main/java/com/savoj/volumpdf/ui/reader/ReaderActivity.kt`, `app/src/main/res/layout/dialog_place_text.xml`, `app/src/test/java/com/savoj/volumpdf/ui/reader/PlaceMarkupLogicTest.kt`, `docs/project_log.md`.
+
+
 ## 2026-11-13 — Керівник проєкту / Агент 0 + Незалежний QA / Агент 4 (`feature/ui-pencil-and-blue-theme`: оновлення іконки олівця та синьої теми; `QA Verified`)
 **Простими словами:**
 - На прохання Власника режим додавання анотацій («Поставити») оновлено на інтуїтивну іконку олівця (`@drawable/ic_edit`) замість штампа у верхньому та нижньому меню переглядача (`menu_reader.xml`, `menu_reader_bottom.xml`).
