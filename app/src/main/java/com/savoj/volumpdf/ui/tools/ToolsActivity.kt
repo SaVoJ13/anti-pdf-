@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -109,6 +110,19 @@ class ToolsActivity : AppCompatActivity() {
             ToolType.MERGE
         }
 
+        if (toolType == ToolType.CREATE_BLANK) {
+            lifecycleScope.launch {
+                try {
+                    val file = com.savoj.volumpdf.util.DocumentCreationHelper.createBlankDocument(this@ToolsActivity)
+                    com.savoj.volumpdf.util.DocumentCreationHelper.openNewDocument(this@ToolsActivity, file)
+                } catch (e: Exception) {
+                    Toast.makeText(this@ToolsActivity, e.localizedMessage ?: "Помилка створення PDF", Toast.LENGTH_SHORT).show()
+                }
+                finish()
+            }
+            return
+        }
+
         if (toolType == ToolType.SCAN_DOCUMENT) {
             com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
             finish()
@@ -127,8 +141,17 @@ class ToolsActivity : AppCompatActivity() {
         // Прив'язка банера внизу ToolsActivity
         adsManager.bindAdaptiveBanner(this, binding.bannerContainer)
 
-        // Дії, для яких потрібен файл, одразу пропонують вибрати PDF при вході
-        if (savedInstanceState == null && viewModel.selectedFiles.value.isEmpty()) {
+        // Якщо передано початковий файл (наприклад, з режиму перегляду), використовуємо його без запиту
+        val sourceUriExtra: Uri? = androidx.core.content.IntentCompat.getParcelableExtra(intent, EXTRA_SOURCE_URI, Uri::class.java)
+            ?: intent.getParcelableExtra(EXTRA_SOURCE_URI)
+
+        if (sourceUriExtra != null && savedInstanceState == null && viewModel.selectedFiles.value.isEmpty()) {
+            SafUtils.takePersistableUriPermissionSafe(this, sourceUriExtra)
+            val displayName = SafUtils.queryDisplayName(this, sourceUriExtra)
+            val item = SelectedFileItem(uri = sourceUriExtra, displayName = displayName)
+            viewModel.setSelectedFiles(listOf(item), this)
+        } else if (savedInstanceState == null && viewModel.selectedFiles.value.isEmpty()) {
+            // Дії, для яких потрібен файл, одразу пропонують вибрати PDF при вході
             launchFilePickerForCurrentTool()
         }
     }
@@ -203,6 +226,7 @@ class ToolsActivity : AppCompatActivity() {
                 binding.btnSelectFiles.setText(R.string.action_select_file)
                 binding.containerCompressParams.visibility = View.VISIBLE
             }
+            ToolType.CREATE_BLANK -> Unit
         }
     }
 
@@ -239,6 +263,7 @@ class ToolsActivity : AppCompatActivity() {
             ToolType.ORGANIZE_PAGES, ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES, ToolType.WATERMARK, ToolType.PAGE_NUMBERS, ToolType.COMPRESS ->
                 openSinglePdfLauncher.launch(arrayOf("application/pdf"))
             ToolType.IMAGES_TO_PDF -> openMultipleImagesLauncher.launch(arrayOf("image/jpeg", "image/png", "image/*"))
+            ToolType.CREATE_BLANK -> Unit
         }
     }
 
@@ -329,6 +354,7 @@ class ToolsActivity : AppCompatActivity() {
                 finish()
                 return
             }
+            ToolType.CREATE_BLANK -> "document.pdf"
         }
 
         createDocumentLauncher.launch(defaultName)
@@ -383,6 +409,7 @@ class ToolsActivity : AppCompatActivity() {
             ToolType.SCAN_DOCUMENT -> {
                 // Відкривається напряму через ScanDocumentActivity
             }
+            ToolType.CREATE_BLANK -> Unit
         }
     }
 
@@ -511,10 +538,12 @@ class ToolsActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_TOOL_TYPE = "extra_tool_type"
+        const val EXTRA_SOURCE_URI = "extra_source_uri"
 
-        fun createIntent(context: Context, toolType: ToolType): Intent {
+        fun createIntent(context: Context, toolType: ToolType, sourceUri: Uri? = null): Intent {
             return Intent(context, ToolsActivity::class.java).apply {
                 putExtra(EXTRA_TOOL_TYPE, toolType.name)
+                sourceUri?.let { putExtra(EXTRA_SOURCE_URI, it) }
             }
         }
     }

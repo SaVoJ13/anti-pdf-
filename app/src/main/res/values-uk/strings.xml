@@ -251,4 +251,21 @@
     <string name="place_copy_saved">Копію збережено</string>
     <string name="action_licenses">Ліцензії відкритого коду</string>
     <string name="dialog_licenses_title">Ліцензії відкритого коду</string>
+    <string name="action_create_pdf">Створити PDF</string>
+    <string name="tool_create_blank_title">Створити PDF</string>
+    <string name="tool_create_blank_desc">Створити новий порожній документ для нотаток і тексту</string>
+    <string name="tool_add_page">+ Стор.</string>
+    <string name="tool_add_page_desc">Додати порожню сторінку до документа</string>
+    <string name="tool_insert_file">Додати файл</string>
+    <string name="tool_insert_file_desc">Додати сторінки з PDF або зображень</string>
+    <string name="action_tools">Інструменти</string>
+    <string name="tools_sheet_title">Інструменти документа</string>
+    <string name="tools_group_pages">Сторінки та файли</string>
+    <string name="tools_group_effects">Оформлення та оптимізація</string>
+    <string name="tools_group_quick">Швидкі дії</string>
+    <string name="text_pages_added">Додано %d нових стор. для тексту</string>
+    <string name="new_document_default_title">Новий документ</string>
+    <string name="action_print">Друк</string>
+    <string name="page_added_successfully">Нову сторінку додано</string>
+    <string name="files_added_successfully">Файли успішно додано</string>
 </resources>

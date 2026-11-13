@@ -1,5 +1,6 @@
 package com.savoj.volumpdf.ui.reader
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Paint
@@ -216,6 +217,10 @@ class ReaderActivity : AppCompatActivity() {
                 }
                 R.id.action_reading_theme -> {
                     showReadingThemeDialog()
+                    false
+                }
+                R.id.action_tools -> {
+                    showToolsBottomSheet()
                     false
                 }
                 R.id.action_organize_pages -> {
@@ -582,6 +587,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.btnPlaceDone.setOnClickListener { leavePlaceThen { } }
         binding.btnPlaceSave.setOnClickListener { savePending() }
         binding.btnPlaceForms.setOnClickListener { openFillFormDialog() }
+        binding.btnPlaceAddPage.setOnClickListener { addNewBlankPage() }
         binding.btnUnsavedSave.setOnClickListener { savePending() }
         binding.btnUnsavedDiscard.setOnClickListener { viewModel.clearAllPending() }
         binding.btnPlaceUndo.setOnClickListener { viewModel.edit { PlaceEditor.undo(it) } }
@@ -885,19 +891,114 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showTextInputDialog(point: PageViewPoint) {
         showTextDialog(initial = "", titleRes = R.string.place_text_title, confirmRes = R.string.place_text_add) { raw ->
-            val page = viewerFragment?.bridge?.pageSizePt(point.pageIndex)
-            val check = PlaceMarkupLogic.textFromTap(
-                UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
-                raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, safeUnsupported(raw) ?: "",
-                page = page,
-                measureWidthPt = { line -> measureTextPt(line, viewModel.placeSize(PlaceTool.TEXT)) }
-            )
-            if (check is TextCheck.Ok) {
-                viewModel.addPending(check.markup)
-                viewModel.placeTool = PlaceTool.HAND
-                viewModel.edit { PlaceEditor.select(it, check.markup.id) }
-                selectToolButton(PlaceTool.HAND)
+            val unsupported = safeUnsupported(raw)
+            if (!unsupported.isNullOrEmpty()) {
+                showError(getString(R.string.place_text_unsupported, unsupported))
+                return@showTextDialog
             }
+            val page = viewerFragment?.bridge?.pageSizePt(point.pageIndex)
+            val fontSize = viewModel.placeSize(PlaceTool.TEXT)
+            val chunks = PlaceMarkupLogic.paginateText(
+                initialPageIndex = point.pageIndex,
+                startX = point.x,
+                startY = point.y,
+                rawText = raw,
+                fontSizePt = fontSize,
+                page = page,
+                measureWidthPt = { line -> measureTextPt(line, fontSize) }
+            )
+
+            if (chunks.isEmpty()) return@showTextDialog
+
+            if (chunks.size == 1) {
+                val check = PlaceMarkupLogic.textFromTap(
+                    UUID.randomUUID().toString(), chunks[0].pageIndex, chunks[0].x, chunks[0].y,
+                    chunks[0].rawText, fontSize, viewModel.placeColor, "",
+                    page = page,
+                    measureWidthPt = { line -> measureTextPt(line, fontSize) }
+                )
+                if (check is TextCheck.Ok) {
+                    viewModel.addPending(check.markup)
+                    viewModel.placeTool = PlaceTool.HAND
+                    viewModel.edit { PlaceEditor.select(it, check.markup.id) }
+                    selectToolButton(PlaceTool.HAND)
+                }
+                return@showTextDialog
+            }
+
+            // Текст виходить за межі однієї сторінки -> додаємо сторінки за потреби та розміщуємо шматки
+            val maxPageNeeded = chunks.maxOf { it.pageIndex }
+            val currentTotalPages = loadedPageCount.coerceAtLeast(viewModel.document.value?.pageCount ?: 1)
+
+            val addChunksAction = {
+                var firstAddedId: String? = null
+                chunks.forEach { chunk ->
+                    val id = UUID.randomUUID().toString()
+                    if (firstAddedId == null) firstAddedId = id
+                    val markup = PendingMarkup(
+                        id = id,
+                        tool = PlaceTool.TEXT,
+                        pageIndex = chunk.pageIndex,
+                        x = chunk.x,
+                        y = chunk.y,
+                        text = chunk.text,
+                        sizePt = fontSize,
+                        color = viewModel.placeColor,
+                        rawText = chunk.rawText
+                    )
+                    viewModel.addPending(markup)
+                }
+                firstAddedId?.let { id ->
+                    viewModel.placeTool = PlaceTool.HAND
+                    viewModel.edit { PlaceEditor.select(it, id) }
+                    selectToolButton(PlaceTool.HAND)
+                }
+            }
+
+            if (maxPageNeeded >= currentTotalPages) {
+                val pagesToAdd = maxPageNeeded - currentTotalPages + 1
+                val docUri = documentUri
+                if (docUri != null) {
+                    lifecycleScope.launch {
+                        showLoadingOverlay(getString(R.string.saving_annotations))
+                        val engine = com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine()
+                        val result = engine.appendBlankPages(
+                            context = this@ReaderActivity,
+                            sourceUri = docUri,
+                            count = pagesToAdd,
+                            outputUri = docUri
+                        )
+                        hideLoadingOverlay()
+                        if (result is com.savoj.volumpdf.core.pdf.model.PdfOperationResult.Success) {
+                            showMessage(getString(R.string.text_pages_added, pagesToAdd), long = false)
+                            reloadViewerDocument()
+                            addChunksAction()
+                        } else {
+                            val first = chunks.first()
+                            val id = UUID.randomUUID().toString()
+                            viewModel.addPending(
+                                PendingMarkup(
+                                    id = id,
+                                    tool = PlaceTool.TEXT,
+                                    pageIndex = first.pageIndex,
+                                    x = first.x,
+                                    y = first.y,
+                                    text = first.text,
+                                    sizePt = fontSize,
+                                    color = viewModel.placeColor,
+                                    rawText = first.rawText
+                                )
+                            )
+                            viewModel.placeTool = PlaceTool.HAND
+                            viewModel.edit { PlaceEditor.select(it, id) }
+                            selectToolButton(PlaceTool.HAND)
+                        }
+                    }
+                    return@showTextDialog
+                }
+            }
+
+            addChunksAction()
         }
     }
 
@@ -1058,6 +1159,141 @@ class ReaderActivity : AppCompatActivity() {
         copyOnSuccess = null
         if (out == null) return@registerForActivityResult // вибір скасовано: нічого не втрачено, незбережене на місці
         lifecycleScope.launch { runSave(out, copy = true, onSuccess = onSuccess ?: {}) }
+    }
+
+    private val insertFilesLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            appendSelectedFiles(uris)
+        }
+    }
+
+    private fun appendSelectedFiles(uris: List<Uri>) {
+        val docUri = documentUri ?: return
+        uris.forEach { SafUtils.takePersistableUriPermissionSafe(this, it) }
+
+        val doAppend = {
+            lifecycleScope.launch {
+                showLoadingOverlay(getString(R.string.saving_annotations))
+                val engine = com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine()
+                val result = engine.appendFiles(
+                    context = this@ReaderActivity,
+                    sourceUri = docUri,
+                    additionalUris = uris,
+                    outputUri = docUri
+                )
+                hideLoadingOverlay()
+                when (result) {
+                    is com.savoj.volumpdf.core.pdf.model.PdfOperationResult.Success -> {
+                        showMessage(getString(R.string.files_added_successfully), long = false)
+                        reloadViewerDocument()
+                    }
+                    is com.savoj.volumpdf.core.pdf.model.PdfOperationResult.Error -> {
+                        showError(result.userMessage)
+                    }
+                    else -> Unit
+                }
+            }
+        }
+
+        if (viewModel.hasUnsaved.value) {
+            savePending { doAppend() }
+        } else {
+            doAppend()
+        }
+    }
+
+    private fun addNewBlankPage(onComplete: ((Boolean) -> Unit)? = null) {
+        val docUri = documentUri ?: return
+
+        val doAdd = {
+            lifecycleScope.launch {
+                showLoadingOverlay(getString(R.string.saving_annotations))
+                val engine = com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine()
+                val result = engine.appendBlankPages(
+                    context = this@ReaderActivity,
+                    sourceUri = docUri,
+                    count = 1,
+                    outputUri = docUri
+                )
+                hideLoadingOverlay()
+                when (result) {
+                    is com.savoj.volumpdf.core.pdf.model.PdfOperationResult.Success -> {
+                        showMessage(getString(R.string.page_added_successfully), long = false)
+                        reloadViewerDocument()
+                        onComplete?.invoke(true)
+                    }
+                    is com.savoj.volumpdf.core.pdf.model.PdfOperationResult.Error -> {
+                        showError(result.userMessage)
+                        onComplete?.invoke(false)
+                    }
+                    else -> onComplete?.invoke(false)
+                }
+            }
+        }
+
+        if (viewModel.hasUnsaved.value) {
+            savePending { doAdd() }
+        } else {
+            doAdd()
+        }
+    }
+
+    private fun showToolsBottomSheet() {
+        val sheet = ReaderToolsBottomSheetDialogFragment.newInstance()
+        sheet.onActionSelected = { action ->
+            val uri = documentUri
+            when (action) {
+                ReaderToolAction.ADD_PAGE -> addNewBlankPage()
+                ReaderToolAction.INSERT_FILE -> insertFilesLauncher.launch(arrayOf("application/pdf", "image/*"))
+                ReaderToolAction.ORGANIZE_PAGES -> {
+                    if (uri != null) com.savoj.volumpdf.ui.organizer.PageOrganizerActivity.start(this, uri)
+                }
+                ReaderToolAction.ROTATE -> {
+                    if (uri != null) startActivity(com.savoj.volumpdf.ui.tools.ToolsActivity.createIntent(this, com.savoj.volumpdf.ui.tools.ToolType.ROTATE, uri))
+                }
+                ReaderToolAction.DELETE_PAGES -> {
+                    if (uri != null) startActivity(com.savoj.volumpdf.ui.tools.ToolsActivity.createIntent(this, com.savoj.volumpdf.ui.tools.ToolType.DELETE_PAGES, uri))
+                }
+                ReaderToolAction.SPLIT -> {
+                    if (uri != null) startActivity(com.savoj.volumpdf.ui.tools.ToolsActivity.createIntent(this, com.savoj.volumpdf.ui.tools.ToolType.SPLIT, uri))
+                }
+                ReaderToolAction.COMPRESS -> {
+                    if (uri != null) startActivity(com.savoj.volumpdf.ui.tools.ToolsActivity.createIntent(this, com.savoj.volumpdf.ui.tools.ToolType.COMPRESS, uri))
+                }
+                ReaderToolAction.WATERMARK -> {
+                    if (uri != null) startActivity(com.savoj.volumpdf.ui.tools.ToolsActivity.createIntent(this, com.savoj.volumpdf.ui.tools.ToolType.WATERMARK, uri))
+                }
+                ReaderToolAction.PAGE_NUMBERS -> {
+                    if (uri != null) startActivity(com.savoj.volumpdf.ui.tools.ToolsActivity.createIntent(this, com.savoj.volumpdf.ui.tools.ToolType.PAGE_NUMBERS, uri))
+                }
+                ReaderToolAction.MERGE -> {
+                    if (uri != null) startActivity(com.savoj.volumpdf.ui.tools.ToolsActivity.createIntent(this, com.savoj.volumpdf.ui.tools.ToolType.MERGE, uri))
+                }
+                ReaderToolAction.SCAN -> {
+                    com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
+                }
+                ReaderToolAction.PRINT -> printCurrentDocument()
+                ReaderToolAction.SHARE -> shareCurrentDocument()
+                ReaderToolAction.DETAILS -> showDetailsDialog()
+            }
+        }
+        sheet.show(supportFragmentManager, ReaderToolsBottomSheetDialogFragment.TAG)
+    }
+
+    private fun printCurrentDocument() {
+        val uri = documentUri ?: return
+        try {
+            val printManager = getSystemService(Context.PRINT_SERVICE) as? android.print.PrintManager
+            if (printManager != null) {
+                val title = documentTitle ?: getString(R.string.reader_title)
+                val printAdapter = com.savoj.volumpdf.util.PdfPrintDocumentAdapter(this, uri, title)
+                printManager.print(title, printAdapter, null)
+            }
+        } catch (e: Exception) {
+            showError(e.localizedMessage ?: getString(R.string.error_title))
+        }
     }
 
     private fun confirmCopy(onSuccess: () -> Unit) {
@@ -1349,6 +1585,10 @@ class ReaderActivity : AppCompatActivity() {
             }
             R.id.action_reading_theme -> {
                 showReadingThemeDialog()
+                true
+            }
+            R.id.action_tools -> {
+                showToolsBottomSheet()
                 true
             }
             R.id.action_details -> {

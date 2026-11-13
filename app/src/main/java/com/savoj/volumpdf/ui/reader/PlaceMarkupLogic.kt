@@ -51,6 +51,15 @@ sealed interface TextVerdict {
     data class Unsupported(val chars: String) : TextVerdict
 }
 
+/** Шматочок тексту для розміщення на окремій сторінці при пагінації довгих текстів. */
+data class PageTextChunk(
+    val pageIndex: Int,
+    val x: Float,
+    val y: Float,
+    val text: String,
+    val rawText: String
+)
+
 /** Результат спроби створити текстовий об'єкт. */
 sealed interface TextCheck {
     data class Ok(val markup: PendingMarkup) : TextCheck
@@ -351,6 +360,106 @@ object PlaceMarkupLogic {
                 rawText = rawText
             )
         )
+    }
+
+    /**
+     * Розбиває довгий текст на шматочки для сторінок (пагінація), якщо текст не вміщується
+     * по висоті на початковій сторінці.
+     * Повертає список шматочків із відповідними pageIndex, x, y та перенесеним текстом.
+     */
+    fun paginateText(
+        initialPageIndex: Int,
+        startX: Float,
+        startY: Float,
+        rawText: String,
+        fontSizePt: Float,
+        page: PageSizePt?,
+        measureWidthPt: ((String) -> Float)? = null
+    ): List<PageTextChunk> {
+        val clampedSize = clampSize(PlaceTool.TEXT, fontSizePt)
+        val pHeight = page?.heightPt ?: 842f
+        val pWidth = page?.widthPt ?: 595f
+        val bottomMargin = 40f
+        val topMargin = 40f
+        val leftMargin = 36f
+        val rightMargin = 36f
+
+        val lineHeight = clampedSize * MarkupLayout.TEXT_LINE_HEIGHT_RATIO
+
+        // Переносимо текст по ширині
+        val firstPageMaxWidth = (pWidth - startX - rightMargin).coerceAtLeast(MIN_TEXT_LINE_WIDTH_PT)
+        val unwrapped = unwrapText(rawText)
+        val paragraphs = unwrapped.split(Regex("\n{2,}"))
+
+        val allLines = mutableListOf<String>()
+        val measure: (String) -> Float = measureWidthPt ?: { str -> estimateTextWidthPt(str, clampedSize) }
+
+        for (p in paragraphs) {
+            val wrappedP = wrapParagraph(p, firstPageMaxWidth, measure)
+            val linesInP = wrappedP.split('\n')
+            allLines.addAll(linesInP)
+            allLines.add("")
+        }
+        if (allLines.isNotEmpty() && allLines.last().isEmpty()) {
+            allLines.removeAt(allLines.lastIndex)
+        }
+
+        // Обчислюємо максимальну кількість рядків на першій сторінці
+        val availableHeightFirst = (pHeight - startY - bottomMargin).coerceAtLeast(lineHeight)
+        val maxLinesFirst = (availableHeightFirst / lineHeight).toInt().coerceAtLeast(1)
+
+        if (allLines.size <= maxLinesFirst) {
+            val text = allLines.joinToString("\n")
+            return listOf(
+                PageTextChunk(
+                    pageIndex = initialPageIndex,
+                    x = startX,
+                    y = startY,
+                    text = text,
+                    rawText = rawText
+                )
+            )
+        }
+
+        // Текст виходить за межі першої сторінки -> розбиваємо на кілька сторінок
+        val chunks = mutableListOf<PageTextChunk>()
+
+        // Перша сторінка
+        val firstLines = allLines.subList(0, maxLinesFirst)
+        chunks.add(
+            PageTextChunk(
+                pageIndex = initialPageIndex,
+                x = startX,
+                y = startY,
+                text = firstLines.joinToString("\n"),
+                rawText = firstLines.joinToString("\n")
+            )
+        )
+
+        // Доступна висота на повних сторінках
+        val availableHeightFull = (pHeight - topMargin - bottomMargin).coerceAtLeast(lineHeight)
+        val maxLinesFull = (availableHeightFull / lineHeight).toInt().coerceAtLeast(1)
+
+        var currentLineIdx = maxLinesFirst
+        var currentPageIdx = initialPageIndex + 1
+
+        while (currentLineIdx < allLines.size) {
+            val endIdx = minOf(currentLineIdx + maxLinesFull, allLines.size)
+            val pageLines = allLines.subList(currentLineIdx, endIdx)
+            chunks.add(
+                PageTextChunk(
+                    pageIndex = currentPageIdx,
+                    x = leftMargin,
+                    y = topMargin,
+                    text = pageLines.joinToString("\n"),
+                    rawText = pageLines.joinToString("\n")
+                )
+            )
+            currentLineIdx = endIdx
+            currentPageIdx++
+        }
+
+        return chunks
     }
 
     /** [signatureBitmap] — картинка підпису за id об'єкта (лише для SIGNATURE); без неї підпис не перетворити. */

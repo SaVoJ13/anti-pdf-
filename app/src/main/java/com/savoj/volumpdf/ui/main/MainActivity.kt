@@ -6,12 +6,14 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.savoj.volumpdf.R
@@ -24,6 +26,7 @@ import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.ui.reader.ReaderActivity
 import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -141,6 +144,17 @@ class MainActivity : AppCompatActivity() {
         openDocumentLauncher.launch(arrayOf("application/pdf"))
     }
 
+    fun createNewBlankDocumentAndOpen() {
+        lifecycleScope.launch {
+            try {
+                val file = com.savoj.volumpdf.util.DocumentCreationHelper.createBlankDocument(this@MainActivity)
+                com.savoj.volumpdf.util.DocumentCreationHelper.openNewDocument(this@MainActivity, file)
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, e.localizedMessage ?: "Помилка створення PDF", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     fun clearSearchQuery() {
         viewModel.setSearchQuery("")
         val searchView = searchMenuItem?.actionView as? SearchView
@@ -190,6 +204,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupActionButtons() {
+        binding.fabCreatePdf.setOnClickListener {
+            createNewBlankDocumentAndOpen()
+        }
         binding.fabOpenPdf.setOnClickListener {
             launchSafOpenDocument()
         }

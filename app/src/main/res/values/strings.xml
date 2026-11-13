@@ -251,4 +251,21 @@
     <string name="place_copy_saved">Copy saved</string>
     <string name="action_licenses">Open source licenses</string>
     <string name="dialog_licenses_title">Open Source Licenses</string>
+    <string name="action_create_pdf">Create PDF</string>
+    <string name="tool_create_blank_title">Create PDF</string>
+    <string name="tool_create_blank_desc">Create a new blank document for notes and text</string>
+    <string name="tool_add_page">+ Page</string>
+    <string name="tool_add_page_desc">Add a blank page to document</string>
+    <string name="tool_insert_file">Add file</string>
+    <string name="tool_insert_file_desc">Append pages from PDF or images</string>
+    <string name="action_tools">Tools</string>
+    <string name="tools_sheet_title">Document Tools</string>
+    <string name="tools_group_pages">Pages and Files</string>
+    <string name="tools_group_effects">Design and Optimization</string>
+    <string name="tools_group_quick">Quick Actions</string>
+    <string name="text_pages_added">Added %d new pages for text</string>
+    <string name="new_document_default_title">New Document</string>
+    <string name="action_print">Print</string>
+    <string name="page_added_successfully">New page added</string>
+    <string name="files_added_successfully">Files added successfully</string>
 </resources>

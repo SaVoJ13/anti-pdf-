@@ -261,6 +261,17 @@
             app:icon="@drawable/ic_camera_scan" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEmptyCreate"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:minWidth="220dp"
+            android:text="@string/action_create_pdf"
+            app:cornerRadius="14dp"
+            app:icon="@drawable/ic_note_add" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnClearSearch"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content"

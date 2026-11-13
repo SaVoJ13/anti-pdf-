@@ -566,6 +566,21 @@
                         android:visibility="gone"
                         app:icon="@drawable/ic_forms" />
 
+                    <!-- Додати нову порожню сторінку в документ -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPlaceAddPage"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:contentDescription="@string/tool_add_page_desc"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="10dp"
+                        android:text="@string/tool_add_page"
+                        android:textSize="13sp"
+                        app:icon="@drawable/ic_add_page" />
+
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPlaceDone"
                         style="@style/Widget.Material3.Button.TextButton"

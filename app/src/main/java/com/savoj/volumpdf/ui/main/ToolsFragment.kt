@@ -7,7 +7,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.savoj.volumpdf.databinding.FragmentToolsBinding
@@ -16,7 +18,9 @@ import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
 import com.savoj.volumpdf.ui.tools.ToolType
 import com.savoj.volumpdf.ui.tools.ToolsActivity
 import com.savoj.volumpdf.ui.tools.ToolsAdapter
+import com.savoj.volumpdf.util.DocumentCreationHelper
 import com.savoj.volumpdf.util.SafUtils
+import kotlinx.coroutines.launch
 
 class ToolsFragment : Fragment() {
 
@@ -59,6 +63,17 @@ class ToolsFragment : Fragment() {
     }
 
     private fun onToolSelected(toolType: ToolType) {
+        if (toolType == ToolType.CREATE_BLANK) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val file = DocumentCreationHelper.createBlankDocument(requireContext())
+                    DocumentCreationHelper.openNewDocument(requireActivity(), file)
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), e.localizedMessage ?: "Помилка створення PDF", Toast.LENGTH_SHORT).show()
+                }
+            }
+            return
+        }
         if (toolType == ToolType.SCAN_DOCUMENT) {
             ScanDocumentActivity.start(requireContext())
             return

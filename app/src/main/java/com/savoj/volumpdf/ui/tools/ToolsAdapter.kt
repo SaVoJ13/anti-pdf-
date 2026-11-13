@@ -9,6 +9,7 @@ import com.savoj.volumpdf.R
 import com.savoj.volumpdf.databinding.ItemToolCardBinding
 
 enum class ToolType {
+    CREATE_BLANK,
     SCAN_DOCUMENT,
     ORGANIZE_PAGES,
     MERGE,
@@ -33,6 +34,12 @@ class ToolsAdapter(
 ) : RecyclerView.Adapter<ToolsAdapter.ToolViewHolder>() {
 
     private val tools = listOf(
+        ToolDefinition(
+            type = ToolType.CREATE_BLANK,
+            titleRes = R.string.tool_create_blank_title,
+            descRes = R.string.tool_create_blank_desc,
+            iconRes = R.drawable.ic_note_add
+        ),
         ToolDefinition(
             type = ToolType.SCAN_DOCUMENT,
             titleRes = R.string.tool_scan_title,

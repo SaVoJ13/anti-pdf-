@@ -52,6 +52,9 @@ class RecentsFragment : Fragment() {
         binding.btnEmptyScan.setOnClickListener {
             ScanDocumentActivity.start(requireContext())
         }
+        binding.btnEmptyCreate.setOnClickListener {
+            (activity as? MainActivity)?.createNewBlankDocumentAndOpen()
+        }
         binding.btnClearSearch.setOnClickListener {
             (activity as? MainActivity)?.clearSearchQuery()
         }
@@ -106,6 +109,7 @@ class RecentsFragment : Fragment() {
                         binding.tvEmptyDesc.setText(R.string.empty_search_desc)
                         binding.btnEmptyOpen.visibility = View.GONE
                         binding.btnEmptyScan.visibility = View.GONE
+                        binding.btnEmptyCreate.visibility = View.GONE
                         binding.btnClearSearch.visibility = View.VISIBLE
                     } else {
                         binding.ivEmptyIcon.setImageResource(R.drawable.ic_empty_recents)
@@ -113,6 +117,7 @@ class RecentsFragment : Fragment() {
                         binding.tvEmptyDesc.setText(R.string.empty_recents_desc)
                         binding.btnEmptyOpen.visibility = View.VISIBLE
                         binding.btnEmptyScan.visibility = View.VISIBLE
+                        binding.btnEmptyCreate.visibility = View.VISIBLE
                         binding.btnClearSearch.visibility = View.GONE
                     }
                 }
