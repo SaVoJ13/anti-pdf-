@@ -71,6 +71,7 @@ class ReaderActivity : AppCompatActivity() {
     private var savingPlace = false
     private var initialPageRestored = false
     private var loadedPageCount = 0
+    private lateinit var readingPreferences: ReadingPreferences
     private val progressViewportListener: (Viewport) -> Unit = { v ->
         viewModel.updatePageProgress(v.currentPage)
     }
@@ -104,6 +105,9 @@ class ReaderActivity : AppCompatActivity() {
 
         binding.toolbar.title = documentTitle
         viewModel.initDocument(uri, documentTitle)
+
+        readingPreferences = ReadingPreferences(this)
+        applyReadingTheme(readingPreferences.theme)
 
         setupViewerFragment(uri, savedInstanceState)
         setupBottomActionBar()
@@ -1243,6 +1247,10 @@ class ReaderActivity : AppCompatActivity() {
                 shareCurrentDocument()
                 true
             }
+            R.id.action_reading_theme -> {
+                showReadingThemeDialog()
+                true
+            }
             R.id.action_details -> {
                 showDetailsDialog()
                 true
@@ -1289,6 +1297,41 @@ class ReaderActivity : AppCompatActivity() {
             .setMessage(msg)
             .setPositiveButton(R.string.action_ok, null)
             .show()
+    }
+
+    private fun showReadingThemeDialog() {
+        val items = arrayOf(
+            getString(R.string.reading_theme_day),
+            getString(R.string.reading_theme_night),
+            getString(R.string.reading_theme_sepia)
+        )
+        val currentTheme = readingPreferences.theme
+        val currentIndex = currentTheme.ordinal
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.reading_theme_title)
+            .setSingleChoiceItems(items, currentIndex) { dialog, which ->
+                val chosen = ReadingTheme.entries.getOrElse(which) { ReadingTheme.DAY }
+                if (chosen != readingPreferences.theme) {
+                    readingPreferences.theme = chosen
+                    applyReadingTheme(chosen)
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    private fun applyReadingTheme(theme: ReadingTheme) {
+        val paint = ReadingThemeLogic.createPaint(theme)
+        if (paint != null) {
+            binding.pdfViewerContainer.setLayerType(View.LAYER_TYPE_HARDWARE, paint)
+        } else {
+            binding.pdfViewerContainer.setLayerType(View.LAYER_TYPE_NONE, null)
+        }
+        val bgColor = ReadingThemeLogic.containerBackgroundColor(theme)
+        binding.viewerWrapper.setBackgroundColor(bgColor)
+        binding.pdfViewerContainer.setBackgroundColor(bgColor)
     }
 
     companion object {

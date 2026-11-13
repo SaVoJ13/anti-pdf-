@@ -31,6 +31,11 @@
     <string name="action_delete_history">Remove from recents</string>
     <string name="action_share">Share</string>
     <string name="action_details">Details</string>
+    <string name="action_reading_theme">Reading Theme</string>
+    <string name="reading_theme_title">Page Reading Theme</string>
+    <string name="reading_theme_day">Day (Light)</string>
+    <string name="reading_theme_night">Night (Dark)</string>
+    <string name="reading_theme_sepia">Sepia (Warm)</string>
     <string name="dialog_details_title">Document Information</string>
     <string name="details_title">Title: %1$s</string>
     <string name="details_pages">Total pages: %1$d</string>
