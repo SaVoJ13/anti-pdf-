@@ -605,10 +605,10 @@
                                 android:layout_width="240dp"
                                 android:layout_height="wrap_content"
                                 android:contentDescription="@string/place_signature_width"
-                                android:stepSize="1"
+                                android:stepSize="0"
                                 android:value="120"
-                                android:valueFrom="30"
-                                android:valueTo="400" />
+                                android:valueFrom="20"
+                                android:valueTo="2000" />
                         </LinearLayout>
 
                         <!-- Керування зображенням: поворот -90°, +90°, кут, на всю сторінку -->

@@ -743,9 +743,13 @@ class ReaderActivity : AppCompatActivity() {
             if (sel != null && (sel.tool == PlaceTool.SIGNATURE || sel.tool == PlaceTool.IMAGE)) {
                 val minW = PlaceMarkupLogic.sizeMin(sel.tool)
                 val maxW = PlaceMarkupLogic.sizeMax(sel.tool)
+                val safeVal = sel.sizePt.coerceIn(minW, maxW)
+                binding.placeSignatureSlider.stepSize = 0f
+                binding.placeSignatureSlider.valueFrom = minOf(minW, binding.placeSignatureSlider.valueFrom)
+                binding.placeSignatureSlider.valueTo = maxOf(maxW, binding.placeSignatureSlider.valueTo)
+                binding.placeSignatureSlider.value = safeVal
                 binding.placeSignatureSlider.valueFrom = minW
                 binding.placeSignatureSlider.valueTo = maxW
-                binding.placeSignatureSlider.value = sel.sizePt.coerceIn(minW, maxW)
                 binding.tvSignatureWidth.text = getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(sel.sizePt))
             }
         } finally {
