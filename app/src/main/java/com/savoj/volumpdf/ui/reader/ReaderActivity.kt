@@ -1268,6 +1268,11 @@ class ReaderActivity : AppCompatActivity() {
                 showDetailsDialog()
                 true
             }
+            R.id.action_organize_pages -> {
+                val uri = documentUri ?: return true
+                com.savoj.volumpdf.ui.organizer.PageOrganizerActivity.start(this, uri)
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

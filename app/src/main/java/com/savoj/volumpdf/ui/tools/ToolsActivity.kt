@@ -52,6 +52,11 @@ class ToolsActivity : AppCompatActivity() {
     ) { uri: Uri? ->
         if (uri != null) {
             SafUtils.takePersistableUriPermissionSafe(this, uri)
+            if (toolType == ToolType.ORGANIZE_PAGES) {
+                com.savoj.volumpdf.ui.organizer.PageOrganizerActivity.start(this, uri)
+                finish()
+                return@registerForActivityResult
+            }
             val item = SelectedFileItem(uri = uri, displayName = SafUtils.queryDisplayName(this, uri))
             viewModel.setSelectedFiles(listOf(item), this)
         }
@@ -133,6 +138,12 @@ class ToolsActivity : AppCompatActivity() {
                 binding.btnSelectFiles.setText(R.string.action_select_file)
                 binding.containerSplitParams.visibility = View.VISIBLE
             }
+            ToolType.ORGANIZE_PAGES -> {
+                binding.toolbar.setTitle(R.string.tool_organize_title)
+                binding.tvToolHeaderTitle.setText(R.string.tool_organize_title)
+                binding.tvToolHeaderDesc.setText(R.string.tool_organize_desc)
+                binding.btnSelectFiles.setText(R.string.action_select_file)
+            }
             ToolType.ROTATE -> {
                 binding.toolbar.setTitle(R.string.tool_rotate_title)
                 binding.tvToolHeaderTitle.setText(R.string.tool_rotate_title)
@@ -190,7 +201,7 @@ class ToolsActivity : AppCompatActivity() {
         binding.btnSelectFiles.setOnClickListener {
             when (toolType) {
                 ToolType.MERGE -> openMultiplePdfLauncher.launch(arrayOf("application/pdf"))
-                ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES, ToolType.WATERMARK, ToolType.PAGE_NUMBERS, ToolType.COMPRESS -> openSinglePdfLauncher.launch(arrayOf("application/pdf"))
+                ToolType.ORGANIZE_PAGES, ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES, ToolType.WATERMARK, ToolType.PAGE_NUMBERS, ToolType.COMPRESS -> openSinglePdfLauncher.launch(arrayOf("application/pdf"))
                 ToolType.IMAGES_TO_PDF -> openMultipleImagesLauncher.launch(arrayOf("image/jpeg", "image/png", "image/*"))
             }
         }
@@ -279,6 +290,14 @@ class ToolsActivity : AppCompatActivity() {
                 }
                 getString(R.string.filename_compressed)
             }
+            ToolType.ORGANIZE_PAGES -> {
+                val single = files.firstOrNull()?.uri
+                if (single != null) {
+                    com.savoj.volumpdf.ui.organizer.PageOrganizerActivity.start(this, single)
+                    finish()
+                }
+                return
+            }
         }
 
         createDocumentLauncher.launch(defaultName)
@@ -326,6 +345,9 @@ class ToolsActivity : AppCompatActivity() {
                     else -> com.savoj.volumpdf.core.pdf.model.CompressionLevel.MEDIUM
                 }
                 viewModel.executeCompress(this, level, outputUri)
+            }
+            ToolType.ORGANIZE_PAGES -> {
+                // Відкривається напряму через PageOrganizerActivity
             }
         }
     }

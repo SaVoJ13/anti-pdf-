@@ -94,6 +94,22 @@
     <string name="compress_level_high">Максимальное сжатие (Наименьший размер)</string>
     <string name="compress_level_low">Минимальное сжатие (Высокое качество)</string>
     <string name="filename_compressed">Сжатый.pdf</string>
+
+    <!-- Organize Pages Strings (ТОП-3) -->
+    <string name="tool_organize_title">Упорядочить страницы</string>
+    <string name="tool_organize_desc">Визуальная сетка: перемещение, поворот и удаление отдельных страниц.</string>
+    <string name="action_organize_pages">Упорядочить страницы</string>
+    <string name="organize_page_badge">Стр. %1$d</string>
+    <string name="organize_page_original">(было %1$d)</string>
+    <string name="organize_pages_count">%1$d стр.</string>
+    <string name="organize_action_rotate_all">Повернуть все</string>
+    <string name="organize_action_reset">Сбросить</string>
+    <string name="organize_save_button">Сохранить PDF</string>
+    <string name="organize_page_deleted">Страница %1$d удалена</string>
+    <string name="organize_undo">Отменить</string>
+    <string name="organize_min_pages_warning">В документе должна остаться хотя бы одна страница</string>
+    <string name="filename_organized">Упорядоченный.pdf</string>
+    <string name="loading_document">Загрузка документа…</string>
     <string name="compress_success_stats">Размер уменьшен на %1$d%% (%2$s → %3$s)</string>
 
     <!-- Tools Flow -->

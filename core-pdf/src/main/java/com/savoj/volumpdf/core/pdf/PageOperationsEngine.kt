@@ -3,6 +3,7 @@ package com.savoj.volumpdf.core.pdf
 import android.content.Context
 import android.net.Uri
 import com.savoj.volumpdf.core.pdf.model.CompressionLevel
+import com.savoj.volumpdf.core.pdf.model.PageTransform
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import kotlinx.coroutines.flow.Flow
 
@@ -66,6 +67,15 @@ interface PageOperationsEngine {
         context: Context,
         sourceUri: Uri,
         level: CompressionLevel = CompressionLevel.MEDIUM,
+        outputUri: Uri,
+        password: String? = null
+    ): PdfOperationResult
+
+    // Візуальний організатор сторінок: перестановка, поворот та видалення (ТОП-3)
+    suspend fun organizePages(
+        context: Context,
+        sourceUri: Uri,
+        pageTransforms: List<PageTransform>,
         outputUri: Uri,
         password: String? = null
     ): PdfOperationResult

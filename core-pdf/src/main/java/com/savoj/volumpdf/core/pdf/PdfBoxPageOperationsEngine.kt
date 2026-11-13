@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import com.savoj.volumpdf.core.pdf.model.CompressionLevel
+import com.savoj.volumpdf.core.pdf.model.PageTransform
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
@@ -569,6 +570,62 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
         } catch (cause: Throwable) {
             if (cause is CancellationException) throw cause
             mapToPdfError(cause, "Помилка стиснення PDF")
+        }
+    }
+
+    override suspend fun organizePages(
+        context: Context,
+        sourceUri: Uri,
+        pageTransforms: List<PageTransform>,
+        outputUri: Uri,
+        password: String?
+    ): PdfOperationResult = withContext(Dispatchers.IO) {
+        try {
+            init(context)
+            if (pageTransforms.isEmpty()) {
+                return@withContext PdfOperationResult.Error(
+                    IllegalArgumentException("Список сторінок для збереження порожній"),
+                    "Список сторінок для збереження порожній"
+                )
+            }
+
+            val sourceDoc = PdfIo.loadDocument(context, sourceUri, password)
+            sourceDoc.use { doc ->
+                val totalPages = doc.numberOfPages
+                for (transform in pageTransforms) {
+                    if (transform.sourcePageIndex < 0 || transform.sourcePageIndex >= totalPages) {
+                        return@withContext PdfOperationResult.Error(
+                            IndexOutOfBoundsException(
+                                "Індекс сторінки ${transform.sourcePageIndex + 1} виходить за межі документа (всього $totalPages)"
+                            ),
+                            "Індекс сторінки виходить за межі документа"
+                        )
+                    }
+                }
+
+                val targetDoc = PDDocument()
+                targetDoc.use { target ->
+                    for (transform in pageTransforms) {
+                        val srcPage = doc.getPage(transform.sourcePageIndex)
+                        val importedPage = target.importPage(srcPage)
+                        if (transform.rotationDegrees % 360 != 0) {
+                            val currentRotation = importedPage.rotation
+                            val newRotation = (currentRotation + transform.rotationDegrees) % 360
+                            importedPage.rotation = if (newRotation < 0) newRotation + 360 else newRotation
+                        }
+                    }
+
+                    PdfIo.copyEncryption(doc, target, password)
+                    PdfIo.saveSafely(context, target, outputUri)
+                    PdfOperationResult.Success(
+                        outputUri = outputUri,
+                        pagesCount = pageTransforms.size
+                    )
+                }
+            }
+        } catch (cause: Throwable) {
+            if (cause is CancellationException) throw cause
+            mapToPdfError(cause, "Помилка впорядкування сторінок PDF")
         }
     }
 
