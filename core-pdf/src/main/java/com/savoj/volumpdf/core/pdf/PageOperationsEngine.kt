@@ -2,6 +2,7 @@ package com.savoj.volumpdf.core.pdf
 
 import android.content.Context
 import android.net.Uri
+import com.savoj.volumpdf.core.pdf.model.CompressionLevel
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import kotlinx.coroutines.flow.Flow
 
@@ -58,5 +59,14 @@ interface PageOperationsEngine {
         outputUri: Uri,
         password: String? = null,
         pageIndices: List<Int>? = null
+    ): PdfOperationResult
+
+    // Офлайн-стиснення та оптимізація розміру PDF (ТОП-5)
+    suspend fun compressPdf(
+        context: Context,
+        sourceUri: Uri,
+        level: CompressionLevel = CompressionLevel.MEDIUM,
+        outputUri: Uri,
+        password: String? = null
     ): PdfOperationResult
 }

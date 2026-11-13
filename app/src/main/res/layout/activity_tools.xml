@@ -361,6 +361,51 @@
 
             </LinearLayout>
 
+            <!-- Tool Parameters: Compress PDF Container -->
+            <LinearLayout
+                android:id="@+id/containerCompressParams"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/compress_level_label"
+                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <RadioGroup
+                    android:id="@+id/rgCompressLevel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp">
+
+                    <RadioButton
+                        android:id="@+id/rbCompressMedium"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/compress_level_medium" />
+
+                    <RadioButton
+                        android:id="@+id/rbCompressHigh"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/compress_level_high" />
+
+                    <RadioButton
+                        android:id="@+id/rbCompressLow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/compress_level_low" />
+
+                </RadioGroup>
+
+            </LinearLayout>
+
             <!-- Progress Indicator Container -->
             <LinearLayout
                 android:id="@+id/containerProgress"

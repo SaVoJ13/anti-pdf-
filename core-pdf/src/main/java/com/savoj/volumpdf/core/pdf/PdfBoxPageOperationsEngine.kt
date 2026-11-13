@@ -1,7 +1,9 @@
 package com.savoj.volumpdf.core.pdf
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
+import com.savoj.volumpdf.core.pdf.model.CompressionLevel
 import com.savoj.volumpdf.core.pdf.model.PdfOperationResult
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
@@ -9,6 +11,7 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
+import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.tom_roush.pdfbox.pdmodel.font.PDFont
 import com.tom_roush.pdfbox.pdmodel.font.PDType0Font
@@ -492,6 +495,97 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
             if (cause is CancellationException) throw cause
             mapToPdfError(cause, "Помилка додавання нумерації сторінок")
         }
+    }
+
+    override suspend fun compressPdf(
+        context: Context,
+        sourceUri: Uri,
+        level: CompressionLevel,
+        outputUri: Uri,
+        password: String?
+    ): PdfOperationResult = withContext(Dispatchers.IO) {
+        try {
+            init(context)
+            val originalSizeBytes = getFileSize(context, sourceUri)
+
+            val doc = PdfIo.loadDocument(context, sourceUri, password)
+            doc.use { targetDoc ->
+                val totalPages = targetDoc.numberOfPages
+
+                for (pageIndex in 0 until totalPages) {
+                    val page = targetDoc.getPage(pageIndex)
+                    val resources = page.resources ?: continue
+                    val names = try {
+                        resources.xObjectNames.toList()
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+
+                    for (name in names) {
+                        try {
+                            if (!resources.isImageXObject(name)) continue
+                            val imageXObject = resources.getXObject(name) as? PDImageXObject ?: continue
+                            val bmp = imageXObject.image ?: continue
+
+                            val origWidth = bmp.width
+                            val origHeight = bmp.height
+                            if (origWidth <= 0 || origHeight <= 0) continue
+
+                            val maxDim = maxOf(origWidth, origHeight)
+                            val targetMaxDim = level.maxDimension
+
+                            val scaledBmp = if (maxDim > targetMaxDim) {
+                                val scale = targetMaxDim.toFloat() / maxDim
+                                val targetW = (origWidth * scale).toInt().coerceAtLeast(1)
+                                val targetH = (origHeight * scale).toInt().coerceAtLeast(1)
+                                Bitmap.createScaledBitmap(bmp, targetW, targetH, true)
+                            } else {
+                                bmp
+                            }
+
+                            val newXObject = JPEGFactory.createFromImage(targetDoc, scaledBmp, level.jpegQuality)
+                            resources.put(name, newXObject)
+
+                            if (scaledBmp !== bmp) {
+                                scaledBmp.recycle()
+                            }
+                        } catch (_: Throwable) {
+                            // Пропускаємо окремі зображення, якщо вони не підлягають перестисненню або на JVM
+                        }
+                    }
+                }
+
+                PdfIo.keepEncryption(targetDoc, password)
+                PdfIo.saveSafely(context, targetDoc, outputUri)
+                val newSizeBytes = getFileSize(context, outputUri)
+
+                PdfOperationResult.Success(
+                    outputUri = outputUri,
+                    pagesCount = totalPages,
+                    originalSizeBytes = originalSizeBytes,
+                    newSizeBytes = newSizeBytes
+                )
+            }
+        } catch (cause: Throwable) {
+            if (cause is CancellationException) throw cause
+            mapToPdfError(cause, "Помилка стиснення PDF")
+        }
+    }
+
+    private fun getFileSize(context: Context, uri: Uri): Long {
+        if (uri.scheme == "file") {
+            uri.path?.let { p ->
+                val f = File(p)
+                if (f.exists()) return f.length()
+            }
+        } else if (uri.scheme == "content") {
+            try {
+                context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                    return pfd.statSize
+                }
+            } catch (_: Throwable) {}
+        }
+        return 0L
     }
 
     private fun mapToPdfError(cause: Throwable, defaultMessage: String): PdfOperationResult.Error =

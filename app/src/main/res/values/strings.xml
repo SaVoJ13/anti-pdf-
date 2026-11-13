@@ -87,6 +87,15 @@
     <string name="filename_numbered">Numbered.pdf</string>
     <string name="error_empty_watermark">Please enter watermark text</string>
 
+    <string name="tool_compress_title">Compress PDF</string>
+    <string name="tool_compress_desc">Optimize and reduce document file size for easy sharing.</string>
+    <string name="compress_level_label">Compression level:</string>
+    <string name="compress_level_medium">Balanced (Recommended)</string>
+    <string name="compress_level_high">Maximum compression (Smallest file)</string>
+    <string name="compress_level_low">Minimum compression (High quality)</string>
+    <string name="filename_compressed">Compressed.pdf</string>
+    <string name="compress_success_stats">Size reduced by %1$d%% (%2$s → %3$s)</string>
+
     <!-- Tools Flow -->
     <string name="action_select_files">Select Files</string>
     <string name="action_select_file">Select File</string>

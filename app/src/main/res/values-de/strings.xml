@@ -87,6 +87,15 @@
     <string name="filename_numbered">Nummeriert.pdf</string>
     <string name="error_empty_watermark">Bitte Wasserzeichen-Text eingeben</string>
 
+    <string name="tool_compress_title">PDF komprimieren</string>
+    <string name="tool_compress_desc">Dateigröße optimieren und reduzieren für einfaches Teilen.</string>
+    <string name="compress_level_label">Komprimierungsstufe:</string>
+    <string name="compress_level_medium">Ausgewogen (Empfohlen)</string>
+    <string name="compress_level_high">Maximale Komprimierung (Kleinste Datei)</string>
+    <string name="compress_level_low">Minimale Komprimierung (Hohe Qualität)</string>
+    <string name="filename_compressed">Komprimiert.pdf</string>
+    <string name="compress_success_stats">Größe um %1$d%% reduziert (%2$s → %3$s)</string>
+
     <!-- Tools Flow -->
     <string name="action_select_files">Dateien auswählen</string>
     <string name="action_select_file">Datei auswählen</string>
