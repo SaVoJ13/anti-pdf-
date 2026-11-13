@@ -94,6 +94,22 @@
     <string name="compress_level_high">Максимальне стиснення (Найменший розмір)</string>
     <string name="compress_level_low">Мінімальне стиснення (Висока якість)</string>
     <string name="filename_compressed">Стиснутий.pdf</string>
+
+    <!-- Organize Pages Strings (ТОП-3) -->
+    <string name="tool_organize_title">Впорядкувати сторінки</string>
+    <string name="tool_organize_desc">Візуальна сітка: перетягування, поворот та видалення окремих сторінок.</string>
+    <string name="action_organize_pages">Впорядкувати сторінки</string>
+    <string name="organize_page_badge">Стор. %1$d</string>
+    <string name="organize_page_original">(було %1$d)</string>
+    <string name="organize_pages_count">%1$d стор.</string>
+    <string name="organize_action_rotate_all">Повернути всі</string>
+    <string name="organize_action_reset">Скинути</string>
+    <string name="organize_save_button">Зберегти PDF</string>
+    <string name="organize_page_deleted">Сторінку %1$d видалено</string>
+    <string name="organize_undo">Скасувати</string>
+    <string name="organize_min_pages_warning">У документі має залишитися хоча б одна сторінка</string>
+    <string name="filename_organized">Впорядкований.pdf</string>
+    <string name="loading_document">Завантаження документа…</string>
     <string name="compress_success_stats">Розмір зменшено на %1$d%% (%2$s → %3$s)</string>
 
     <!-- Tools Flow -->

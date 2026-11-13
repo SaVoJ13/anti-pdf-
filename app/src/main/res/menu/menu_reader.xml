@@ -33,6 +33,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_organize_pages"
+        android:icon="@drawable/ic_organize_pages"
+        android:title="@string/action_organize_pages"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_details"
         android:icon="@drawable/ic_info"
         android:title="@string/action_details"

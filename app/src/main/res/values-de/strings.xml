@@ -94,6 +94,22 @@
     <string name="compress_level_high">Maximale Komprimierung (Kleinste Datei)</string>
     <string name="compress_level_low">Minimale Komprimierung (Hohe Qualität)</string>
     <string name="filename_compressed">Komprimiert.pdf</string>
+
+    <!-- Organize Pages Strings (ТОП-3) -->
+    <string name="tool_organize_title">Seiten organisieren</string>
+    <string name="tool_organize_desc">Visuelles Raster: Seiten neu anordnen, drehen und löschen.</string>
+    <string name="action_organize_pages">Seiten organisieren</string>
+    <string name="organize_page_badge">Seite %1$d</string>
+    <string name="organize_page_original">(vorher %1$d)</string>
+    <string name="organize_pages_count">%1$d Seiten</string>
+    <string name="organize_action_rotate_all">Alle drehen</string>
+    <string name="organize_action_reset">Zurücksetzen</string>
+    <string name="organize_save_button">PDF speichern</string>
+    <string name="organize_page_deleted">Seite %1$d entfernt</string>
+    <string name="organize_undo">Rückgängig</string>
+    <string name="organize_min_pages_warning">Das Dokument muss mindestens eine Seite enthalten</string>
+    <string name="filename_organized">Organisiert.pdf</string>
+    <string name="loading_document">Dokument wird geladen…</string>
     <string name="compress_success_stats">Größe um %1$d%% reduziert (%2$s → %3$s)</string>
 
     <!-- Tools Flow -->
