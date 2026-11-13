@@ -726,7 +726,7 @@ class ReaderActivity : AppCompatActivity() {
 
         syncingPanel = true
         try {
-            if (hasImage && sel != null) {
+            if (sel?.tool == PlaceTool.IMAGE) {
                 binding.tvImageRotationAngle.text = getString(R.string.image_rotation_angle, sel.rotationDeg)
             }
             val color = (sel?.color ?: viewModel.placeColor) or PlaceMarkupLogic.ALPHA_MASK

@@ -118,7 +118,7 @@ object PlaceEditor {
 
     fun setSizeAndPosition(s: PlaceEditorState, id: String, sizePt: Float, x: Float, y: Float, page: PageSizePt? = null): PlaceEditorState =
         update(s, id, key = "sizePos:$id") { item ->
-            val clampedSize = PlaceMarkupLogic.clampSize(item.tool, sizePt, x, y, item.aspect, page)
+            val clampedSize = PlaceMarkupLogic.clampSize(item.tool, sizePt, 0f, 0f, item.aspect, page)
             val clampedHeight = clampedSize * item.aspect
             val newX = if (page != null) {
                 x.coerceIn(0f, (page.widthPt - clampedSize).coerceAtLeast(0f))
