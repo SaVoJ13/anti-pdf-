@@ -40,7 +40,8 @@ data class PendingMarkup(
     val sizePt: Float,
     val color: Int,
     val ink: InkPoints? = null,
-    val aspect: Float = 0f
+    val aspect: Float = 0f,
+    val rawText: String? = null
 )
 
 /** Підсумок перевірки введеного тексту (без створення об'єкта). */
@@ -81,6 +82,9 @@ object PlaceMarkupLogic {
 
     /** Опорна точка об'єкта не ближче цього до правого/нижнього краю видимої сторінки (двигун відхиляє об'єкт, що цілком поза сторінкою). */
     const val PAGE_EDGE_MARGIN_PT = 2f
+
+    /** Мінімальна допустима ширина рядка тексту при перенесенні або зміні розміру вікна (pt). */
+    const val MIN_TEXT_LINE_WIDTH_PT = 40f
 
     fun defaultSize(tool: PlaceTool): Float = when (tool) {
         PlaceTool.TEXT -> DEFAULT_TEXT_SIZE_PT
@@ -186,11 +190,50 @@ object PlaceMarkupLogic {
     }
 
     /**
+     * Відновлює початковий безперервний текст із раніше перенесеного тексту:
+     * - Окремі переноси рядків ('\n') у межах одного абзацу об'єднуються через пробіл.
+     * - Подвійні переноси ('\n\n' або більше) зберігаються як межі абзаців.
+     */
+    fun unwrapText(text: String): String {
+        val normalized = text.replace("\r", "")
+        if (!normalized.contains('\n')) return normalized
+        val paragraphs = normalized.split(Regex("\n{2,}"))
+        return paragraphs.joinToString("\n\n") { p ->
+            p.split('\n')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .joinToString(" ")
+        }
+    }
+
+    /**
+     * Переносить текст на рядки під задану максимальну ширину [maxWidthPt] (pt).
+     * - [rawText] — початковий або раніше перенесений текст (абзаци '\n\n' зберігаються).
+     * - Розриває слова за пробілами, коли рядок перевищує [maxWidthPt].
+     * - Якщо окреме слово ширше за [maxWidthPt], розбиває його по символах.
+     * - [measureWidthPt] — функція вимірювання (Paint на Android); якщо null — [estimateTextWidthPt].
+     */
+    fun wrapTextToWidth(
+        rawText: String,
+        maxWidthPt: Float,
+        fontSizePt: Float,
+        measureWidthPt: ((String) -> Float)? = null
+    ): String {
+        if (rawText.isEmpty()) return rawText
+        val width = maxWidthPt.coerceAtLeast(MIN_TEXT_LINE_WIDTH_PT)
+        val measure: (String) -> Float = measureWidthPt ?: { str -> estimateTextWidthPt(str, fontSizePt) }
+
+        val unwrapped = unwrapText(rawText)
+        val paragraphs = unwrapped.split(Regex("\n{2,}"))
+        val wrappedParagraphs = paragraphs.map { paragraph ->
+            wrapParagraph(paragraph, width, measure)
+        }
+        return wrappedParagraphs.joinToString("\n\n")
+    }
+
+    /**
      * Переносить довгий текст на наступний рядок ('\n'), зберігаючи поля сторінки (не виходить за межі).
-     * - Зберігає явні абзаци користувача ('\n').
-     * - Розриває слова за пробілами, коли рядок перевищує [maxWidthPt] (обчислений через [maxTextLineWidthPt]).
-     * - Якщо окреме слово ширше за [maxWidthPt], розбиває його по символах, щоб не вилазити за поля.
-     * - [measureWidthPt] — функція точного вимірювання (Paint на Android); якщо null — [estimateTextWidthPt].
+     * Обчислює [maxWidthPt] через [maxTextLineWidthPt] і викликає [wrapTextToWidth].
      */
     fun wrapText(
         rawText: String,
@@ -201,13 +244,7 @@ object PlaceMarkupLogic {
     ): String {
         if (rawText.isEmpty()) return rawText
         val maxWidth = maxTextLineWidthPt(xPt, page)
-        val measure: (String) -> Float = measureWidthPt ?: { str -> estimateTextWidthPt(str, fontSizePt) }
-
-        val paragraphs = rawText.replace("\r", "").split('\n')
-        val wrappedParagraphs = paragraphs.map { paragraph ->
-            wrapParagraph(paragraph, maxWidth, measure)
-        }
-        return wrappedParagraphs.joinToString("\n")
+        return wrapTextToWidth(rawText, maxWidth, fontSizePt, measureWidthPt)
     }
 
     private fun wrapParagraph(paragraph: String, maxWidthPt: Float, measure: (String) -> Float): String {
@@ -301,7 +338,19 @@ object PlaceMarkupLogic {
         }
         val clampedSize = clampSize(PlaceTool.TEXT, sizePt)
         val finalText = if (page != null) wrapText(rawText, x, clampedSize, page, measureWidthPt) else rawText
-        return TextCheck.Ok(PendingMarkup(id, PlaceTool.TEXT, pageIndex, x, y, finalText, clampedSize, color))
+        return TextCheck.Ok(
+            PendingMarkup(
+                id = id,
+                tool = PlaceTool.TEXT,
+                pageIndex = pageIndex,
+                x = x,
+                y = y,
+                text = finalText,
+                sizePt = clampedSize,
+                color = color,
+                rawText = rawText
+            )
+        )
     }
 
     /** [signatureBitmap] — картинка підпису за id об'єкта (лише для SIGNATURE); без неї підпис не перетворити. */

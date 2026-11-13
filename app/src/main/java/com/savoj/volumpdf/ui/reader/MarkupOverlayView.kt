@@ -3,6 +3,7 @@ package com.savoj.volumpdf.ui.reader
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
@@ -39,6 +40,9 @@ class MarkupOverlayView @JvmOverloads constructor(
          * першої точки), pt, плоский масив пар; відсікання надлишку й перевірку «на сторінці» робить виклик.
          */
         fun onInkDrawn(pageIndex: Int, xy: FloatArray)
+
+        /** Зміна тексту або розміру вікна з текстом (ресайз маркерів). */
+        fun onItemTextChanged(id: String, newText: String, rawText: String? = null)
     }
 
     var bridge: PdfViewerBridge? = null
@@ -124,6 +128,34 @@ class MarkupOverlayView @JvmOverloads constructor(
     }
     private val path = Path()
     private val rectF = RectF()
+    private val rectHandle = RectF()
+
+    private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = Color.WHITE
+    }
+    private val handleStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f * density
+        color = FRAME_COLOR
+    }
+    private val handleGripPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1.6f * density
+        strokeCap = Paint.Cap.ROUND
+        color = FRAME_COLOR
+    }
+    private val handleHaloPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = 0x261565C0.toInt()
+    }
+
+    /** Стан ресайзу вікна тексту за маркери ширини. */
+    private var isResizing = false
+    private var resizeId: String? = null
+    private var startWidthPt = 0f
+    private var originalText = ""
+    private var dragText: String? = null
 
     private fun loadTypeface(): Typeface = try {
         Typeface.createFromAsset(context.assets, MarkupLayout.FONT_ASSET_PATH)
@@ -190,6 +222,42 @@ class MarkupOverlayView @JvmOverloads constructor(
         if (drawingEnabled) return onDrawTouch(event)
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                // Перевірка натискання на маркери зміни ширини для виділеного тексту
+                val sel = selectedId?.let { id -> items.firstOrNull { it.id == id } }
+                if (sel != null && sel.tool == PlaceTool.TEXT) {
+                    val b = bridge
+                    val zoom = b?.zoom?.takeIf { it > 0f } ?: 1f
+                    val offset = b?.offsetTo(this)
+                    if (offset != null) {
+                        val o = originPx(sel, offset)
+                        if (o != null) {
+                            val r = PlaceBounds.boundsPx(sel, o.first, o.second, zoom, lineWidthPx(sel.sizePt, zoom))
+                            val pad = 4f * density
+                            val hx = r.right + pad
+                            val hy = (r.top + r.bottom) / 2f
+                            val cx = r.right + pad
+                            val cy = r.bottom + pad
+                            val slop = 28f * density
+                            val hitRight = Math.hypot((event.x - hx).toDouble(), (event.y - hy).toDouble()) <= slop
+                            val hitCorner = Math.hypot((event.x - cx).toDouble(), (event.y - cy).toDouble()) <= slop
+                            if (hitRight || hitCorner) {
+                                gestureActive = true
+                                isResizing = true
+                                resizeId = sel.id
+                                activePointerId = event.getPointerId(0)
+                                downX = event.x
+                                downY = event.y
+                                startZoom = zoom
+                                startWidthPt = (r.right - r.left) / zoom
+                                originalText = sel.rawText ?: PlaceMarkupLogic.unwrapText(sel.text)
+                                dragText = sel.text
+                                parent?.requestDisallowInterceptTouchEvent(true)
+                                return true
+                            }
+                        }
+                    }
+                }
+
                 val id = PlaceHitTest.hit(targetsNow(), event.x, event.y, PlaceHitTest.SLOP_DP * density)
                     ?: return false // повз об'єкти: жест іде у PdfView
                 val item = items.firstOrNull { it.id == id } ?: return false
@@ -210,7 +278,33 @@ class MarkupOverlayView @JvmOverloads constructor(
             MotionEvent.ACTION_MOVE -> {
                 if (!gestureActive) return false
                 val idx = event.findPointerIndex(activePointerId)
-                if (idx < 0 || dragId == null) return true // другий палець або кінець жесту: ігноруємо
+                if (idx < 0) return true
+                if (isResizing) {
+                    val sel = items.firstOrNull { it.id == resizeId }
+                    if (sel != null) {
+                        val dxPx = event.getX(idx) - downX
+                        val dxPt = dxPx / startZoom
+                        val page = bridge?.pageSizePt(sel.pageIndex)
+                        val minWidthPt = PlaceMarkupLogic.MIN_TEXT_LINE_WIDTH_PT
+                        val maxWidthPt = if (page != null) {
+                            (page.widthPt - PlaceMarkupLogic.PAGE_EDGE_MARGIN_PT - sel.x).coerceAtLeast(minWidthPt)
+                        } else {
+                            2000f
+                        }
+                        val targetWidthPt = (startWidthPt + dxPt).coerceIn(minWidthPt, maxWidthPt)
+                        val measure: (String) -> Float = { str ->
+                            textPaint.textSize = MarkupOverlayMath.ptToPx(sel.sizePt, startZoom)
+                            textPaint.measureText(str) / startZoom
+                        }
+                        val newWrapped = PlaceMarkupLogic.wrapTextToWidth(
+                            originalText, targetWidthPt, sel.sizePt, measure
+                        )
+                        dragText = newWrapped
+                        invalidate()
+                    }
+                    return true
+                }
+                if (dragId == null) return true // другий палець або кінець жесту: ігноруємо
                 val dx = event.getX(idx) - downX
                 val dy = event.getY(idx) - downY
                 if (!moved && Math.hypot(dx.toDouble(), dy.toDouble()) > touchSlop) moved = true
@@ -230,12 +324,16 @@ class MarkupOverlayView @JvmOverloads constructor(
             MotionEvent.ACTION_POINTER_UP -> {
                 if (!gestureActive) return false
                 // Якщо підняли саме активний палець — завершуємо жест; решта пальців ігнорується до кінця.
-                if (event.getPointerId(event.actionIndex) == activePointerId) finishGesture(commit = true)
+                if (event.getPointerId(event.actionIndex) == activePointerId) {
+                    if (isResizing) finishResize(commit = true) else finishGesture(commit = true)
+                }
                 return true
             }
             MotionEvent.ACTION_UP -> {
                 if (!gestureActive) return false
-                if (event.getPointerId(event.actionIndex) == activePointerId) finishGesture(commit = true)
+                if (event.getPointerId(event.actionIndex) == activePointerId) {
+                    if (isResizing) finishResize(commit = true) else finishGesture(commit = true)
+                }
                 endGesture()
                 return true
             }
@@ -246,6 +344,19 @@ class MarkupOverlayView @JvmOverloads constructor(
             }
         }
         return gestureActive
+    }
+
+    private fun finishResize(commit: Boolean) {
+        val id = resizeId ?: return
+        val textToCommit = dragText
+        val raw = originalText
+        isResizing = false
+        resizeId = null
+        dragText = null
+        invalidate()
+        if (commit && textToCommit != null) {
+            editListener?.onItemTextChanged(id, textToCommit, raw)
+        }
     }
 
     private fun finishGesture(commit: Boolean) {
@@ -270,12 +381,18 @@ class MarkupOverlayView @JvmOverloads constructor(
 
     private fun endGesture() {
         gestureActive = false
+        isResizing = false
+        resizeId = null
+        dragText = null
         activePointerId = -1
         dragId = null
         moved = false
     }
 
     private fun cancelGesture() {
+        isResizing = false
+        resizeId = null
+        dragText = null
         dragId = null
         moved = false
         gestureActive = false
@@ -390,24 +507,58 @@ class MarkupOverlayView @JvmOverloads constructor(
         val zoom = b.zoom
         for (item in list) {
             val o = originPx(item, offset) ?: continue
-            when (item.tool) {
-                PlaceTool.CHECK, PlaceTool.CROSS -> drawMark(canvas, item, o.first, o.second, zoom)
-                PlaceTool.TEXT -> drawText(canvas, item, o.first, o.second, zoom)
-                PlaceTool.INK -> drawInk(canvas, item, o.first, o.second, zoom)
-                PlaceTool.SIGNATURE -> drawSignature(canvas, item, o.first, o.second, zoom)
+            val activeItem = if (isResizing && item.id == resizeId && dragText != null) {
+                item.copy(text = dragText!!)
+            } else {
+                item
+            }
+            when (activeItem.tool) {
+                PlaceTool.CHECK, PlaceTool.CROSS -> drawMark(canvas, activeItem, o.first, o.second, zoom)
+                PlaceTool.TEXT -> drawText(canvas, activeItem, o.first, o.second, zoom)
+                PlaceTool.INK -> drawInk(canvas, activeItem, o.first, o.second, zoom)
+                PlaceTool.SIGNATURE -> drawSignature(canvas, activeItem, o.first, o.second, zoom)
                 PlaceTool.HAND -> Unit
             }
         }
         if (live) drawLiveStroke(canvas, zoom)
         val sel = selectedId?.let { id -> list.firstOrNull { it.id == id } }
         if (sel != null) {
-            val o = originPx(sel, offset)
+            val activeSel = if (isResizing && sel.id == resizeId && dragText != null) {
+                sel.copy(text = dragText!!)
+            } else {
+                sel
+            }
+            val o = originPx(activeSel, offset)
             if (o != null) {
-                val r = PlaceBounds.boundsPx(sel, o.first, o.second, zoom, lineWidthPx(sel.sizePt, zoom))
+                val r = PlaceBounds.boundsPx(activeSel, o.first, o.second, zoom, lineWidthPx(activeSel.sizePt, zoom))
                 val pad = 4f * density
                 rectF.set(r.left - pad, r.top - pad, r.right + pad, r.bottom + pad)
                 canvas.drawRoundRect(rectF, 4f * density, 4f * density, frameHaloPaint)
                 canvas.drawRoundRect(rectF, 4f * density, 4f * density, framePaint)
+
+                // Маркери зміни ширини для текстового об'єкта
+                if (activeSel.tool == PlaceTool.TEXT) {
+                    val hx = rectF.right
+                    val hy = (rectF.top + rectF.bottom) / 2f
+                    val cx = rectF.right
+                    val cy = rectF.bottom
+
+                    // Правий маркер ширини (вертикальна пігулка з насічками)
+                    val pillW = 6f * density
+                    val pillH = 22f * density
+                    rectHandle.set(hx - pillW / 2f, hy - pillH / 2f, hx + pillW / 2f, hy + pillH / 2f)
+                    canvas.drawRoundRect(rectHandle, pillW / 2f, pillW / 2f, handleHaloPaint)
+                    canvas.drawRoundRect(rectHandle, pillW / 2f, pillW / 2f, handlePaint)
+                    canvas.drawRoundRect(rectHandle, pillW / 2f, pillW / 2f, handleStrokePaint)
+                    canvas.drawLine(hx - 1.2f * density, hy - 4.5f * density, hx - 1.2f * density, hy + 4.5f * density, handleGripPaint)
+                    canvas.drawLine(hx + 1.2f * density, hy - 4.5f * density, hx + 1.2f * density, hy + 4.5f * density, handleGripPaint)
+
+                    // Нижній правий кутовий маркер (кружечок)
+                    val cornerR = 5f * density
+                    canvas.drawCircle(cx, cy, cornerR + 2f * density, handleHaloPaint)
+                    canvas.drawCircle(cx, cy, cornerR, handlePaint)
+                    canvas.drawCircle(cx, cy, cornerR, handleStrokePaint)
+                }
             }
         }
         // Перерахунок у кожному кадрі, поки є об'єкти (як у спайку, режим frame).

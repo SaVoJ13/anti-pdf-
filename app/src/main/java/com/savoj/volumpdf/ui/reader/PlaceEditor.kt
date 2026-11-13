@@ -119,8 +119,10 @@ object PlaceEditor {
         }
 
     /** Нове значення тексту для текстового об'єкта; для ✓/✗ — без змін. Перевірку тексту робить викликач. */
-    fun setText(s: PlaceEditorState, id: String, text: String): PlaceEditorState =
-        update(s, id, key = null) { if (it.tool == PlaceTool.TEXT) it.copy(text = text) else it }
+    fun setText(s: PlaceEditorState, id: String, text: String, rawText: String? = null): PlaceEditorState =
+        update(s, id, key = null) {
+            if (it.tool == PlaceTool.TEXT) it.copy(text = text, rawText = rawText ?: it.rawText) else it
+        }
 
     /** ✓ ↔ ✗; для тексту — без змін. */
     fun toggleMarkKind(s: PlaceEditorState, id: String): PlaceEditorState =

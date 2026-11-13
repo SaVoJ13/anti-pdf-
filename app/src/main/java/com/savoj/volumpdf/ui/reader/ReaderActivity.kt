@@ -429,6 +429,10 @@ class ReaderActivity : AppCompatActivity() {
                 ) ?: return // усі точки поза сторінкою або штрих порожній
                 viewModel.addPending(stroke)
             }
+
+            override fun onItemTextChanged(id: String, newText: String, rawText: String?) {
+                viewModel.edit { PlaceEditor.setText(it, id, newText, rawText) }
+            }
         }
 
         binding.placeToolGroup.check(toolButtons.getValue(viewModel.placeTool))
@@ -590,14 +594,14 @@ class ReaderActivity : AppCompatActivity() {
         val sel = viewModel.editor.value.selected ?: return
         when (sel.tool) {
             PlaceTool.TEXT -> showTextDialog(
-                initial = sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply
+                initial = sel.rawText ?: sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply
             ) { raw ->
                 val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
                 val wrapped = PlaceMarkupLogic.wrapText(
                     raw, sel.x, sel.sizePt, page,
                     measureWidthPt = { line -> measureTextPt(line, sel.sizePt) }
                 )
-                viewModel.edit { PlaceEditor.setText(it, sel.id, wrapped) }
+                viewModel.edit { PlaceEditor.setText(it, sel.id, wrapped, raw) }
             }
             PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.edit { PlaceEditor.toggleMarkKind(it, sel.id) }
             else -> Unit
@@ -611,12 +615,12 @@ class ReaderActivity : AppCompatActivity() {
             if (sel.tool == PlaceTool.TEXT) {
                 val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
                 val wrapped = PlaceMarkupLogic.wrapText(
-                    sel.text, sel.x, next, page,
+                    sel.rawText ?: sel.text, sel.x, next, page,
                     measureWidthPt = { line -> measureTextPt(line, next) }
                 )
                 viewModel.edit { s ->
                     val s1 = PlaceEditor.setSize(s, sel.id, next)
-                    PlaceEditor.setText(s1, sel.id, wrapped)
+                    PlaceEditor.setText(s1, sel.id, wrapped, sel.rawText)
                 }
             } else {
                 viewModel.edit { PlaceEditor.setSize(it, sel.id, next) }
@@ -791,7 +795,12 @@ class ReaderActivity : AppCompatActivity() {
                 page = page,
                 measureWidthPt = { line -> measureTextPt(line, viewModel.placeSize(PlaceTool.TEXT)) }
             )
-            if (check is TextCheck.Ok) viewModel.addPending(check.markup)
+            if (check is TextCheck.Ok) {
+                viewModel.addPending(check.markup)
+                viewModel.placeTool = PlaceTool.HAND
+                viewModel.edit { PlaceEditor.select(it, check.markup.id) }
+                selectToolButton(PlaceTool.HAND)
+            }
         }
     }
 

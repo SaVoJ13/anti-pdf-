@@ -95,6 +95,15 @@ class PlaceEditorTest {
     }
 
     @Test
+    fun `setText updates text and stores rawText`() {
+        var s = PlaceEditor.add(PlaceEditor.initial(emptyList()), text("t"))
+        s = PlaceEditor.setText(s, "t", "Рядок 1\nРядок 2", rawText = "Рядок 1 Рядок 2")
+        val item = s.items.first { it.id == "t" }
+        assertEquals("Рядок 1\nРядок 2", item.text)
+        assertEquals("Рядок 1 Рядок 2", item.rawText)
+    }
+
+    @Test
     fun `toggle mark kind flips check and cross, ignores text`() {
         var s = PlaceEditor.add(PlaceEditor.add(PlaceEditor.initial(emptyList()), check("m")), text("t"))
         s = PlaceEditor.toggleMarkKind(s, "m")
