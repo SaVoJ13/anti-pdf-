@@ -116,6 +116,77 @@ object PlaceEditor {
             item.copy(sizePt = clamped)
         }
 
+    fun setSizeAndPosition(s: PlaceEditorState, id: String, sizePt: Float, x: Float, y: Float, page: PageSizePt? = null): PlaceEditorState =
+        update(s, id, key = "sizePos:$id") { item ->
+            val clampedSize = PlaceMarkupLogic.clampSize(item.tool, sizePt, x, y, item.aspect, page)
+            val clampedHeight = clampedSize * item.aspect
+            val newX = if (page != null) {
+                x.coerceIn(0f, (page.widthPt - clampedSize).coerceAtLeast(0f))
+            } else x.coerceAtLeast(0f)
+            val newY = if (page != null) {
+                y.coerceIn(0f, (page.heightPt - clampedHeight).coerceAtLeast(0f))
+            } else y.coerceAtLeast(0f)
+            item.copy(sizePt = clampedSize, x = newX, y = newY)
+        }
+
+    /**
+     * Повертає зображення на [deltaDeg] градусів (+90 або -90) з нормалізацією кута 0..270.
+     * При повороті на 90°/270° пропорції інвертуються (aspect = 1/aspect), розмір та положення підлаштовуються,
+     * зберігаючи центр об'єкта та залишаючись строго в межах сторінки [page].
+     */
+    fun rotate(s: PlaceEditorState, id: String, deltaDeg: Int, page: PageSizePt? = null): PlaceEditorState =
+        update(s, id, key = null) { item ->
+            if (item.tool != PlaceTool.IMAGE) return@update item
+            val rawAngle = (item.rotationDeg + deltaDeg) % 360
+            val newRot = if (rawAngle < 0) rawAngle + 360 else rawAngle
+            val isOrthogonal = Math.abs(deltaDeg) % 180 != 0
+            val newAspect = if (isOrthogonal && item.aspect > 0f) 1f / item.aspect else item.aspect
+            val cx = item.x + item.sizePt / 2f
+            val cy = item.y + (item.sizePt * item.aspect) / 2f
+
+            val candWidth = if (isOrthogonal) item.sizePt * item.aspect else item.sizePt
+            val clampedWidth = PlaceMarkupLogic.clampSize(item.tool, candWidth, 0f, 0f, newAspect, page)
+            val clampedHeight = clampedWidth * newAspect
+
+            val newX = if (page != null) {
+                val maxX = (page.widthPt - clampedWidth).coerceAtLeast(0f)
+                (cx - clampedWidth / 2f).coerceIn(0f, maxX)
+            } else {
+                (cx - clampedWidth / 2f).coerceAtLeast(0f)
+            }
+
+            val newY = if (page != null) {
+                val maxY = (page.heightPt - clampedHeight).coerceAtLeast(0f)
+                (cy - clampedHeight / 2f).coerceIn(0f, maxY)
+            } else {
+                (cy - clampedHeight / 2f).coerceAtLeast(0f)
+            }
+
+            item.copy(
+                rotationDeg = newRot,
+                aspect = newAspect,
+                sizePt = clampedWidth,
+                x = newX,
+                y = newY
+            )
+        }
+
+    /** Розміщує зображення на всю сторінку, зберігаючи пропорції та центруючи. */
+    fun fitToPage(s: PlaceEditorState, id: String, page: PageSizePt): PlaceEditorState =
+        update(s, id, key = null) { item ->
+            if (item.tool != PlaceTool.IMAGE) return@update item
+            val width = if (item.aspect > 0f) {
+                minOf(page.widthPt, page.heightPt / item.aspect)
+            } else {
+                page.widthPt
+            }
+            val clampedWidth = PlaceMarkupLogic.clampSize(item.tool, width, 0f, 0f, item.aspect, page)
+            val clampedHeight = clampedWidth * item.aspect
+            val newX = ((page.widthPt - clampedWidth) / 2f).coerceAtLeast(0f)
+            val newY = ((page.heightPt - clampedHeight) / 2f).coerceAtLeast(0f)
+            item.copy(sizePt = clampedWidth, x = newX, y = newY)
+        }
+
     fun setColor(s: PlaceEditorState, id: String, color: Int): PlaceEditorState =
         update(s, id, key = "color:$id") { it.copy(color = PlaceMarkupLogic.recolor(it, color)) }
 

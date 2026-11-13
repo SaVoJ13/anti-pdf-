@@ -284,4 +284,13 @@
     <string name="dialog_clear_history_message">Список недавних документов будет очищен. Сами PDF-файлы на вашем устройстве останутся без изменений.</string>
     <string name="dialog_clear_history_keep_favorites">Сохранить избранные документы</string>
     <string name="history_cleared_message">История открытия очищена</string>
+
+    <!-- Поворот и размещение изображений -->
+    <string name="action_rotate_clockwise">Повернуть по часовой</string>
+    <string name="action_rotate_counterclockwise">Повернуть против часовой</string>
+    <string name="action_rotate_left_short">−90°</string>
+    <string name="action_rotate_right_short">+90°</string>
+    <string name="action_fit_page">Во всю страницу</string>
+    <string name="place_drag_outside_snapped_back">Изображение возвращено в границы страницы</string>
+    <string name="image_rotation_angle">%1$d°</string>
 </resources>

@@ -284,4 +284,13 @@
     <string name="dialog_clear_history_message">Die Liste der zuletzt geöffneten Dokumente wird gelöscht. Ihre PDF-Dateien auf dem Gerät bleiben unverändert.</string>
     <string name="dialog_clear_history_keep_favorites">Favoriten behalten</string>
     <string name="history_cleared_message">Öffnungsverlauf gelöscht</string>
+
+    <!-- Bilddrehung und Anpassung -->
+    <string name="action_rotate_clockwise">Im Uhrzeigersinn drehen</string>
+    <string name="action_rotate_counterclockwise">Gegen den Uhrzeigersinn drehen</string>
+    <string name="action_rotate_left_short">−90°</string>
+    <string name="action_rotate_right_short">+90°</string>
+    <string name="action_fit_page">An Seite anpassen</string>
+    <string name="place_drag_outside_snapped_back">Bild in den Seitenbereich zurückgesetzt</string>
+    <string name="image_rotation_angle">%1$d°</string>
 </resources>

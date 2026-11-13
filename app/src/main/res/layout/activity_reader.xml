@@ -135,50 +135,101 @@
                 android:orientation="vertical"
                 android:padding="8dp">
 
-                <LinearLayout
+                <HorizontalScrollView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:scrollbars="none">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSelDelete"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:minWidth="48dp"
-                        android:minHeight="48dp"
-                        android:text="@string/place_delete"
-                        app:icon="@drawable/ic_delete" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSelEdit"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:minWidth="48dp"
-                        android:minHeight="48dp"
-                        android:text="@string/place_edit_text"
-                        app:icon="@drawable/ic_edit" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSelDelete"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:text="@string/place_delete"
+                            app:icon="@drawable/ic_delete" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSelMovePage"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:minWidth="48dp"
-                        android:minHeight="48dp"
-                        android:text="@string/place_move_to_page"
-                        app:icon="@drawable/ic_move_to_page" />
-                </LinearLayout>
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSelEdit"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:text="@string/place_edit_text"
+                            app:icon="@drawable/ic_edit" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSelRotateLeft"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:contentDescription="@string/action_rotate_counterclockwise"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:text="@string/action_rotate_left_short"
+                            android:visibility="gone"
+                            app:icon="@drawable/ic_rotate_left" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSelRotateRight"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:contentDescription="@string/action_rotate_clockwise"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:text="@string/action_rotate_right_short"
+                            android:visibility="gone"
+                            app:icon="@drawable/ic_rotate_right" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSelFitPage"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:contentDescription="@string/action_fit_page"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:text="@string/action_fit_page"
+                            android:visibility="gone"
+                            app:icon="@drawable/ic_fit_page" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSelMovePage"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:text="@string/place_move_to_page"
+                            app:icon="@drawable/ic_move_to_page" />
+                    </LinearLayout>
+                </HorizontalScrollView>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -558,6 +609,61 @@
                                 android:value="120"
                                 android:valueFrom="30"
                                 android:valueTo="400" />
+                        </LinearLayout>
+
+                        <!-- Керування зображенням: поворот -90°, +90°, кут, на всю сторінку -->
+                        <LinearLayout
+                            android:id="@+id/placeImageBlock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnOptRotateLeft"
+                                style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:contentDescription="@string/action_rotate_counterclockwise"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:padding="0dp"
+                                app:icon="@drawable/ic_rotate_left" />
+
+                            <TextView
+                                android:id="@+id/tvImageRotationAngle"
+                                android:layout_width="56dp"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:text="0°"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnOptRotateRight"
+                                style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:contentDescription="@string/action_rotate_clockwise"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:padding="0dp"
+                                app:icon="@drawable/ic_rotate_right" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnOptFitPage"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="48dp"
+                                android:layout_marginStart="8dp"
+                                android:contentDescription="@string/action_fit_page"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingHorizontal="10dp"
+                                android:text="@string/action_fit_page"
+                                android:textSize="13sp"
+                                app:icon="@drawable/ic_fit_page" />
                         </LinearLayout>
                     </LinearLayout>
                 </HorizontalScrollView>

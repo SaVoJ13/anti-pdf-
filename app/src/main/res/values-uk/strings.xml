@@ -284,4 +284,13 @@
     <string name="dialog_clear_history_message">Список нещодавніх документів буде очищено. Самі PDF-файли на вашому пристрої залишаться без змін.</string>
     <string name="dialog_clear_history_keep_favorites">Зберегти обрані документи</string>
     <string name="history_cleared_message">Історію відкривання очищено</string>
+
+    <!-- Поворот та розміщення зображень -->
+    <string name="action_rotate_clockwise">Повернути за годинниковою</string>
+    <string name="action_rotate_counterclockwise">Повернути проти годинникової</string>
+    <string name="action_rotate_left_short">−90°</string>
+    <string name="action_rotate_right_short">+90°</string>
+    <string name="action_fit_page">На всю сторінку</string>
+    <string name="place_drag_outside_snapped_back">Зображення повернуто в межі сторінки</string>
+    <string name="image_rotation_angle">%1$d°</string>
 </resources>

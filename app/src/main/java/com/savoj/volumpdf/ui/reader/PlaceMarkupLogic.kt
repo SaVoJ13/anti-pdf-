@@ -41,7 +41,8 @@ data class PendingMarkup(
     val color: Int,
     val ink: InkPoints? = null,
     val aspect: Float = 0f,
-    val rawText: String? = null
+    val rawText: String? = null,
+    val rotationDeg: Int = 0
 )
 
 /** Підсумок перевірки введеного тексту (без створення об'єкта). */

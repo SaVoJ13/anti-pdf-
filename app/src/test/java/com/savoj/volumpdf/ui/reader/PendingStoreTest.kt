@@ -113,7 +113,7 @@ class PendingStoreTest {
     @Test
     fun codecRoundTripKeepsFormSectionOrderAndTypes() {
         val bytes = PendingCodec.encode("k", sample(), forms)
-        assertEquals(2, bytes[0].toInt())
+        assertEquals(3, bytes[0].toInt())
         val back = PendingCodec.decode(bytes)!!
         assertEquals(sample(), back.items)
         assertEquals(forms, back.forms)
@@ -131,6 +131,16 @@ class PendingStoreTest {
         val back = PendingCodec.decode(v1)!!
         assertEquals(sample(), back.items)
         assertTrue(back.forms.isEmpty())
+    }
+
+    @Test
+    fun oldVersion2FileIsReadWithoutRotation() {
+        val v2 = PendingCodec.encodeVersion(2, "k", sample(), forms)
+        assertEquals(2, v2[0].toInt())
+        val back = PendingCodec.decode(v2)!!
+        assertEquals(sample(), back.items)
+        assertEquals(forms, back.forms)
+        assertEquals(0, back.items.first().rotationDeg)
     }
 
     @Test

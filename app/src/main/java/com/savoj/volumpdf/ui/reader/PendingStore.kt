@@ -14,7 +14,8 @@ import java.security.MessageDigest
  * (кількість; для кожного: fullyQualifiedName, тип 0 = String / 1 = Boolean, значення). Версію 1 читаємо без форм.
  */
 object PendingCodec {
-    const val VERSION: Int = 2
+    const val VERSION: Int = 3
+    const val VERSION_V2: Int = 2
     const val VERSION_OBJECTS_ONLY: Int = 1
     private const val MAX_FORM_UPDATES = 100_000
     private const val TYPE_STRING = 0
@@ -50,6 +51,9 @@ object PendingCodec {
                     out.writeInt(xy.size)
                     for (v in xy) out.writeFloat(v)
                 }
+                if (version >= 3) {
+                    out.writeInt(p.rotationDeg)
+                }
             }
             if (version >= 2) {
                 out.writeInt(forms.size)
@@ -69,7 +73,7 @@ object PendingCodec {
     fun decode(data: ByteArray): Decoded? = try {
         DataInputStream(ByteArrayInputStream(data)).use { inp ->
             val version = inp.readUnsignedByte()
-            if (version != VERSION && version != VERSION_OBJECTS_ONLY) return null
+            if (version != VERSION && version != VERSION_V2 && version != VERSION_OBJECTS_ONLY) return null
             val key = readString(inp)
             val count = inp.readInt()
             if (count < 0 || count > MAX_ITEMS) return null
@@ -90,7 +94,8 @@ object PendingCodec {
                     n < 0 || n > MAX_FLOATS || n % 2 != 0 -> return null
                     else -> InkPoints(FloatArray(n) { inp.readFloat() })
                 }
-                items += PendingMarkup(id, tool, page, x, y, text, size, color, ink, aspect)
+                val rotationDeg = if (version >= 3) inp.readInt() else 0
+                items += PendingMarkup(id, tool, page, x, y, text, size, color, ink, aspect, null, rotationDeg)
             }
             val forms = ArrayList<FormFieldUpdate>()
             if (version >= 2) {

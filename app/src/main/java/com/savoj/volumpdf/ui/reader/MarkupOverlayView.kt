@@ -47,6 +47,15 @@ class MarkupOverlayView @JvmOverloads constructor(
         /** Зміна розміру об'єкта (зображення чи підпису) у pt. */
         fun onItemSizeChanged(id: String, newSizePt: Float) {}
 
+        /** Зміна розміру та положення об'єкта (наприклад, при масштабуванні щипком двома пальцями). */
+        fun onItemSizeAndPositionChanged(id: String, newSizePt: Float, x: Float, y: Float) {
+            onItemSizeChanged(id, newSizePt)
+            onItemMoved(id, x, y)
+        }
+
+        /** Зворотне повернення об'єкта в початкову позицію при відпусканні за межами дозволеної області сторінки. */
+        fun onItemDragSnappedBack(id: String) {}
+
         /**
          * Завершено штрих (від дотику до відпускання). [xy] — точки в просторі сторінки [pageIndex] (сторінка
          * першої точки), pt, плоский масив пар; відсікання надлишку й перевірку «на сторінці» робить виклик.
@@ -190,6 +199,32 @@ class MarkupOverlayView @JvmOverloads constructor(
     private var originalText = ""
     private var dragText: String? = null
     private var dragSizePt: Float? = null
+
+    /** Стан масштабування щипком двома пальцями. */
+    private var isPinching = false
+    private var pinchStartDist = 0f
+    private var pinchStartSizePt = 0f
+    private var pinchStartX = 0f
+    private var pinchStartY = 0f
+    private var pinchAspect = 0f
+
+    /** Прапорець перетягування за межі сторінки (для захисту від крашу та Snap-back). */
+    private var isOutsideAllowedBounds = false
+    private var startPageIndex = 0
+
+    private val pageSafeGuidePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f * density
+        color = 0x663949AB.toInt()
+        pathEffect = DashPathEffect(floatArrayOf(10f * density, 6f * density), 0f)
+    }
+    private val pageOutsideGuidePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2.5f * density
+        color = 0x99E53935.toInt()
+        pathEffect = DashPathEffect(floatArrayOf(8f * density, 5f * density), 0f)
+    }
+    private val safeBoundsRectF = RectF()
 
     private fun loadTypeface(): Typeface = try {
         Typeface.createFromAsset(context.assets, MarkupLayout.FONT_ASSET_PATH)
@@ -341,10 +376,12 @@ class MarkupOverlayView @JvmOverloads constructor(
                 downY = event.y
                 startX = item.x
                 startY = item.y
+                startPageIndex = item.pageIndex
                 startZoom = bridge?.zoom?.takeIf { it > 0f } ?: 1f
                 dragId = id
-                dragPageIndex = null
+                dragPageIndex = item.pageIndex
                 isDragBelowDocument = false
+                isOutsideAllowedBounds = false
                 dragX = item.x
                 dragY = item.y
                 parent?.requestDisallowInterceptTouchEvent(true)
@@ -354,6 +391,38 @@ class MarkupOverlayView @JvmOverloads constructor(
                 if (!gestureActive) return false
                 val idx = event.findPointerIndex(activePointerId)
                 if (idx < 0) return true
+                if (isPinching && event.pointerCount >= 2) {
+                    val targetId = dragId ?: selectedId
+                    val sel = targetId?.let { id -> items.firstOrNull { it.id == id } }
+                    if (sel != null) {
+                        val p0X = event.getX(0); val p0Y = event.getY(0)
+                        val p1X = event.getX(1); val p1Y = event.getY(1)
+                        val currentDist = Math.hypot((p1X - p0X).toDouble(), (p1Y - p0Y).toDouble()).toFloat()
+                        if (pinchStartDist > 10f) {
+                            val scale = currentDist / pinchStartDist
+                            val targetSizePt = pinchStartSizePt * scale
+                            val page = bridge?.pageSizePt(dragPageIndex ?: sel.pageIndex)
+                            val minS = PlaceMarkupLogic.sizeMin(sel.tool)
+                            val maxS = PlaceMarkupLogic.sizeMax(sel.tool)
+                            val maxW = if (page != null) page.widthPt else maxS
+                            val maxH = if (page != null && sel.aspect > 0f) page.heightPt / sel.aspect else maxS
+                            val clampedSize = targetSizePt.coerceIn(minS, minOf(maxS, maxW, maxH))
+
+                            val cx = pinchStartX + pinchStartSizePt / 2f
+                            val cy = pinchStartY + (pinchStartSizePt * sel.aspect) / 2f
+                            val maxX = if (page != null) (page.widthPt - clampedSize).coerceAtLeast(0f) else 1000f
+                            val maxY = if (page != null) (page.heightPt - clampedSize * sel.aspect).coerceAtLeast(0f) else 1000f
+                            val newX = (cx - clampedSize / 2f).coerceIn(0f, maxX)
+                            val newY = (cy - (clampedSize * sel.aspect) / 2f).coerceIn(0f, maxY)
+
+                            dragSizePt = clampedSize
+                            dragX = newX
+                            dragY = newY
+                            invalidate()
+                        }
+                    }
+                    return true
+                }
                 if (isResizing) {
                     val sel = items.firstOrNull { it.id == resizeId }
                     if (sel != null) {
@@ -427,15 +496,23 @@ class MarkupOverlayView @JvmOverloads constructor(
                             dragPageIndex = totalPages
                             dragX = 36f
                             dragY = 40f
+                            isOutsideAllowedBounds = false
                         } else {
-                            val targetPoint = b?.viewToPage(pdfX, pdfY)
-                            if (targetPoint != null) {
+                            val targetPoint = try {
+                                b?.viewToPage(pdfX, pdfY)
+                            } catch (_: Throwable) {
+                                null
+                            }
+                            if (targetPoint != null && targetPoint.pageIndex in 0 until totalPages) {
                                 dragPageIndex = targetPoint.pageIndex
-                                val targetPage = b.pageSizePt(targetPoint.pageIndex)
+                                val targetPage = b?.pageSizePt(targetPoint.pageIndex)
                                 val c = PlaceMarkupLogic.clampedAnchor(item.copy(pageIndex = targetPoint.pageIndex), targetPoint.x, targetPoint.y, targetPage)
                                 dragX = c.first
                                 dragY = c.second
+                                isOutsideAllowedBounds = false
                             } else {
+                                // Дотик за межами сторінки: фіксуємо вихід за поля для безпечного Snap-back
+                                isOutsideAllowedBounds = true
                                 val currPageIdx = dragPageIndex ?: item.pageIndex
                                 val page = b?.pageSizePt(currPageIdx)
                                 val c = PlaceMarkupLogic.clampedAnchor(item.copy(pageIndex = currPageIdx), startX + dx / startZoom, startY + dy / startZoom, page)
@@ -448,10 +525,42 @@ class MarkupOverlayView @JvmOverloads constructor(
                 }
                 return true
             }
-            MotionEvent.ACTION_POINTER_DOWN -> return gestureActive // другий палець ігноруємо
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                if (gestureActive && event.pointerCount >= 2) {
+                    val targetId = dragId ?: selectedId
+                    val sel = targetId?.let { id -> items.firstOrNull { it.id == id } }
+                    if (sel != null && (sel.tool == PlaceTool.IMAGE || sel.tool == PlaceTool.SIGNATURE)) {
+                        isPinching = true
+                        isResizing = false
+                        val p0X = event.getX(0); val p0Y = event.getY(0)
+                        val p1X = event.getX(1); val p1Y = event.getY(1)
+                        pinchStartDist = Math.hypot((p1X - p0X).toDouble(), (p1Y - p0Y).toDouble()).toFloat().coerceAtLeast(10f)
+                        pinchStartSizePt = dragSizePt ?: sel.sizePt
+                        pinchStartX = dragX
+                        pinchStartY = dragY
+                        pinchAspect = sel.aspect
+                        parent?.requestDisallowInterceptTouchEvent(true)
+                        return true
+                    }
+                }
+                return gestureActive
+            }
             MotionEvent.ACTION_POINTER_UP -> {
                 if (!gestureActive) return false
-                // Якщо підняли саме активний палець — завершуємо жест; решта пальців ігнорується до кінця.
+                if (isPinching) {
+                    isPinching = false
+                    val targetId = dragId ?: selectedId
+                    val sel = targetId?.let { id -> items.firstOrNull { it.id == id } }
+                    val finalSize = dragSizePt
+                    val finalX = dragX
+                    val finalY = dragY
+                    dragSizePt = null
+                    invalidate()
+                    if (sel != null && finalSize != null) {
+                        editListener?.onItemSizeAndPositionChanged(sel.id, finalSize, finalX, finalY)
+                    }
+                    return true
+                }
                 if (event.getPointerId(event.actionIndex) == activePointerId) {
                     if (isResizing) finishResize(commit = true) else finishGesture(commit = true)
                 }
@@ -459,7 +568,19 @@ class MarkupOverlayView @JvmOverloads constructor(
             }
             MotionEvent.ACTION_UP -> {
                 if (!gestureActive) return false
-                if (event.getPointerId(event.actionIndex) == activePointerId) {
+                if (isPinching) {
+                    isPinching = false
+                    val targetId = dragId ?: selectedId
+                    val sel = targetId?.let { id -> items.firstOrNull { it.id == id } }
+                    val finalSize = dragSizePt
+                    val finalX = dragX
+                    val finalY = dragY
+                    dragSizePt = null
+                    invalidate()
+                    if (sel != null && finalSize != null) {
+                        editListener?.onItemSizeAndPositionChanged(sel.id, finalSize, finalX, finalY)
+                    }
+                } else if (event.getPointerId(event.actionIndex) == activePointerId) {
                     if (isResizing) finishResize(commit = true) else finishGesture(commit = true)
                 }
                 endGesture()

@@ -50,6 +50,7 @@ import com.savoj.volumpdf.databinding.DialogDocumentPasswordBinding
 import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
+import com.savoj.volumpdf.util.ImageRotationHelper
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -551,6 +552,16 @@ class ReaderActivity : AppCompatActivity() {
                 viewModel.edit { PlaceEditor.setSize(it, id, newSizePt, page) }
             }
 
+            override fun onItemSizeAndPositionChanged(id: String, newSizePt: Float, x: Float, y: Float) {
+                val sel = viewModel.editor.value.items.firstOrNull { it.id == id } ?: return
+                val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
+                viewModel.edit { PlaceEditor.setSizeAndPosition(it, id, newSizePt, x, y, page) }
+            }
+
+            override fun onItemDragSnappedBack(id: String) {
+                showMessage(getString(R.string.place_drag_outside_snapped_back), long = false)
+            }
+
             override fun onInkDrawn(pageIndex: Int, xy: FloatArray) {
                 if (savingPlace || viewerFragment?.bridge?.isRestoring == true) return
                 val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
@@ -637,6 +648,12 @@ class ReaderActivity : AppCompatActivity() {
             viewModel.editor.value.selectedId?.let { id -> viewModel.edit { PlaceEditor.delete(it, id) } }
         }
         binding.btnSelEdit.setOnClickListener { editSelected() }
+        binding.btnSelRotateLeft.setOnClickListener { rotateSelectedImage(-90) }
+        binding.btnSelRotateRight.setOnClickListener { rotateSelectedImage(90) }
+        binding.btnSelFitPage.setOnClickListener { fitSelectedImageToPage() }
+        binding.btnOptRotateLeft.setOnClickListener { rotateSelectedImage(-90) }
+        binding.btnOptRotateRight.setOnClickListener { rotateSelectedImage(90) }
+        binding.btnOptFitPage.setOnClickListener { fitSelectedImageToPage() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -690,6 +707,11 @@ class ReaderActivity : AppCompatActivity() {
             binding.btnSelMovePage.visibility = View.VISIBLE
         }
 
+        val isImage = sel?.tool == PlaceTool.IMAGE
+        binding.btnSelRotateLeft.visibility = if (isImage) View.VISIBLE else View.GONE
+        binding.btnSelRotateRight.visibility = if (isImage) View.VISIBLE else View.GONE
+        binding.btnSelFitPage.visibility = if (isImage) View.VISIBLE else View.GONE
+
         // Параметри залежать від цілі: виділений об'єкт, інакше поточний інструмент.
         val target = sel?.tool ?: tool
         val hasColor = target == PlaceTool.CHECK || target == PlaceTool.CROSS || target == PlaceTool.TEXT || target == PlaceTool.INK
@@ -698,10 +720,15 @@ class ReaderActivity : AppCompatActivity() {
         binding.placeInkPresetGroup.visibility = if (target == PlaceTool.INK) View.VISIBLE else View.GONE
         val hasSignature = sel?.tool == PlaceTool.SIGNATURE || sel?.tool == PlaceTool.IMAGE
         binding.placeSignatureBlock.visibility = if (hasSignature) View.VISIBLE else View.GONE
-        binding.placeOptionsScroll.visibility = if (hasColor || hasSignature) View.VISIBLE else View.GONE
+        val hasImage = isImage
+        binding.placeImageBlock.visibility = if (hasImage) View.VISIBLE else View.GONE
+        binding.placeOptionsScroll.visibility = if (hasColor || hasSignature || hasImage) View.VISIBLE else View.GONE
 
         syncingPanel = true
         try {
+            if (hasImage && sel != null) {
+                binding.tvImageRotationAngle.text = getString(R.string.image_rotation_angle, sel.rotationDeg)
+            }
             val color = (sel?.color ?: viewModel.placeColor) or PlaceMarkupLogic.ALPHA_MASK
             colorButtons.entries.firstOrNull { it.value == color }?.key?.let { binding.placeColorGroup.check(it) }
             val preset = if (sel?.tool == PlaceTool.INK) presetOf(sel) else viewModel.inkPreset
@@ -1320,12 +1347,17 @@ class ReaderActivity : AppCompatActivity() {
         val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
         val pageWidth = page?.widthPt ?: 595.28f
         val pageHeight = page?.heightPt ?: 842f
-        val margin = 36f
-        val maxAvailableWidth = (pageWidth - margin * 2f).coerceAtLeast(100f)
         val aspect = bitmap.height.toFloat() / bitmap.width.toFloat()
-        val width = minOf(maxAvailableWidth, PlaceMarkupLogic.DEFAULT_IMAGE_WIDTH_PT, if (aspect > 0f) (pageHeight - margin * 2f) / aspect else 1000f)
-        val x = ((pageWidth - width) / 2f).coerceAtLeast(0f)
-        val y = margin
+        // За замовчуванням розміщувати зображення на всю сторінку, зберігаючи пропорції
+        val fitWidth = if (aspect > 0f) {
+            minOf(pageWidth, pageHeight / aspect)
+        } else {
+            pageWidth
+        }
+        val clampedWidth = PlaceMarkupLogic.clampSize(PlaceTool.IMAGE, fitWidth, 0f, 0f, aspect, page)
+        val clampedHeight = clampedWidth * aspect
+        val x = ((pageWidth - clampedWidth) / 2f).coerceAtLeast(0f)
+        val y = ((pageHeight - clampedHeight) / 2f).coerceAtLeast(0f)
 
         val itemId = UUID.randomUUID().toString()
         val item = PendingMarkup(
@@ -1335,10 +1367,12 @@ class ReaderActivity : AppCompatActivity() {
             x = x,
             y = y,
             text = "",
-            sizePt = width,
+            sizePt = clampedWidth,
             color = 0,
-            aspect = aspect
+            aspect = aspect,
+            rotationDeg = 0
         )
+        viewModel.originalBitmaps[itemId] = bitmap
         viewModel.signatureBitmaps[itemId] = bitmap
         viewModel.addPending(item)
         if (!viewModel.placeModeActive) {
@@ -1347,6 +1381,24 @@ class ReaderActivity : AppCompatActivity() {
         viewModel.placeTool = PlaceTool.HAND
         viewModel.edit { PlaceEditor.select(it, itemId) }
         renderEditor(viewModel.editor.value)
+    }
+
+    private fun rotateSelectedImage(deltaDeg: Int) {
+        val sel = viewModel.editor.value.selected ?: return
+        if (sel.tool != PlaceTool.IMAGE) return
+        val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex) ?: return
+        val original = viewModel.originalBitmaps[sel.id] ?: viewModel.signatureBitmaps[sel.id] ?: return
+        val nextDeg = ImageRotationHelper.normalize(sel.rotationDeg + deltaDeg)
+        val rotatedBmp = ImageRotationHelper.rotate(original, nextDeg)
+        viewModel.signatureBitmaps[sel.id] = rotatedBmp
+        viewModel.edit { PlaceEditor.rotate(it, sel.id, deltaDeg, page) }
+    }
+
+    private fun fitSelectedImageToPage() {
+        val sel = viewModel.editor.value.selected ?: return
+        if (sel.tool != PlaceTool.IMAGE) return
+        val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex) ?: return
+        viewModel.edit { PlaceEditor.fitToPage(it, sel.id, page) }
     }
 
     private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {

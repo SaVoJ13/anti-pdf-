@@ -418,7 +418,7 @@ class PlaceEditorTest {
 
     @Test
     fun `image pending markup round trips through PendingCodec`() {
-        val item = PendingMarkup("img1", PlaceTool.IMAGE, 1, 45f, 90f, "", 220f, 0, aspect = 1.33f)
+        val item = PendingMarkup("img1", PlaceTool.IMAGE, 1, 45f, 90f, "", 220f, 0, aspect = 1.33f, rotationDeg = 90)
         val encoded = PendingCodec.encode("docKey", listOf(item))
         val decoded = PendingCodec.decode(encoded)!!.items.single()
 
@@ -429,5 +429,99 @@ class PlaceEditorTest {
         assertEquals(item.y, decoded.y, 0.001f)
         assertEquals(item.sizePt, decoded.sizePt, 0.001f)
         assertEquals(item.aspect, decoded.aspect, 0.001f)
+        assertEquals(90, decoded.rotationDeg)
+    }
+
+    @Test
+    fun `image rotation cycles through 90, 180, 270, 0 degrees and inverts aspect correctly`() {
+        // Page 600x800. Initial image: width = 200, aspect = 0.5 (height = 100), x = 100, y = 100.
+        // Center: cx = 100 + 100 = 200, cy = 100 + 50 = 150.
+        val item = PendingMarkup("img1", PlaceTool.IMAGE, 0, 100f, 100f, "", 200f, 0, aspect = 0.5f, rotationDeg = 0)
+        var s = PlaceEditor.add(PlaceEditor.initial(emptyList()), item)
+
+        // +90° rotation
+        s = PlaceEditor.rotate(s, "img1", 90, page)
+        var cur = s.items.single()
+        assertEquals(90, cur.rotationDeg)
+        assertEquals(2.0f, cur.aspect, 0.001f)
+        assertEquals(100f, cur.sizePt, 0.001f) // new width is old height (100)
+        // Center cx = 200, cy = 150 -> x = 200 - 50 = 150, y = 150 - 100 = 50
+        assertEquals(150f, cur.x, 0.001f)
+        assertEquals(50f, cur.y, 0.001f)
+
+        // +90° -> 180°
+        s = PlaceEditor.rotate(s, "img1", 90, page)
+        cur = s.items.single()
+        assertEquals(180, cur.rotationDeg)
+        assertEquals(0.5f, cur.aspect, 0.001f)
+        assertEquals(200f, cur.sizePt, 0.001f)
+
+        // +90° -> 270°
+        s = PlaceEditor.rotate(s, "img1", 90, page)
+        cur = s.items.single()
+        assertEquals(270, cur.rotationDeg)
+        assertEquals(2.0f, cur.aspect, 0.001f)
+
+        // +90° -> 360°/0°
+        s = PlaceEditor.rotate(s, "img1", 90, page)
+        cur = s.items.single()
+        assertEquals(0, cur.rotationDeg)
+        assertEquals(0.5f, cur.aspect, 0.001f)
+
+        // -90° from 0° -> 270°
+        s = PlaceEditor.rotate(s, "img1", -90, page)
+        cur = s.items.single()
+        assertEquals(270, cur.rotationDeg)
+
+        // Undo returns to 0°
+        s = PlaceEditor.undo(s)
+        assertEquals(0, s.items.single().rotationDeg)
+    }
+
+    @Test
+    fun `fitToPage expands image to fill page preserving aspect ratio and centers it`() {
+        // Page 600x800. Image aspect = 2.0 (height is 2x width).
+        // Max height is 800 -> max width is 400.
+        val item = PendingMarkup("img1", PlaceTool.IMAGE, 0, 10f, 10f, "", 100f, 0, aspect = 2.0f)
+        var s = PlaceEditor.add(PlaceEditor.initial(emptyList()), item)
+
+        s = PlaceEditor.fitToPage(s, "img1", page)
+        val fitted = s.items.single()
+        assertEquals(400f, fitted.sizePt, 0.001f)
+        assertEquals(800f, fitted.sizePt * fitted.aspect, 0.001f)
+        assertEquals(100f, fitted.x, 0.001f) // (600 - 400) / 2 = 100
+        assertEquals(0f, fitted.y, 0.001f)   // (800 - 800) / 2 = 0
+    }
+
+    @Test
+    fun `setSizeAndPosition updates both size and position and clamps within page bounds`() {
+        val item = PendingMarkup("img1", PlaceTool.IMAGE, 0, 50f, 50f, "", 100f, 0, aspect = 1.0f)
+        var s = PlaceEditor.add(PlaceEditor.initial(emptyList()), item)
+
+        // Valid update inside page
+        s = PlaceEditor.setSizeAndPosition(s, "img1", 200f, 150f, 150f, page)
+        var cur = s.items.single()
+        assertEquals(200f, cur.sizePt, 0.001f)
+        assertEquals(150f, cur.x, 0.001f)
+        assertEquals(150f, cur.y, 0.001f)
+
+        // Out of bounds attempt: x=500 with width=200 on 600-wide page -> x clamped to 400
+        s = PlaceEditor.setSizeAndPosition(s, "img1", 200f, 500f, 700f, page)
+        cur = s.items.single()
+        assertEquals(400f, cur.x, 0.001f)
+        assertEquals(600f, cur.y, 0.001f) // 800 - 200 = 600
+    }
+
+    @Test
+    fun `ImageRotationHelper normalize handles positive negative and overflow angles`() {
+        assertEquals(0, com.savoj.volumpdf.util.ImageRotationHelper.normalize(0))
+        assertEquals(90, com.savoj.volumpdf.util.ImageRotationHelper.normalize(90))
+        assertEquals(180, com.savoj.volumpdf.util.ImageRotationHelper.normalize(180))
+        assertEquals(270, com.savoj.volumpdf.util.ImageRotationHelper.normalize(270))
+        assertEquals(0, com.savoj.volumpdf.util.ImageRotationHelper.normalize(360))
+        assertEquals(270, com.savoj.volumpdf.util.ImageRotationHelper.normalize(-90))
+        assertEquals(180, com.savoj.volumpdf.util.ImageRotationHelper.normalize(-180))
+        assertEquals(90, com.savoj.volumpdf.util.ImageRotationHelper.normalize(-270))
+        assertEquals(90, com.savoj.volumpdf.util.ImageRotationHelper.normalize(450))
     }
 }

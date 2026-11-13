@@ -284,4 +284,13 @@
     <string name="dialog_clear_history_message">The list of recently opened documents will be cleared. Your PDF files on this device will not be deleted.</string>
     <string name="dialog_clear_history_keep_favorites">Keep favorite documents</string>
     <string name="history_cleared_message">Opening history cleared</string>
+
+    <!-- Image Rotation and Fit -->
+    <string name="action_rotate_clockwise">Rotate clockwise</string>
+    <string name="action_rotate_counterclockwise">Rotate counter-clockwise</string>
+    <string name="action_rotate_left_short">−90°</string>
+    <string name="action_rotate_right_short">+90°</string>
+    <string name="action_fit_page">Fit to page</string>
+    <string name="place_drag_outside_snapped_back">Image returned to safe page bounds</string>
+    <string name="image_rotation_angle">%1$d°</string>
 </resources>

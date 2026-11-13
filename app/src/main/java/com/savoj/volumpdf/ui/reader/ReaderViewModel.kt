@@ -244,13 +244,16 @@ class ReaderViewModel(
                 val loaded = state?.items ?: emptyList()
                 restoredForms = state?.forms ?: emptyList()
                 for (p in loaded) {
-                    if (p.tool != PlaceTool.SIGNATURE) continue
+                    if (p.tool != PlaceTool.SIGNATURE && p.tool != PlaceTool.IMAGE) continue
                     val f = store.imageFile(key, p.id)
                     val bmp = try { android.graphics.BitmapFactory.decodeFile(f.path) } catch (_: Throwable) { null }
-                    if (bmp != null) signatureBitmaps[p.id] = bmp
+                    if (bmp != null) {
+                        signatureBitmaps[p.id] = bmp
+                        originalBitmaps[p.id] = bmp
+                    }
                 }
-                // Підпис без картинки показати й зберегти не вдасться — такий об'єкт відкидаємо.
-                loaded.filter { it.tool != PlaceTool.SIGNATURE || signatureBitmaps.containsKey(it.id) }
+                // Підпис чи зображення без картинки показати й зберегти не вдасться — такий об'єкт відкидаємо.
+                loaded.filter { (it.tool != PlaceTool.SIGNATURE && it.tool != PlaceTool.IMAGE) || signatureBitmaps.containsKey(it.id) }
             }
             if (_editor.value.items.isEmpty() && items.isNotEmpty()) _editor.value = PlaceEditor.initial(items)
             if (_formEdits.value.isEmpty() && restoredForms.isNotEmpty()) {
@@ -304,10 +307,14 @@ class ReaderViewModel(
     fun clearPending() {
         edit { PlaceEditor.reset() }
         signatureBitmaps.clear()
+        originalBitmaps.clear()
     }
 
-    /** Картинки підписів поставлених об'єктів за id (лише в пам'яті; на диск — окремо, див. сховище незбереженого). */
+    /** Картинки підписів та зображень поставлених об'єктів за id (актуальні з урахуванням повороту). */
     val signatureBitmaps = java.util.concurrent.ConcurrentHashMap<String, android.graphics.Bitmap>()
+
+    /** Оригінальні бітмапи зображень до повороту (для збереження якості при поворотах 90/180/270). */
+    val originalBitmaps = java.util.concurrent.ConcurrentHashMap<String, android.graphics.Bitmap>()
 
     /** Створений, але ще не поставлений підпис: наступний тап по сторінці ставить його (лише в пам'яті). */
     var armedSignature: android.graphics.Bitmap? = null
