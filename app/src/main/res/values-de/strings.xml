@@ -31,6 +31,11 @@
     <string name="action_delete_history">Aus Verlauf entfernen</string>
     <string name="action_share">Teilen</string>
     <string name="action_details">Details</string>
+    <string name="action_reading_theme">Lesethema</string>
+    <string name="reading_theme_title">Seitenanzeigethema</string>
+    <string name="reading_theme_day">Tag (Hell)</string>
+    <string name="reading_theme_night">Nacht (Dunkel)</string>
+    <string name="reading_theme_sepia">Sepia (Warm)</string>
     <string name="dialog_details_title">Dokumentinformationen</string>
     <string name="details_title">Titel: %1$s</string>
     <string name="details_pages">Seitenanzahl: %1$d</string>

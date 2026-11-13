@@ -31,6 +31,11 @@
     <string name="action_delete_history">Видалити з історії</string>
     <string name="action_share">Поділитися</string>
     <string name="action_details">Відомості</string>
+    <string name="action_reading_theme">Тема читання</string>
+    <string name="reading_theme_title">Тема відображення сторінок</string>
+    <string name="reading_theme_day">Денна (Світла)</string>
+    <string name="reading_theme_night">Нічна (Темна)</string>
+    <string name="reading_theme_sepia">Сепія (Тепла)</string>
     <string name="dialog_details_title">Інформація про документ</string>
     <string name="details_title">Назва: %1$s</string>
     <string name="details_pages">Всього сторінок: %1$d</string>
