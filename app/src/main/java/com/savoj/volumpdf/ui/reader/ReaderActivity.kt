@@ -1,8 +1,10 @@
 package com.savoj.volumpdf.ui.reader
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.util.Log
@@ -20,6 +22,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
@@ -29,7 +32,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import com.savoj.volumpdf.R
+import com.savoj.volumpdf.ui.scanner.DocumentScannerLogic
 import com.savoj.volumpdf.core.pdf.FormEngine
 import com.savoj.volumpdf.core.pdf.MarkupEngine
 import com.savoj.volumpdf.core.pdf.MarkupLayout
@@ -490,6 +496,7 @@ class ReaderActivity : AppCompatActivity() {
             PlaceTool.TEXT to R.id.btnToolText,
             PlaceTool.INK to R.id.btnToolInk,
             PlaceTool.SIGNATURE to R.id.btnToolSignature,
+            PlaceTool.IMAGE to R.id.btnToolImage,
             PlaceTool.HAND to R.id.btnToolHand
         )
     }
@@ -510,6 +517,7 @@ class ReaderActivity : AppCompatActivity() {
     private fun setupPlaceMode() {
         val fragment = viewerFragment
         binding.markupOverlay.bridge = fragment?.bridge
+        binding.markupOverlay.pageCountProvider = { loadedPageCount }
         binding.markupOverlay.editListener = object : MarkupOverlayView.EditListener {
             override fun onItemTapped(id: String) = viewModel.edit { PlaceEditor.select(it, id) }
 
@@ -517,6 +525,30 @@ class ReaderActivity : AppCompatActivity() {
                 val pageIndex = viewModel.editor.value.items.firstOrNull { it.id == id }?.pageIndex ?: return
                 val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
                 viewModel.edit { PlaceEditor.move(PlaceEditor.select(it, id), id, x, y, page) }
+            }
+
+            override fun onItemMoved(id: String, pageIndex: Int, x: Float, y: Float) {
+                val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
+                viewModel.edit { PlaceEditor.move(PlaceEditor.select(it, id), id, pageIndex, x, y, page) }
+            }
+
+            override fun onItemMovedBelowDocument(id: String, x: Float, y: Float) {
+                addNewBlankPage { success ->
+                    if (success) {
+                        val newPageIndex = (loadedPageCount - 1).coerceAtLeast(0)
+                        val page = viewerFragment?.bridge?.pageSizePt(newPageIndex)
+                        viewModel.edit {
+                            PlaceEditor.move(PlaceEditor.select(it, id), id, newPageIndex, x.coerceAtLeast(36f), 40f, page)
+                        }
+                        showMessage(getString(R.string.page_added_and_moved), long = false)
+                    }
+                }
+            }
+
+            override fun onItemSizeChanged(id: String, newSizePt: Float) {
+                val sel = viewModel.editor.value.items.firstOrNull { it.id == id } ?: return
+                val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
+                viewModel.edit { PlaceEditor.setSize(it, id, newSizePt, page) }
             }
 
             override fun onInkDrawn(pageIndex: Int, xy: FloatArray) {
@@ -553,10 +585,20 @@ class ReaderActivity : AppCompatActivity() {
         binding.btnToolSignature.setOnClickListener {
             if (viewModel.armedSignature == null) openSignatureDialog()
         }
+        binding.btnToolImage.setOnClickListener {
+            pickImageForReaderLauncher.launch(arrayOf("image/*"))
+        }
+        binding.btnSelMovePage.setOnClickListener {
+            val sel = viewModel.editor.value.selected ?: return@setOnClickListener
+            showMoveToPageDialog(sel)
+        }
         binding.placeSignatureSlider.addOnChangeListener { _, value, fromUser ->
             if (!fromUser || syncingPanel) return@addOnChangeListener
             val sel = viewModel.editor.value.selected ?: return@addOnChangeListener
-            if (sel.tool == PlaceTool.SIGNATURE) viewModel.edit { PlaceEditor.setSize(it, sel.id, value) }
+            if (sel.tool == PlaceTool.SIGNATURE || sel.tool == PlaceTool.IMAGE) {
+                val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
+                viewModel.edit { PlaceEditor.setSize(it, sel.id, value, page) }
+            }
         }
         binding.markupOverlay.signatureBitmaps = { id -> viewModel.signatureBitmaps[id] }
         binding.placeInkPresetGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -645,6 +687,7 @@ class ReaderActivity : AppCompatActivity() {
             }
             binding.btnSelEdit.visibility = if (editLabel == null) View.GONE else View.VISIBLE
             if (editLabel != null) binding.btnSelEdit.setText(editLabel)
+            binding.btnSelMovePage.visibility = View.VISIBLE
         }
 
         // Параметри залежать від цілі: виділений об'єкт, інакше поточний інструмент.
@@ -653,7 +696,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.placeColorGroup.visibility = if (hasColor) View.VISIBLE else View.GONE
         binding.placeSizeBlock.visibility = if (hasColor) View.VISIBLE else View.GONE
         binding.placeInkPresetGroup.visibility = if (target == PlaceTool.INK) View.VISIBLE else View.GONE
-        val hasSignature = sel?.tool == PlaceTool.SIGNATURE
+        val hasSignature = sel?.tool == PlaceTool.SIGNATURE || sel?.tool == PlaceTool.IMAGE
         binding.placeSignatureBlock.visibility = if (hasSignature) View.VISIBLE else View.GONE
         binding.placeOptionsScroll.visibility = if (hasColor || hasSignature) View.VISIBLE else View.GONE
 
@@ -670,10 +713,12 @@ class ReaderActivity : AppCompatActivity() {
                 null -> Unit
             }
             updateSizeLabel()
-            if (sel != null && sel.tool == PlaceTool.SIGNATURE) {
-                binding.placeSignatureSlider.value = sel.sizePt.coerceIn(
-                    PlaceMarkupLogic.MIN_SIGNATURE_WIDTH_PT, PlaceMarkupLogic.MAX_SIGNATURE_WIDTH_PT
-                )
+            if (sel != null && (sel.tool == PlaceTool.SIGNATURE || sel.tool == PlaceTool.IMAGE)) {
+                val minW = PlaceMarkupLogic.sizeMin(sel.tool)
+                val maxW = PlaceMarkupLogic.sizeMax(sel.tool)
+                binding.placeSignatureSlider.valueFrom = minW
+                binding.placeSignatureSlider.valueTo = maxW
+                binding.placeSignatureSlider.value = sel.sizePt.coerceIn(minW, maxW)
                 binding.tvSignatureWidth.text = getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(sel.sizePt))
             }
         } finally {
@@ -863,7 +908,7 @@ class ReaderActivity : AppCompatActivity() {
             )
             PlaceTool.TEXT -> showTextInputDialog(point)
             PlaceTool.SIGNATURE -> placeArmedSignature(point)
-            PlaceTool.INK, PlaceTool.HAND -> Unit // штрих малює оверлей; «рука» нічого не ставить
+            PlaceTool.INK, PlaceTool.HAND, PlaceTool.IMAGE -> Unit // штрих малює оверлей; «рука» нічого не ставить
         }
     }
 
@@ -1161,6 +1206,199 @@ class ReaderActivity : AppCompatActivity() {
         lifecycleScope.launch { runSave(out, copy = true, onSuccess = onSuccess ?: {}) }
     }
 
+    private val pickImageForReaderLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            SafUtils.takePersistableUriPermissionSafe(this, uri)
+            handleImagePickedForReader(uri)
+        }
+    }
+
+    private val scanDocumentForReaderLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val scanResult = GmsDocumentScanningResult.fromActivityResultIntent(result.data)
+            val pageUri = scanResult?.pages?.firstOrNull()?.imageUri ?: scanResult?.pdf?.uri
+            if (pageUri != null) {
+                handleScanResultForReader(pageUri)
+            }
+        }
+    }
+
+    private val scanFallbackForReaderLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            handleScanResultForReader(uri)
+        }
+    }
+
+    private fun startScanForReader() {
+        try {
+            val options = DocumentScannerLogic.buildScannerOptions(pageLimit = 1)
+            val scanner = GmsDocumentScanning.getClient(options)
+            scanner.getStartScanIntent(this)
+                .addOnSuccessListener { intentSender ->
+                    scanDocumentForReaderLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+                }
+                .addOnFailureListener {
+                    scanFallbackForReaderLauncher.launch("image/*")
+                }
+        } catch (_: Throwable) {
+            scanFallbackForReaderLauncher.launch("image/*")
+        }
+    }
+
+    private fun handleImagePickedForReader(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                showLoadingOverlay(getString(R.string.saving_annotations))
+                val bitmap = withContext(Dispatchers.IO) {
+                    contentResolver.openInputStream(uri)?.use { stream ->
+                        val bytes = stream.readBytes()
+                        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+                        val sampleSize = calculateInSampleSize(options, 2048, 2048)
+                        val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOpts)
+                    }
+                }
+                hideLoadingOverlay()
+                if (bitmap == null) {
+                    showError(getString(R.string.error_title))
+                    return@launch
+                }
+
+                val currPage = (viewerFragment?.currentPageIndex ?: 0).coerceIn(0, (loadedPageCount - 1).coerceAtLeast(0))
+                placeImageOnPage(bitmap, currPage)
+            } catch (e: Exception) {
+                hideLoadingOverlay()
+                showError(e.localizedMessage ?: getString(R.string.error_title))
+            }
+        }
+    }
+
+    private fun handleScanResultForReader(imageUri: Uri) {
+        lifecycleScope.launch {
+            try {
+                showLoadingOverlay(getString(R.string.scan_processing))
+                val bitmap = withContext(Dispatchers.IO) {
+                    contentResolver.openInputStream(imageUri)?.use { stream ->
+                        val bytes = stream.readBytes()
+                        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+                        val sampleSize = calculateInSampleSize(options, 2048, 2048)
+                        val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOpts)
+                    }
+                }
+                hideLoadingOverlay()
+                if (bitmap == null) {
+                    showError(getString(R.string.error_title))
+                    return@launch
+                }
+
+                // Додаємо нову чисту сторінку в документ і розміщуємо на ній скан
+                addNewBlankPage { success ->
+                    if (success) {
+                        val newPageIndex = (loadedPageCount - 1).coerceAtLeast(0)
+                        placeImageOnPage(bitmap, newPageIndex)
+                        viewerFragment?.bridge?.restorePage(newPageIndex)
+                        showMessage(getString(R.string.scan_added_to_new_page), long = false)
+                    }
+                }
+            } catch (e: Exception) {
+                hideLoadingOverlay()
+                showError(e.localizedMessage ?: getString(R.string.error_title))
+            }
+        }
+    }
+
+    private fun placeImageOnPage(bitmap: Bitmap, pageIndex: Int) {
+        val page = viewerFragment?.bridge?.pageSizePt(pageIndex)
+        val pageWidth = page?.widthPt ?: 595.28f
+        val pageHeight = page?.heightPt ?: 842f
+        val margin = 36f
+        val maxAvailableWidth = (pageWidth - margin * 2f).coerceAtLeast(100f)
+        val aspect = bitmap.height.toFloat() / bitmap.width.toFloat()
+        val width = minOf(maxAvailableWidth, PlaceMarkupLogic.DEFAULT_IMAGE_WIDTH_PT, if (aspect > 0f) (pageHeight - margin * 2f) / aspect else 1000f)
+        val x = ((pageWidth - width) / 2f).coerceAtLeast(0f)
+        val y = margin
+
+        val itemId = UUID.randomUUID().toString()
+        val item = PendingMarkup(
+            id = itemId,
+            tool = PlaceTool.IMAGE,
+            pageIndex = pageIndex,
+            x = x,
+            y = y,
+            text = "",
+            sizePt = width,
+            color = 0,
+            aspect = aspect
+        )
+        viewModel.signatureBitmaps[itemId] = bitmap
+        viewModel.addPending(item)
+        if (!viewModel.placeModeActive) {
+            enterPlaceMode()
+        }
+        viewModel.placeTool = PlaceTool.HAND
+        viewModel.edit { PlaceEditor.select(it, itemId) }
+        renderEditor(viewModel.editor.value)
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.outHeight to options.outWidth
+        var inSampleSize = 1
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
+    private fun showMoveToPageDialog(sel: PendingMarkup) {
+        val totalPages = loadedPageCount.coerceAtLeast(1)
+        val items = ArrayList<String>()
+        for (i in 0 until totalPages) {
+            val label = getString(R.string.page_number_item, i + 1)
+            val currentMark = if (i == sel.pageIndex) " (поточна)" else ""
+            items.add(label + currentMark)
+        }
+        items.add(getString(R.string.place_create_new_page_option))
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.place_move_to_page_title)
+            .setItems(items.toTypedArray()) { _, which ->
+                if (which < totalPages) {
+                    val targetPage = viewerFragment?.bridge?.pageSizePt(which)
+                    viewModel.edit {
+                        PlaceEditor.move(PlaceEditor.select(it, sel.id), sel.id, which, sel.x, sel.y, targetPage)
+                    }
+                    viewerFragment?.bridge?.restorePage(which)
+                } else {
+                    addNewBlankPage { success ->
+                        if (success) {
+                            val newPageIndex = (loadedPageCount - 1).coerceAtLeast(0)
+                            val targetPage = viewerFragment?.bridge?.pageSizePt(newPageIndex)
+                            viewModel.edit {
+                                PlaceEditor.move(PlaceEditor.select(it, sel.id), sel.id, newPageIndex, sel.x, sel.y, targetPage)
+                            }
+                            viewerFragment?.bridge?.restorePage(newPageIndex)
+                            showMessage(getString(R.string.page_added_and_moved), long = false)
+                        }
+                    }
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private val insertFilesLauncher = registerForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
     ) { uris: List<Uri> ->
@@ -1246,6 +1484,7 @@ class ReaderActivity : AppCompatActivity() {
             val uri = documentUri
             when (action) {
                 ReaderToolAction.ADD_PAGE -> addNewBlankPage()
+                ReaderToolAction.ADD_IMAGE -> pickImageForReaderLauncher.launch(arrayOf("image/*"))
                 ReaderToolAction.INSERT_FILE -> insertFilesLauncher.launch(arrayOf("application/pdf", "image/*"))
                 ReaderToolAction.ORGANIZE_PAGES -> {
                     if (uri != null) com.savoj.volumpdf.ui.organizer.PageOrganizerActivity.start(this, uri)
@@ -1271,9 +1510,7 @@ class ReaderActivity : AppCompatActivity() {
                 ReaderToolAction.MERGE -> {
                     if (uri != null) startActivity(com.savoj.volumpdf.ui.tools.ToolsActivity.createIntent(this, com.savoj.volumpdf.ui.tools.ToolType.MERGE, uri))
                 }
-                ReaderToolAction.SCAN -> {
-                    com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
-                }
+                ReaderToolAction.SCAN -> startScanForReader()
                 ReaderToolAction.PRINT -> printCurrentDocument()
                 ReaderToolAction.SHARE -> shareCurrentDocument()
                 ReaderToolAction.DETAILS -> showDetailsDialog()

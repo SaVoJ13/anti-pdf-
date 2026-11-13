@@ -165,6 +165,19 @@
                         android:minHeight="48dp"
                         android:text="@string/place_edit_text"
                         app:icon="@drawable/ic_edit" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSelMovePage"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="48dp"
+                        android:minHeight="48dp"
+                        android:text="@string/place_move_to_page"
+                        app:icon="@drawable/ic_move_to_page" />
                 </LinearLayout>
 
                 <TextView
@@ -297,6 +310,22 @@
                                 android:text="@string/place_tool_signature"
                                 android:textSize="13sp"
                                 app:icon="@drawable/ic_signature"
+                                app:iconPadding="6dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnToolImage"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:minHeight="48dp"
+                                android:contentDescription="@string/place_tool_image"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:maxLines="1"
+                                android:paddingHorizontal="12dp"
+                                android:text="@string/place_tool_image"
+                                android:textSize="13sp"
+                                app:icon="@drawable/ic_image"
                                 app:iconPadding="6dp" />
 
                             <com.google.android.material.button.MaterialButton

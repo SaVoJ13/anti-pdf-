@@ -15,6 +15,7 @@ import com.savoj.volumpdf.databinding.ItemToolCardBinding
 
 enum class ReaderToolAction {
     ADD_PAGE,
+    ADD_IMAGE,
     INSERT_FILE,
     ORGANIZE_PAGES,
     ROTATE,
@@ -50,6 +51,12 @@ class ReaderToolsBottomSheetDialogFragment : BottomSheetDialogFragment() {
             titleRes = R.string.tool_add_page,
             descRes = R.string.tool_add_page_desc,
             iconRes = R.drawable.ic_add_page
+        ),
+        ReaderToolDefinition(
+            action = ReaderToolAction.ADD_IMAGE,
+            titleRes = R.string.action_add_image,
+            descRes = R.string.tool_add_image_desc,
+            iconRes = R.drawable.ic_image
         ),
         ReaderToolDefinition(
             action = ReaderToolAction.INSERT_FILE,

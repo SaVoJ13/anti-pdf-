@@ -9,7 +9,7 @@ import com.savoj.volumpdf.core.pdf.model.PageMarkup
  * Інструмент режиму «Поставити». Об'єкти на сторінці бувають лише CHECK, CROSS, TEXT, INK (штрих) і SIGNATURE;
  * HAND — «рука»: не створює об'єктів, лише вмикає прокрутку й зум (оверлей не перехоплює дотик повз об'єкти).
  */
-enum class PlaceTool { CHECK, CROSS, TEXT, INK, SIGNATURE, HAND }
+enum class PlaceTool { CHECK, CROSS, TEXT, INK, SIGNATURE, HAND, IMAGE }
 
 /** Точки штриха: плоский масив x0,y0,x1,y1,… у pt (PageViewPoint сторінки штриха). Незмінний за домовленістю. */
 class InkPoints(val xy: FloatArray) {
@@ -83,6 +83,10 @@ object PlaceMarkupLogic {
     const val MIN_SIGNATURE_WIDTH_PT = 30f
     const val MAX_SIGNATURE_WIDTH_PT = 400f
 
+    const val DEFAULT_IMAGE_WIDTH_PT = 240f
+    const val MIN_IMAGE_WIDTH_PT = 30f
+    const val MAX_IMAGE_WIDTH_PT = 800f
+
     /** Точки штриха, ближчі за цю відстань (pt) до попередньої залишеної, відкидаються. */
     const val INK_MIN_POINT_DISTANCE_PT = 0.5f
 
@@ -99,26 +103,43 @@ object PlaceMarkupLogic {
         PlaceTool.TEXT -> DEFAULT_TEXT_SIZE_PT
         PlaceTool.INK -> DEFAULT_INK_WIDTH_PT
         PlaceTool.SIGNATURE -> DEFAULT_SIGNATURE_WIDTH_PT
+        PlaceTool.IMAGE -> DEFAULT_IMAGE_WIDTH_PT
         else -> DEFAULT_MARK_SIZE_PT
     }
 
-    private fun sizeMin(tool: PlaceTool): Float = when (tool) {
+    fun sizeMin(tool: PlaceTool): Float = when (tool) {
         PlaceTool.INK -> MIN_INK_WIDTH_PT
-        PlaceTool.SIGNATURE -> MIN_SIGNATURE_WIDTH_PT
+        PlaceTool.SIGNATURE, PlaceTool.IMAGE -> MIN_IMAGE_WIDTH_PT
         else -> MIN_SIZE_PT
     }
 
-    private fun sizeMax(tool: PlaceTool): Float = when (tool) {
+    fun sizeMax(tool: PlaceTool): Float = when (tool) {
         PlaceTool.TEXT -> MAX_TEXT_SIZE_PT
         PlaceTool.INK -> MAX_INK_WIDTH_PT
         PlaceTool.SIGNATURE -> MAX_SIGNATURE_WIDTH_PT
+        PlaceTool.IMAGE -> MAX_IMAGE_WIDTH_PT
         else -> MAX_MARK_SIZE_PT
     }
 
-    /** Розмір у межах діапазону інструмента (✓/✗ і текст 4–144, штрих 0,5–40, підпис 30–400 pt); NaN/∞ → за замовчуванням. */
-    fun clampSize(tool: PlaceTool, value: Float): Float {
+    /** Розмір у межах діапазону інструмента; за наявності page обмежується межами сторінки. */
+    fun clampSize(
+        tool: PlaceTool,
+        value: Float,
+        x: Float = 0f,
+        y: Float = 0f,
+        aspect: Float = 0f,
+        page: PageSizePt? = null
+    ): Float {
         if (value.isNaN() || value.isInfinite()) return defaultSize(tool)
-        return value.coerceIn(sizeMin(tool), sizeMax(tool))
+        var max = sizeMax(tool)
+        if (tool == PlaceTool.IMAGE && page != null) {
+            val maxWFromX = (page.widthPt - x).coerceAtLeast(sizeMin(tool))
+            val maxWFromY = if (aspect > 0f) {
+                ((page.heightPt - y) / aspect).coerceAtLeast(sizeMin(tool))
+            } else page.heightPt
+            max = minOf(max, maxWFromX, maxWFromY)
+        }
+        return value.coerceIn(sizeMin(tool), max)
     }
 
     /** Розмір для підпису в панелі: ціле без дробу, інакше один знак. */
@@ -473,9 +494,9 @@ object PlaceMarkupLogic {
             for (i in 0 until xy.size / 2) points += android.graphics.PointF().also { it.x = xy[i * 2]; it.y = xy[i * 2 + 1] }
             PageMarkup.Ink(p.id, p.pageIndex, listOf(InkStroke(points, p.color, p.sizePt)))
         }
-        PlaceTool.SIGNATURE -> {
+        PlaceTool.SIGNATURE, PlaceTool.IMAGE -> {
             val bitmap = signatureBitmap?.invoke(p.id)
-                ?: throw IllegalStateException("Немає картинки підпису для ${p.id}")
+                ?: throw IllegalStateException("Немає картинки підпису або зображення для ${p.id}")
             PageMarkup.Signature(p.id, p.pageIndex, bitmap, p.x, p.y, p.sizePt, p.sizePt * p.aspect)
         }
         PlaceTool.HAND -> throw IllegalArgumentException("«Рука» не створює об'єктів")
@@ -510,6 +531,29 @@ object PlaceMarkupLogic {
         return PendingMarkup(
             id, PlaceTool.SIGNATURE, pageIndex, cx, cy, "", clampSize(PlaceTool.SIGNATURE, widthPt), 0,
             aspect = bitmapHeight.toFloat() / bitmapWidth.toFloat()
+        )
+    }
+
+    /** Зображення: лівий верхній кут у точці тапу, ширина [widthPt], висота зберігає пропорції, обмежені сторінкою. */
+    fun imageFromTap(
+        id: String, pageIndex: Int, x: Float, y: Float, bitmapWidth: Int, bitmapHeight: Int,
+        widthPt: Float = DEFAULT_IMAGE_WIDTH_PT, page: PageSizePt? = null
+    ): PendingMarkup? {
+        if (bitmapWidth <= 0 || bitmapHeight <= 0) return null
+        val aspect = bitmapHeight.toFloat() / bitmapWidth.toFloat()
+        val clampedWidth = clampSize(PlaceTool.IMAGE, widthPt, x, y, aspect, page)
+        val (cx, cy) = if (page != null) {
+            val w = clampedWidth
+            val h = clampedWidth * aspect
+            val maxX = (page.widthPt - w).coerceAtLeast(0f)
+            val maxY = (page.heightPt - h).coerceAtLeast(0f)
+            Pair(x.coerceIn(0f, maxX), y.coerceIn(0f, maxY))
+        } else {
+            clampToPage(x, y, null)
+        }
+        return PendingMarkup(
+            id, PlaceTool.IMAGE, pageIndex, cx, cy, "", clampedWidth, 0,
+            aspect = aspect
         )
     }
 
@@ -551,6 +595,15 @@ object PlaceMarkupLogic {
             val maxLineW = lines.maxOfOrNull { measure(it) } ?: 0f
             val maxX = (page.widthPt - PAGE_EDGE_MARGIN_PT - maxLineW).coerceAtLeast(0f)
             return Pair(baseX.coerceIn(0f, maxX), baseY)
+        }
+        if (item.tool == PlaceTool.IMAGE && page != null) {
+            val w = item.sizePt
+            val h = item.sizePt * item.aspect
+            val maxX = (page.widthPt - w).coerceAtLeast(0f)
+            val maxY = (page.heightPt - h).coerceAtLeast(0f)
+            val sx = if (x.isNaN()) item.x else x
+            val sy = if (y.isNaN()) item.y else y
+            return Pair(sx.coerceIn(0f, maxX), sy.coerceIn(0f, maxY))
         }
         if (item.tool != PlaceTool.INK || item.ink == null) return clampToPage(x, y, page)
         val sx = if (x.isNaN()) item.x else x

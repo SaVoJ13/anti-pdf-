@@ -351,4 +351,83 @@ class PlaceEditorTest {
         assertEquals(TextVerdict.Unsupported("😀"), PlaceMarkupLogic.checkText("Ab😀", "😀"))
         assertEquals(TextVerdict.Ok, PlaceMarkupLogic.checkText("Привіт", ""))
     }
+
+    // --- інтерактивне розміщення зображення та перенесення між сторінками -------------------------------
+
+    @Test
+    fun `imageFromTap creates item with correct aspect ratio and clamped size`() {
+        val item = PlaceMarkupLogic.imageFromTap("img1", 0, 100f, 150f, 800, 600, 200f, page)
+        assertEquals("img1", item?.id)
+        assertEquals(PlaceTool.IMAGE, item?.tool)
+        assertEquals(0, item?.pageIndex)
+        assertEquals(100f, item?.x ?: 0f, 0.001f)
+        assertEquals(150f, item?.y ?: 0f, 0.001f)
+        assertEquals(200f, item?.sizePt ?: 0f, 0.001f)
+        assertEquals(0.75f, item?.aspect ?: 0f, 0.001f) // 600 / 800 = 0.75
+    }
+
+    @Test
+    fun `image move is clamped strictly inside page boundaries`() {
+        // page is 600x800. image is 200 wide x 150 high (aspect 0.75).
+        val item = PendingMarkup("img1", PlaceTool.IMAGE, 0, 50f, 50f, "", 200f, 0, aspect = 0.75f)
+        var s = PlaceEditor.add(PlaceEditor.initial(emptyList()), item)
+
+        // Спроба витягнути за правий та нижній край (x=500, y=750)
+        s = PlaceEditor.move(s, "img1", 500f, 750f, page)
+        val moved = s.items.single()
+        // maxX = 600 - 200 = 400; maxY = 800 - 150 = 650
+        assertEquals(400f, moved.x, 0.001f)
+        assertEquals(650f, moved.y, 0.001f)
+
+        // Спроба витягнути за лівий та верхній край (від'ємні координати)
+        s = PlaceEditor.move(s, "img1", -50f, -30f, page)
+        val movedNeg = s.items.single()
+        assertEquals(0f, movedNeg.x, 0.001f)
+        assertEquals(0f, movedNeg.y, 0.001f)
+    }
+
+    @Test
+    fun `image moving to another page updates pageIndex and records undo history`() {
+        val item = PendingMarkup("img1", PlaceTool.IMAGE, 0, 50f, 50f, "", 200f, 0, aspect = 0.75f)
+        var s = PlaceEditor.add(PlaceEditor.initial(emptyList()), item)
+        s = PlaceEditor.move(s, "img1", targetPageIndex = 3, x = 120f, y = 180f, page = page)
+
+        val updated = s.items.single()
+        assertEquals(3, updated.pageIndex)
+        assertEquals(120f, updated.x, 0.001f)
+        assertEquals(180f, updated.y, 0.001f)
+        assertEquals(2, s.history.size)
+
+        // Undo повертає об'єкт на попередню сторінку
+        s = PlaceEditor.undo(s)
+        assertEquals(0, s.items.single().pageIndex)
+        assertEquals(50f, s.items.single().x, 0.001f)
+    }
+
+    @Test
+    fun `image setSize respects page bounds and cannot exceed page dimensions`() {
+        // page is 600x800. Image is at (450, 100), aspect 1.0 (square).
+        // Remaining width from x=450 is 600 - 450 = 150 pt.
+        val item = PendingMarkup("img1", PlaceTool.IMAGE, 0, 450f, 100f, "", 100f, 0, aspect = 1.0f)
+        var s = PlaceEditor.add(PlaceEditor.initial(emptyList()), item)
+
+        // Спроба збільшити ширину до 300 pt при доступних 150 pt
+        s = PlaceEditor.setSize(s, "img1", 300f, page)
+        assertEquals(150f, s.items.single().sizePt, 0.001f)
+    }
+
+    @Test
+    fun `image pending markup round trips through PendingCodec`() {
+        val item = PendingMarkup("img1", PlaceTool.IMAGE, 1, 45f, 90f, "", 220f, 0, aspect = 1.33f)
+        val encoded = PendingCodec.encode("docKey", listOf(item))
+        val decoded = PendingCodec.decode(encoded)!!.items.single()
+
+        assertEquals(item.id, decoded.id)
+        assertEquals(item.tool, decoded.tool)
+        assertEquals(item.pageIndex, decoded.pageIndex)
+        assertEquals(item.x, decoded.x, 0.001f)
+        assertEquals(item.y, decoded.y, 0.001f)
+        assertEquals(item.sizePt, decoded.sizePt, 0.001f)
+        assertEquals(item.aspect, decoded.aspect, 0.001f)
+    }
 }

@@ -102,8 +102,19 @@ object PlaceEditor {
             PlaceMarkupLogic.withAnchor(item, cx, cy)
         }
 
-    fun setSize(s: PlaceEditorState, id: String, sizePt: Float): PlaceEditorState =
-        update(s, id, key = "size:$id") { it.copy(sizePt = PlaceMarkupLogic.clampSize(it.tool, sizePt)) }
+    /** Переносить об'єкт на іншу сторінку та нову опорну точку. */
+    fun move(s: PlaceEditorState, id: String, targetPageIndex: Int, x: Float, y: Float, page: PageSizePt?): PlaceEditorState =
+        update(s, id, key = null) { item ->
+            val updated = if (item.pageIndex != targetPageIndex) item.copy(pageIndex = targetPageIndex) else item
+            val (cx, cy) = PlaceMarkupLogic.clampedAnchor(updated, x, y, page)
+            PlaceMarkupLogic.withAnchor(updated, cx, cy)
+        }
+
+    fun setSize(s: PlaceEditorState, id: String, sizePt: Float, page: PageSizePt? = null): PlaceEditorState =
+        update(s, id, key = "size:$id") { item ->
+            val clamped = PlaceMarkupLogic.clampSize(item.tool, sizePt, item.x, item.y, item.aspect, page)
+            item.copy(sizePt = clamped)
+        }
 
     fun setColor(s: PlaceEditorState, id: String, color: Int): PlaceEditorState =
         update(s, id, key = "color:$id") { it.copy(color = PlaceMarkupLogic.recolor(it, color)) }
@@ -205,7 +216,7 @@ object PlaceBounds {
             }
             RectPx(l - half, t - half, r + half, b + half)
         }
-        PlaceTool.SIGNATURE ->
+        PlaceTool.SIGNATURE, PlaceTool.IMAGE ->
             RectPx(originX, originY, originX + item.sizePt * zoom, originY + item.sizePt * item.aspect * zoom)
         PlaceTool.HAND -> RectPx(originX, originY, originX, originY)
         PlaceTool.CHECK, PlaceTool.CROSS -> {

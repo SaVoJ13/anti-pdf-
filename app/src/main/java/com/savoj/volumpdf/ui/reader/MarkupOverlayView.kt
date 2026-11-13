@@ -13,6 +13,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import com.savoj.volumpdf.R
 import com.savoj.volumpdf.core.pdf.MarkupLayout
 
 /**
@@ -34,6 +35,17 @@ class MarkupOverlayView @JvmOverloads constructor(
 
         /** Перетягування завершено: нова опорна точка в pt (ще без кламп сторінки — їх робить редактор). */
         fun onItemMoved(id: String, x: Float, y: Float)
+
+        /** Перенесення об'єкта на іншу сторінку. */
+        fun onItemMoved(id: String, pageIndex: Int, x: Float, y: Float) {
+            onItemMoved(id, x, y)
+        }
+
+        /** Перенесення об'єкта нижче за існуючий документ (викликає додавання нової сторінки). */
+        fun onItemMovedBelowDocument(id: String, x: Float, y: Float) {}
+
+        /** Зміна розміру об'єкта (зображення чи підпису) у pt. */
+        fun onItemSizeChanged(id: String, newSizePt: Float) {}
 
         /**
          * Завершено штрих (від дотику до відпускання). [xy] — точки в просторі сторінки [pageIndex] (сторінка
@@ -89,6 +101,9 @@ class MarkupOverlayView @JvmOverloads constructor(
 
     /** Картинки підписів за id об'єкта. */
     var signatureBitmaps: ((String) -> Bitmap?)? = null
+
+    /** Постачальник загальної кількості сторінок у документі для перенесення об'єктів. */
+    var pageCountProvider: (() -> Int)? = null
 
     var editListener: EditListener? = null
 
@@ -150,12 +165,31 @@ class MarkupOverlayView @JvmOverloads constructor(
         color = 0x263949AB.toInt()
     }
 
-    /** Стан ресайзу вікна тексту за маркери ширини. */
+    private val belowPagePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f * density
+        color = FRAME_COLOR
+        pathEffect = DashPathEffect(floatArrayOf(8f * density, 6f * density), 0f)
+    }
+    private val belowPageFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = 0x1A3949AB.toInt()
+    }
+    private val belowPageTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = FRAME_COLOR
+        textSize = 14f * density
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+
+    /** Стан ресайзу вікна тексту або зображення/підпису за маркери. */
     private var isResizing = false
     private var resizeId: String? = null
     private var startWidthPt = 0f
     private var originalText = ""
     private var dragText: String? = null
+    private var dragSizePt: Float? = null
 
     private fun loadTypeface(): Typeface = try {
         Typeface.createFromAsset(context.assets, MarkupLayout.FONT_ASSET_PATH)
@@ -167,16 +201,19 @@ class MarkupOverlayView @JvmOverloads constructor(
 
     /** Нове положення під час перетягування (pt); null — не перетягуємо. */
     private var dragId: String? = null
+    private var dragPageIndex: Int? = null
     private var dragX = 0f
     private var dragY = 0f
+    private var isDragBelowDocument = false
 
     /** Опорна точка об'єкта в пікселях цього в'ю з урахуванням перетягування; null — сторінка ще не розкладена. */
     private fun originPx(item: PendingMarkup, offset: IntArray): Pair<Float, Float>? {
         val b = bridge ?: return null
         val useDrag = item.id == dragId && moved
+        val pIndex = if (useDrag && dragPageIndex != null) dragPageIndex!! else item.pageIndex
         val x = if (useDrag) dragX else item.x
         val y = if (useDrag) dragY else item.y
-        val p = b.pageToView(PageViewPoint(item.pageIndex, x, y)) ?: return null
+        val p = b.pageToView(PageViewPoint(pIndex, x, y)) ?: return null
         return Pair(p.x + offset[0], p.y + offset[1])
     }
 
@@ -257,6 +294,42 @@ class MarkupOverlayView @JvmOverloads constructor(
                         }
                     }
                 }
+                // Перевірка натискання на маркери розміру для зображення або підпису
+                if (sel != null && (sel.tool == PlaceTool.IMAGE || sel.tool == PlaceTool.SIGNATURE)) {
+                    val b = bridge
+                    val zoom = b?.zoom?.takeIf { it > 0f } ?: 1f
+                    val offset = b?.offsetTo(this)
+                    if (offset != null) {
+                        val o = originPx(sel, offset)
+                        if (o != null) {
+                            val r = PlaceBounds.boundsPx(sel, o.first, o.second, zoom, lineWidthPx(sel.sizePt, zoom))
+                            val pad = 6f * density
+                            val brX = r.right + pad
+                            val brY = r.bottom + pad
+                            val blX = r.left - pad
+                            val blY = r.bottom + pad
+                            val trX = r.right + pad
+                            val trY = r.top - pad
+                            val slop = 28f * density
+                            val hitBR = Math.hypot((event.x - brX).toDouble(), (event.y - brY).toDouble()) <= slop
+                            val hitBL = Math.hypot((event.x - blX).toDouble(), (event.y - blY).toDouble()) <= slop
+                            val hitTR = Math.hypot((event.x - trX).toDouble(), (event.y - trY).toDouble()) <= slop
+                            if (hitBR || hitBL || hitTR) {
+                                gestureActive = true
+                                isResizing = true
+                                resizeId = sel.id
+                                activePointerId = event.getPointerId(0)
+                                downX = event.x
+                                downY = event.y
+                                startZoom = zoom
+                                startWidthPt = sel.sizePt
+                                dragSizePt = sel.sizePt
+                                parent?.requestDisallowInterceptTouchEvent(true)
+                                return true
+                            }
+                        }
+                    }
+                }
 
                 val id = PlaceHitTest.hit(targetsNow(), event.x, event.y, PlaceHitTest.SLOP_DP * density)
                     ?: return false // повз об'єкти: жест іде у PdfView
@@ -270,6 +343,8 @@ class MarkupOverlayView @JvmOverloads constructor(
                 startY = item.y
                 startZoom = bridge?.zoom?.takeIf { it > 0f } ?: 1f
                 dragId = id
+                dragPageIndex = null
+                isDragBelowDocument = false
                 dragX = item.x
                 dragY = item.y
                 parent?.requestDisallowInterceptTouchEvent(true)
@@ -282,6 +357,21 @@ class MarkupOverlayView @JvmOverloads constructor(
                 if (isResizing) {
                     val sel = items.firstOrNull { it.id == resizeId }
                     if (sel != null) {
+                        if (sel.tool == PlaceTool.IMAGE || sel.tool == PlaceTool.SIGNATURE) {
+                            val dxPx = event.getX(idx) - downX
+                            val dxPt = dxPx / startZoom
+                            val page = bridge?.pageSizePt(sel.pageIndex)
+                            val minWidthPt = PlaceMarkupLogic.sizeMin(sel.tool)
+                            val maxWidthFromX = if (page != null) (page.widthPt - sel.x).coerceAtLeast(minWidthPt) else 1000f
+                            val maxWidthFromY = if (page != null && sel.aspect > 0f) {
+                                ((page.heightPt - sel.y) / sel.aspect).coerceAtLeast(minWidthPt)
+                            } else 1000f
+                            val maxAllowedWidthPt = minOf(maxWidthFromX, maxWidthFromY, PlaceMarkupLogic.sizeMax(sel.tool))
+                            val targetWidthPt = (startWidthPt + dxPt).coerceIn(minWidthPt, maxAllowedWidthPt)
+                            dragSizePt = targetWidthPt
+                            invalidate()
+                            return true
+                        }
                         val dxPx = event.getX(idx) - downX
                         val dxPt = dxPx / startZoom
                         val page = bridge?.pageSizePt(sel.pageIndex)
@@ -311,10 +401,48 @@ class MarkupOverlayView @JvmOverloads constructor(
                 if (moved) {
                     val item = items.firstOrNull { it.id == dragId }
                     if (item != null) {
-                        val page = bridge?.pageSizePt(item.pageIndex)
-                        val c = PlaceMarkupLogic.clampedAnchor(item, startX + dx / startZoom, startY + dy / startZoom, page)
-                        dragX = c.first
-                        dragY = c.second
+                        val b = bridge
+                        val offset = b?.offsetTo(this)
+                        val touchX = event.getX(idx)
+                        val touchY = event.getY(idx)
+                        val pdfX = touchX - (offset?.get(0) ?: 0)
+                        val pdfY = touchY - (offset?.get(1) ?: 0)
+                        val totalPages = pageCountProvider?.invoke() ?: 0
+
+                        var below = false
+                        if (totalPages > 0 && b != null) {
+                            val lastIdx = totalPages - 1
+                            val lastOrigin = b.pageToView(PageViewPoint(lastIdx, 0f, 0f))
+                            val lastSize = b.pageSizePt(lastIdx)
+                            if (lastOrigin != null && lastSize != null) {
+                                val lastBottomPx = lastOrigin.y + (offset?.get(1) ?: 0) + lastSize.heightPt * b.zoom
+                                if (touchY > lastBottomPx + 15f * density) {
+                                    below = true
+                                }
+                            }
+                        }
+                        isDragBelowDocument = below
+
+                        if (below) {
+                            dragPageIndex = totalPages
+                            dragX = 36f
+                            dragY = 40f
+                        } else {
+                            val targetPoint = b?.viewToPage(pdfX, pdfY)
+                            if (targetPoint != null) {
+                                dragPageIndex = targetPoint.pageIndex
+                                val targetPage = b.pageSizePt(targetPoint.pageIndex)
+                                val c = PlaceMarkupLogic.clampedAnchor(item.copy(pageIndex = targetPoint.pageIndex), targetPoint.x, targetPoint.y, targetPage)
+                                dragX = c.first
+                                dragY = c.second
+                            } else {
+                                val currPageIdx = dragPageIndex ?: item.pageIndex
+                                val page = b?.pageSizePt(currPageIdx)
+                                val c = PlaceMarkupLogic.clampedAnchor(item.copy(pageIndex = currPageIdx), startX + dx / startZoom, startY + dy / startZoom, page)
+                                dragX = c.first
+                                dragY = c.second
+                            }
+                        }
                     }
                     invalidate()
                 }
@@ -348,11 +476,24 @@ class MarkupOverlayView @JvmOverloads constructor(
 
     private fun finishResize(commit: Boolean) {
         val id = resizeId ?: return
+        val sel = items.firstOrNull { it.id == id }
+        if (sel != null && (sel.tool == PlaceTool.IMAGE || sel.tool == PlaceTool.SIGNATURE)) {
+            val sizeToCommit = dragSizePt
+            isResizing = false
+            resizeId = null
+            dragSizePt = null
+            invalidate()
+            if (commit && sizeToCommit != null) {
+                editListener?.onItemSizeChanged(id, sizeToCommit)
+            }
+            return
+        }
         val textToCommit = dragText
         val raw = originalText
         isResizing = false
         resizeId = null
         dragText = null
+        dragSizePt = null
         invalidate()
         if (commit && textToCommit != null) {
             editListener?.onItemTextChanged(id, textToCommit, raw)
@@ -364,11 +505,23 @@ class MarkupOverlayView @JvmOverloads constructor(
         val wasMoved = moved
         val x = dragX
         val y = dragY
+        val targetPage = dragPageIndex
+        val below = isDragBelowDocument
         dragId = null
+        dragPageIndex = null
+        isDragBelowDocument = false
         moved = false
         invalidate()
         if (!commit) return
-        if (wasMoved) editListener?.onItemMoved(id, x, y) else {
+        if (wasMoved) {
+            if (below) {
+                editListener?.onItemMovedBelowDocument(id, x, y)
+            } else if (targetPage != null) {
+                editListener?.onItemMoved(id, targetPage, x, y)
+            } else {
+                editListener?.onItemMoved(id, x, y)
+            }
+        } else {
             editListener?.onItemTapped(id)
             performClick()
         }
@@ -384,6 +537,9 @@ class MarkupOverlayView @JvmOverloads constructor(
         isResizing = false
         resizeId = null
         dragText = null
+        dragSizePt = null
+        dragPageIndex = null
+        isDragBelowDocument = false
         activePointerId = -1
         dragId = null
         moved = false
@@ -393,6 +549,9 @@ class MarkupOverlayView @JvmOverloads constructor(
         isResizing = false
         resizeId = null
         dragText = null
+        dragSizePt = null
+        dragPageIndex = null
+        isDragBelowDocument = false
         dragId = null
         moved = false
         gestureActive = false
@@ -507,8 +666,10 @@ class MarkupOverlayView @JvmOverloads constructor(
         val zoom = b.zoom
         for (item in list) {
             val o = originPx(item, offset) ?: continue
-            val activeItem = if (isResizing && item.id == resizeId && dragText != null) {
-                item.copy(text = dragText!!)
+            val activeItem = if (isResizing && item.id == resizeId) {
+                if (dragText != null) item.copy(text = dragText!!)
+                else if (dragSizePt != null) item.copy(sizePt = dragSizePt!!)
+                else item
             } else {
                 item
             }
@@ -516,15 +677,17 @@ class MarkupOverlayView @JvmOverloads constructor(
                 PlaceTool.CHECK, PlaceTool.CROSS -> drawMark(canvas, activeItem, o.first, o.second, zoom)
                 PlaceTool.TEXT -> drawText(canvas, activeItem, o.first, o.second, zoom)
                 PlaceTool.INK -> drawInk(canvas, activeItem, o.first, o.second, zoom)
-                PlaceTool.SIGNATURE -> drawSignature(canvas, activeItem, o.first, o.second, zoom)
+                PlaceTool.SIGNATURE, PlaceTool.IMAGE -> drawSignature(canvas, activeItem, o.first, o.second, zoom)
                 PlaceTool.HAND -> Unit
             }
         }
         if (live) drawLiveStroke(canvas, zoom)
         val sel = selectedId?.let { id -> list.firstOrNull { it.id == id } }
         if (sel != null) {
-            val activeSel = if (isResizing && sel.id == resizeId && dragText != null) {
-                sel.copy(text = dragText!!)
+            val activeSel = if (isResizing && sel.id == resizeId) {
+                if (dragText != null) sel.copy(text = dragText!!)
+                else if (dragSizePt != null) sel.copy(sizePt = dragSizePt!!)
+                else sel
             } else {
                 sel
             }
@@ -559,7 +722,38 @@ class MarkupOverlayView @JvmOverloads constructor(
                     canvas.drawCircle(cx, cy, cornerR, handlePaint)
                     canvas.drawCircle(cx, cy, cornerR, handleStrokePaint)
                 }
+
+                // Кутові маркери масштабування для зображення або підпису
+                if (activeSel.tool == PlaceTool.IMAGE || activeSel.tool == PlaceTool.SIGNATURE) {
+                    val cornerR = 5.5f * density
+                    val corners = arrayOf(
+                        Pair(rectF.right, rectF.bottom),
+                        Pair(rectF.left, rectF.bottom),
+                        Pair(rectF.right, rectF.top),
+                        Pair(rectF.left, rectF.top)
+                    )
+                    for (c in corners) {
+                        canvas.drawCircle(c.first, c.second, cornerR + 2f * density, handleHaloPaint)
+                        canvas.drawCircle(c.first, c.second, cornerR, handlePaint)
+                        canvas.drawCircle(c.first, c.second, cornerR, handleStrokePaint)
+                    }
+                }
             }
+        }
+        if (isDragBelowDocument) {
+            val boxW = 280f * density
+            val boxH = 52f * density
+            val cx = width / 2f
+            val cy = height - 60f * density
+            val rBox = RectF(cx - boxW / 2f, cy - boxH / 2f, cx + boxW / 2f, cy + boxH / 2f)
+            canvas.drawRoundRect(rBox, 16f * density, 16f * density, belowPageFillPaint)
+            canvas.drawRoundRect(rBox, 16f * density, 16f * density, belowPagePaint)
+            canvas.drawText(
+                context.getString(R.string.place_drag_to_new_page_hint),
+                cx,
+                cy + 5f * density,
+                belowPageTextPaint
+            )
         }
         // Перерахунок у кожному кадрі, поки є об'єкти (як у спайку, режим frame).
         postInvalidateOnAnimation()

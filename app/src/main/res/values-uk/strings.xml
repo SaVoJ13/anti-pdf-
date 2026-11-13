@@ -268,4 +268,14 @@
     <string name="action_print">Друк</string>
     <string name="page_added_successfully">Нову сторінку додано</string>
     <string name="files_added_successfully">Файли успішно додано</string>
+    <string name="place_tool_image">Зображення</string>
+    <string name="action_add_image">Додати зображення</string>
+    <string name="tool_add_image_desc">Вставити зображення з можливістю зміни розміру та положення</string>
+    <string name="place_move_to_page">На сторінку</string>
+    <string name="place_move_to_page_title">Перемістити на сторінку</string>
+    <string name="place_create_new_page_option">+ Створити нову сторінку в кінці</string>
+    <string name="place_drag_to_new_page_hint">+ Відпустіть, щоб створити нову сторінку</string>
+    <string name="scan_added_to_new_page">Скан додано на нову сторінку</string>
+    <string name="page_added_and_moved">Створено нову сторінку та переміщено об’єкт</string>
+    <string name="page_number_item">Сторінка %1$d</string>
 </resources>

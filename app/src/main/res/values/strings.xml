@@ -268,4 +268,14 @@
     <string name="action_print">Print</string>
     <string name="page_added_successfully">New page added</string>
     <string name="files_added_successfully">Files added successfully</string>
+    <string name="place_tool_image">Image</string>
+    <string name="action_add_image">Add image</string>
+    <string name="tool_add_image_desc">Insert image with resize and reposition capabilities</string>
+    <string name="place_move_to_page">To page</string>
+    <string name="place_move_to_page_title">Move to page</string>
+    <string name="place_create_new_page_option">+ Create new page at the end</string>
+    <string name="place_drag_to_new_page_hint">+ Release to create new page</string>
+    <string name="scan_added_to_new_page">Scan added to a new page</string>
+    <string name="page_added_and_moved">Created new page and moved object</string>
+    <string name="page_number_item">Page %1$d</string>
 </resources>

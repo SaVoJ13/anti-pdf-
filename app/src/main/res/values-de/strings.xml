@@ -268,4 +268,14 @@
     <string name="action_print">Drucken</string>
     <string name="page_added_successfully">Neue Seite hinzugefügt</string>
     <string name="files_added_successfully">Dateien erfolgreich hinzugefügt</string>
+    <string name="place_tool_image">Bild</string>
+    <string name="action_add_image">Bild hinzufügen</string>
+    <string name="tool_add_image_desc">Bild mit Größen- und Positionsanpassung einfügen</string>
+    <string name="place_move_to_page">Auf Seite</string>
+    <string name="place_move_to_page_title">Auf Seite verschieben</string>
+    <string name="place_create_new_page_option">+ Neue Seite am Ende erstellen</string>
+    <string name="place_drag_to_new_page_hint">+ Loslassen, um neue Seite zu erstellen</string>
+    <string name="scan_added_to_new_page">Scan auf neuer Seite hinzugefügt</string>
+    <string name="page_added_and_moved">Neue Seite erstellt und Objekt verschoben</string>
+    <string name="page_number_item">Seite %1$d</string>
 </resources>

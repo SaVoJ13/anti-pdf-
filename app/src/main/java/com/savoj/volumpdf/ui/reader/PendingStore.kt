@@ -162,7 +162,7 @@ class PendingStore(private val root: File) {
         dir.mkdirs()
         val wanted = HashSet<String>()
         for (p in items) {
-            if (p.tool != PlaceTool.SIGNATURE) continue
+            if (p.tool != PlaceTool.SIGNATURE && p.tool != PlaceTool.IMAGE) continue
             val f = imageFile(documentKey, p.id)
             wanted += f.name
             if (!f.exists()) {
