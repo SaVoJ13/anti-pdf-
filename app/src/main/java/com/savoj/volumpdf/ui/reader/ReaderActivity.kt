@@ -2,6 +2,8 @@ package com.savoj.volumpdf.ui.reader
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.util.Log
 import android.net.Uri
 import android.os.Bundle
@@ -589,7 +591,14 @@ class ReaderActivity : AppCompatActivity() {
         when (sel.tool) {
             PlaceTool.TEXT -> showTextDialog(
                 initial = sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply
-            ) { raw -> viewModel.edit { PlaceEditor.setText(it, sel.id, raw) } }
+            ) { raw ->
+                val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
+                val wrapped = PlaceMarkupLogic.wrapText(
+                    raw, sel.x, sel.sizePt, page,
+                    measureWidthPt = { line -> measureTextPt(line, sel.sizePt) }
+                )
+                viewModel.edit { PlaceEditor.setText(it, sel.id, wrapped) }
+            }
             PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.edit { PlaceEditor.toggleMarkKind(it, sel.id) }
             else -> Unit
         }
@@ -599,7 +608,19 @@ class ReaderActivity : AppCompatActivity() {
         val sel = viewModel.editor.value.selected
         if (sel != null) {
             val next = PlaceMarkupLogic.stepSize(sel.tool, sel.sizePt, direction)
-            viewModel.edit { PlaceEditor.setSize(it, sel.id, next) }
+            if (sel.tool == PlaceTool.TEXT) {
+                val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
+                val wrapped = PlaceMarkupLogic.wrapText(
+                    sel.text, sel.x, next, page,
+                    measureWidthPt = { line -> measureTextPt(line, next) }
+                )
+                viewModel.edit { s ->
+                    val s1 = PlaceEditor.setSize(s, sel.id, next)
+                    PlaceEditor.setText(s1, sel.id, wrapped)
+                }
+            } else {
+                viewModel.edit { PlaceEditor.setSize(it, sel.id, next) }
+            }
             return
         }
         val tool = viewModel.placeTool
@@ -763,12 +784,30 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showTextInputDialog(point: PageViewPoint) {
         showTextDialog(initial = "", titleRes = R.string.place_text_title, confirmRes = R.string.place_text_add) { raw ->
+            val page = viewerFragment?.bridge?.pageSizePt(point.pageIndex)
             val check = PlaceMarkupLogic.textFromTap(
                 UUID.randomUUID().toString(), point.pageIndex, point.x, point.y,
-                raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, safeUnsupported(raw) ?: ""
+                raw, viewModel.placeSize(PlaceTool.TEXT), viewModel.placeColor, safeUnsupported(raw) ?: "",
+                page = page,
+                measureWidthPt = { line -> measureTextPt(line, viewModel.placeSize(PlaceTool.TEXT)) }
             )
             if (check is TextCheck.Ok) viewModel.addPending(check.markup)
         }
+    }
+
+    private val textMeasurePaint by lazy {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = try {
+                Typeface.createFromAsset(assets, MarkupLayout.FONT_ASSET_PATH)
+            } catch (_: Throwable) {
+                Typeface.DEFAULT
+            }
+        }
+    }
+
+    private fun measureTextPt(text: String, fontSizePt: Float): Float {
+        textMeasurePaint.textSize = fontSizePt
+        return textMeasurePaint.measureText(text)
     }
 
     /** Непідтримувані символи; null — перевірку виконати не вдалося (шрифт недоступний). */

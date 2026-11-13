@@ -143,7 +143,96 @@ class PlaceMarkupLogicTest {
     }
 
     @Test
-    fun `long line is not wrapped`() {
+    fun `long line without newlines stays as one line in textLinesPx`() {
+        val lines = MarkupOverlayMath.textLinesPx("a".repeat(500), 0f, 0f, 14f, 1f)
+        assertEquals(1, lines.size)
+    }
+
+    @Test
+    fun `maxTextLineWidthPt computes symmetrical margins in left half of page`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val w50 = PlaceMarkupLogic.maxTextLineWidthPt(50f, page)
+        // 595.28 - 50 (left) - 50 (right) = 495.28
+        assertEquals(495.28f, w50, 0.01f)
+
+        val w72 = PlaceMarkupLogic.maxTextLineWidthPt(72f, page)
+        // 595.28 - 72 (left) - 72 (right) = 451.28
+        assertEquals(451.28f, w72, 0.01f)
+    }
+
+    @Test
+    fun `maxTextLineWidthPt computes standard margin in right half of page`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val w400 = PlaceMarkupLogic.maxTextLineWidthPt(400f, page)
+        // 595.28 - 400 (left) - 36 (standard right margin) = 159.28
+        assertEquals(159.28f, w400, 0.01f)
+    }
+
+    @Test
+    fun `wrapText keeps short text on single line`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val shortText = "Короткий текст"
+        val wrapped = PlaceMarkupLogic.wrapText(shortText, 50f, 14f, page)
+        assertEquals(shortText, wrapped)
+    }
+
+    @Test
+    fun `wrapText wraps long paragraph across multiple lines preserving margins`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val longText = "Під час редагування документів користувач часто вставляє великі фрагменти тексту, " +
+                "які мають акуратно переноситися на наступний рядок зі збереженням розміру полів сторінки без виходу за краї."
+        val wrapped = PlaceMarkupLogic.wrapText(longText, 50f, 14f, page)
+        val lines = wrapped.split('\n')
+        assertTrue("Довгий текст має бути розбитий на кілька рядків, отримано рядків: ${lines.size}", lines.size >= 2)
+        val maxWidth = PlaceMarkupLogic.maxTextLineWidthPt(50f, page)
+        for (line in lines) {
+            val w = PlaceMarkupLogic.estimateTextWidthPt(line, 14f)
+            assertTrue("Рядок «$line» (ширина $w pt) не повинен перевищувати $maxWidth pt", w <= maxWidth + 5f)
+        }
+    }
+
+    @Test
+    fun `wrapText preserves explicit paragraphs and empty lines`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val input = "Перший абзац тексту.\n\nДругий дуже довгий абзац тексту, який обов'язково має бути перенесений на кілька рядків нижче."
+        val wrapped = PlaceMarkupLogic.wrapText(input, 50f, 14f, page)
+        val paragraphs = wrapped.split("\n\n")
+        assertEquals(2, paragraphs.size)
+        assertEquals("Перший абзац тексту.", paragraphs[0])
+        assertTrue(paragraphs[1].contains('\n'))
+    }
+
+    @Test
+    fun `wrapText breaks long unbroken words without spaces`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val unbrokenWord = "a".repeat(300)
+        val wrapped = PlaceMarkupLogic.wrapText(unbrokenWord, 50f, 14f, page)
+        val lines = wrapped.split('\n')
+        assertTrue("Суцільне довге слово має розбиватися на частини, отримано: ${lines.size}", lines.size >= 3)
+    }
+
+    @Test
+    fun `textFromTap with page wraps text automatically`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val text = "Один два три чотири п'ять шість сім вісім дев'ять десять одинадцять дванадцять тринадцять чотирнадцять"
+        val check = PlaceMarkupLogic.textFromTap(
+            "t1", 0, 50f, 50f, text, 14f, 0xFF000000.toInt(), "", page = page
+        ) as TextCheck.Ok
+        assertTrue(check.markup.text.contains('\n'))
+    }
+
+    @Test
+    fun `clampedAnchor clamps text so right edge stays within page margins`() {
+        val page = PageSizePt(600f, 800f)
+        val item = PendingMarkup("t", PlaceTool.TEXT, 0, 50f, 50f, "Hello World Wide Text Block", 14f, 0xFF000000.toInt())
+        val (cx, cy) = PlaceMarkupLogic.clampedAnchor(item, 9999f, 50f, page)
+        val textWidth = PlaceMarkupLogic.estimateTextWidthPt(item.text, item.sizePt)
+        assertTrue("Текст не повинен виходити за правий край: cx ($cx) + textWidth ($textWidth) <= 600", cx + textWidth <= 600f)
+        assertEquals(50f, cy, 0f)
+    }
+
+    @Test
+    fun `long line is not wrapped without page`() {
         val lines = MarkupOverlayMath.textLinesPx("a".repeat(500), 0f, 0f, 14f, 1f)
         assertEquals(1, lines.size)
     }
