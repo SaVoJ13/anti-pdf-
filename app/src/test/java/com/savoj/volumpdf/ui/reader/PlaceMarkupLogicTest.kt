@@ -236,4 +236,38 @@ class PlaceMarkupLogicTest {
         val lines = MarkupOverlayMath.textLinesPx("a".repeat(500), 0f, 0f, 14f, 1f)
         assertEquals(1, lines.size)
     }
+
+    @Test
+    fun `unwrapText merges single newlines into spaces and preserves double newlines`() {
+        val wrapped = "Це перший рядок\nтексту який перенесли.\n\nА це другий абзац\nз двома рядками."
+        val unwrapped = PlaceMarkupLogic.unwrapText(wrapped)
+        val paragraphs = unwrapped.split("\n\n")
+        assertEquals(2, paragraphs.size)
+        assertEquals("Це перший рядок тексту який перенесли.", paragraphs[0])
+        assertEquals("А це другий абзац з двома рядками.", paragraphs[1])
+    }
+
+    @Test
+    fun `wrapTextToWidth adapts text dynamically to narrower and wider box widths`() {
+        val raw = "Швидка бура лисиця перестрибує через ледачого собаку в лісі."
+        // Вузьке вікно: багато рядків
+        val narrow = PlaceMarkupLogic.wrapTextToWidth(raw, maxWidthPt = 100f, fontSizePt = 14f)
+        val narrowLines = narrow.split('\n')
+        assertTrue("Вузьке вікно повинно створити щонайменше 3 рядки, отримано: ${narrowLines.size}", narrowLines.size >= 3)
+
+        // Розширюємо вікно: рядки перетікають у меншу кількість рядків
+        val wide = PlaceMarkupLogic.wrapTextToWidth(narrow, maxWidthPt = 400f, fontSizePt = 14f)
+        val wideLines = wide.split('\n')
+        assertTrue("Широке вікно повинно зменшити кількість рядків (отримано ${wideLines.size} проти ${narrowLines.size})", wideLines.size < narrowLines.size)
+    }
+
+    @Test
+    fun `textFromTap preserves rawText in PendingMarkup`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val raw = "Текст для перевірки rawText збереження"
+        val check = PlaceMarkupLogic.textFromTap(
+            "t1", 0, 50f, 50f, raw, 14f, 0xFF000000.toInt(), "", page = page
+        ) as TextCheck.Ok
+        assertEquals(raw, check.markup.rawText)
+    }
 }
