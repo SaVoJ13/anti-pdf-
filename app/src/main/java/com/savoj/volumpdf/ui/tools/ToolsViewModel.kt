@@ -166,6 +166,56 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun executeWatermark(context: Context, watermarkText: String, pagesInput: String?, outputUri: Uri) {
+        val source = _selectedFiles.value.firstOrNull()
+        if (source == null) {
+            _uiState.value = OperationUiState.Error("Виберіть документ")
+            return
+        }
+        if (watermarkText.isBlank()) {
+            _uiState.value = OperationUiState.Error("Введіть текст водяного знака")
+            return
+        }
+
+        val pageIndices = if (!pagesInput.isNullOrBlank()) {
+            try {
+                PageRangeParser.parsePageIndices(pagesInput, sourceDocumentPages)
+            } catch (e: Exception) {
+                _uiState.value = OperationUiState.Error(e.localizedMessage ?: "Помилка введення номерів сторінок")
+                return
+            }
+        } else null
+
+        viewModelScope.launch {
+            _uiState.value = OperationUiState.Loading(1, 1)
+            val result = engine.addWatermark(context, source.uri, watermarkText, outputUri, pageIndices = pageIndices)
+            handleEngineResult(context, result)
+        }
+    }
+
+    fun executePageNumbers(context: Context, formatPattern: String, pagesInput: String?, outputUri: Uri) {
+        val source = _selectedFiles.value.firstOrNull()
+        if (source == null) {
+            _uiState.value = OperationUiState.Error("Виберіть документ")
+            return
+        }
+
+        val pageIndices = if (!pagesInput.isNullOrBlank()) {
+            try {
+                PageRangeParser.parsePageIndices(pagesInput, sourceDocumentPages)
+            } catch (e: Exception) {
+                _uiState.value = OperationUiState.Error(e.localizedMessage ?: "Помилка введення номерів сторінок")
+                return
+            }
+        } else null
+
+        viewModelScope.launch {
+            _uiState.value = OperationUiState.Loading(1, 1)
+            val result = engine.addPageNumbers(context, source.uri, formatPattern, outputUri, pageIndices = pageIndices)
+            handleEngineResult(context, result)
+        }
+    }
+
     private suspend fun handleEngineResult(context: Context, result: PdfOperationResult) {
         when (result) {
             is PdfOperationResult.Progress -> {

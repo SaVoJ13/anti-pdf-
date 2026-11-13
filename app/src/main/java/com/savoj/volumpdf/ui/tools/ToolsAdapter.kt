@@ -13,7 +13,9 @@ enum class ToolType {
     SPLIT,
     ROTATE,
     DELETE_PAGES,
-    IMAGES_TO_PDF
+    IMAGES_TO_PDF,
+    WATERMARK,
+    PAGE_NUMBERS
 }
 
 data class ToolDefinition(
@@ -57,6 +59,18 @@ class ToolsAdapter(
             titleRes = R.string.tool_images_to_pdf_title,
             descRes = R.string.tool_images_to_pdf_desc,
             iconRes = R.drawable.ic_image_to_pdf
+        ),
+        ToolDefinition(
+            type = ToolType.WATERMARK,
+            titleRes = R.string.tool_watermark_title,
+            descRes = R.string.tool_watermark_desc,
+            iconRes = R.drawable.ic_watermark
+        ),
+        ToolDefinition(
+            type = ToolType.PAGE_NUMBERS,
+            titleRes = R.string.tool_page_numbers_title,
+            descRes = R.string.tool_page_numbers_desc,
+            iconRes = R.drawable.ic_page_numbers
         )
     )
 

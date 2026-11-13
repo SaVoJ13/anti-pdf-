@@ -154,6 +154,20 @@ class ToolsActivity : AppCompatActivity() {
                 binding.btnSelectFiles.setText(R.string.action_select_images)
                 binding.recyclerViewSelectedFiles.visibility = View.VISIBLE
             }
+            ToolType.WATERMARK -> {
+                binding.toolbar.setTitle(R.string.tool_watermark_title)
+                binding.tvToolHeaderTitle.setText(R.string.tool_watermark_title)
+                binding.tvToolHeaderDesc.setText(R.string.tool_watermark_desc)
+                binding.btnSelectFiles.setText(R.string.action_select_file)
+                binding.containerWatermarkParams.visibility = View.VISIBLE
+            }
+            ToolType.PAGE_NUMBERS -> {
+                binding.toolbar.setTitle(R.string.tool_page_numbers_title)
+                binding.tvToolHeaderTitle.setText(R.string.tool_page_numbers_title)
+                binding.tvToolHeaderDesc.setText(R.string.tool_page_numbers_desc)
+                binding.btnSelectFiles.setText(R.string.action_select_file)
+                binding.containerPageNumbersParams.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -169,10 +183,15 @@ class ToolsActivity : AppCompatActivity() {
         binding.btnSelectFiles.setOnClickListener {
             when (toolType) {
                 ToolType.MERGE -> openMultiplePdfLauncher.launch(arrayOf("application/pdf"))
-                ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES -> openSinglePdfLauncher.launch(arrayOf("application/pdf"))
+                ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES, ToolType.WATERMARK, ToolType.PAGE_NUMBERS -> openSinglePdfLauncher.launch(arrayOf("application/pdf"))
                 ToolType.IMAGES_TO_PDF -> openMultipleImagesLauncher.launch(arrayOf("image/jpeg", "image/png", "image/*"))
             }
         }
+
+        binding.chipCopy.setOnClickListener { binding.etWatermarkText.setText(getString(R.string.watermark_preset_copy)) }
+        binding.chipSample.setOnClickListener { binding.etWatermarkText.setText(getString(R.string.watermark_preset_sample)) }
+        binding.chipConfidential.setOnClickListener { binding.etWatermarkText.setText(getString(R.string.watermark_preset_confidential)) }
+        binding.chipDraft.setOnClickListener { binding.etWatermarkText.setText(getString(R.string.watermark_preset_draft)) }
 
         binding.btnProcessAndSave.setOnClickListener {
             validateAndRequestOutputFile()
@@ -227,6 +246,25 @@ class ToolsActivity : AppCompatActivity() {
                 }
                 getString(R.string.filename_images)
             }
+            ToolType.WATERMARK -> {
+                if (files.isEmpty()) {
+                    showError(getString(R.string.error_select_source_file))
+                    return
+                }
+                val text = binding.etWatermarkText.text?.toString().orEmpty().trim()
+                if (text.isBlank()) {
+                    showError(getString(R.string.error_empty_watermark))
+                    return
+                }
+                getString(R.string.filename_watermarked)
+            }
+            ToolType.PAGE_NUMBERS -> {
+                if (files.isEmpty()) {
+                    showError(getString(R.string.error_select_source_file))
+                    return
+                }
+                getString(R.string.filename_numbered)
+            }
         }
 
         createDocumentLauncher.launch(defaultName)
@@ -253,6 +291,20 @@ class ToolsActivity : AppCompatActivity() {
                 viewModel.executeDelete(this, input, outputUri)
             }
             ToolType.IMAGES_TO_PDF -> viewModel.executeImagesToPdf(this, outputUri)
+            ToolType.WATERMARK -> {
+                val text = binding.etWatermarkText.text?.toString().orEmpty().trim()
+                val pagesInput = binding.etWatermarkPages.text?.toString()
+                viewModel.executeWatermark(this, text, pagesInput, outputUri)
+            }
+            ToolType.PAGE_NUMBERS -> {
+                val formatPattern = when (binding.rgPageNumbersFormat.checkedRadioButtonId) {
+                    R.id.rbFormat2 -> "%d / %d"
+                    R.id.rbFormat3 -> "%d"
+                    else -> getString(R.string.page_numbers_format_1)
+                }
+                val pagesInput = binding.etPageNumbersPages.text?.toString()
+                viewModel.executePageNumbers(this, formatPattern, pagesInput, outputUri)
+            }
         }
     }
 

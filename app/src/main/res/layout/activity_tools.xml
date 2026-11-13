@@ -210,6 +210,157 @@
 
             </LinearLayout>
 
+            <!-- Tool Parameters: Watermark Container -->
+            <LinearLayout
+                android:id="@+id/containerWatermarkParams"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/watermark_text_label"
+                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupWatermarkPresets"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="6dp"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCopy"
+                        style="@style/Widget.Material3.Chip.Suggestion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/watermark_preset_copy" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipSample"
+                        style="@style/Widget.Material3.Chip.Suggestion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/watermark_preset_sample" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipConfidential"
+                        style="@style/Widget.Material3.Chip.Suggestion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/watermark_preset_confidential" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipDraft"
+                        style="@style/Widget.Material3.Chip.Suggestion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/watermark_preset_draft" />
+
+                </com.google.android.material.chip.ChipGroup>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilWatermarkText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/watermark_text_label"
+                    app:helperText="@string/watermark_text_hint"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etWatermarkText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapCharacters" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilWatermarkPages"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="@string/apply_to_custom_pages"
+                    app:helperText="@string/input_pages_hint"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etWatermarkPages"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+            <!-- Tool Parameters: Page Numbers Container -->
+            <LinearLayout
+                android:id="@+id/containerPageNumbersParams"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/page_numbers_format_label"
+                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <RadioGroup
+                    android:id="@+id/rgPageNumbersFormat"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp">
+
+                    <RadioButton
+                        android:id="@+id/rbFormat1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/page_numbers_format_1" />
+
+                    <RadioButton
+                        android:id="@+id/rbFormat2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/page_numbers_format_2" />
+
+                    <RadioButton
+                        android:id="@+id/rbFormat3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/page_numbers_format_3" />
+
+                </RadioGroup>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilPageNumbersPages"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="@string/apply_to_custom_pages"
+                    app:helperText="@string/input_pages_hint"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPageNumbersPages"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
             <!-- Progress Indicator Container -->
             <LinearLayout
                 android:id="@+id/containerProgress"
