@@ -110,6 +110,14 @@
     <string name="organize_min_pages_warning">The document must contain at least one page</string>
     <string name="filename_organized">Organized.pdf</string>
     <string name="loading_document">Loading document…</string>
+
+    <!-- Document Scanner Strings (ТОП-1) -->
+    <string name="tool_scan_title">Scan Document</string>
+    <string name="tool_scan_desc">Camera scanner: auto-edge detection, perspective correction, clean PDF without watermarks.</string>
+    <string name="scan_error_unavailable">Google Play Services Document Scanner is not available on this device.</string>
+    <string name="scan_processing">Processing scanned document…</string>
+    <string name="filename_scanned">Scanned_%1$s.pdf</string>
+    <string name="scan_empty_action">Scan document</string>
     <string name="compress_success_stats">Size reduced by %1$d%% (%2$s → %3$s)</string>
 
     <!-- Tools Flow -->

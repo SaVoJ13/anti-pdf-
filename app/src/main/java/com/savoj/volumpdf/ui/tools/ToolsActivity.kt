@@ -109,6 +109,12 @@ class ToolsActivity : AppCompatActivity() {
             ToolType.MERGE
         }
 
+        if (toolType == ToolType.SCAN_DOCUMENT) {
+            com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
+            finish()
+            return
+        }
+
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         applyWindowInsets()
@@ -124,6 +130,12 @@ class ToolsActivity : AppCompatActivity() {
 
     private fun setupToolUi() {
         when (toolType) {
+            ToolType.SCAN_DOCUMENT -> {
+                binding.toolbar.setTitle(R.string.tool_scan_title)
+                binding.tvToolHeaderTitle.setText(R.string.tool_scan_title)
+                binding.tvToolHeaderDesc.setText(R.string.tool_scan_desc)
+                binding.btnSelectFiles.setText(R.string.scan_empty_action)
+            }
             ToolType.MERGE -> {
                 binding.toolbar.setTitle(R.string.tool_merge_title)
                 binding.tvToolHeaderTitle.setText(R.string.tool_merge_title)
@@ -200,6 +212,10 @@ class ToolsActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnSelectFiles.setOnClickListener {
             when (toolType) {
+                ToolType.SCAN_DOCUMENT -> {
+                    com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
+                    finish()
+                }
                 ToolType.MERGE -> openMultiplePdfLauncher.launch(arrayOf("application/pdf"))
                 ToolType.ORGANIZE_PAGES, ToolType.SPLIT, ToolType.ROTATE, ToolType.DELETE_PAGES, ToolType.WATERMARK, ToolType.PAGE_NUMBERS, ToolType.COMPRESS -> openSinglePdfLauncher.launch(arrayOf("application/pdf"))
                 ToolType.IMAGES_TO_PDF -> openMultipleImagesLauncher.launch(arrayOf("image/jpeg", "image/png", "image/*"))
@@ -298,6 +314,11 @@ class ToolsActivity : AppCompatActivity() {
                 }
                 return
             }
+            ToolType.SCAN_DOCUMENT -> {
+                com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
+                finish()
+                return
+            }
         }
 
         createDocumentLauncher.launch(defaultName)
@@ -348,6 +369,9 @@ class ToolsActivity : AppCompatActivity() {
             }
             ToolType.ORGANIZE_PAGES -> {
                 // Відкривається напряму через PageOrganizerActivity
+            }
+            ToolType.SCAN_DOCUMENT -> {
+                // Відкривається напряму через ScanDocumentActivity
             }
         }
     }

@@ -110,6 +110,14 @@
     <string name="organize_min_pages_warning">У документі має залишитися хоча б одна сторінка</string>
     <string name="filename_organized">Впорядкований.pdf</string>
     <string name="loading_document">Завантаження документа…</string>
+
+    <!-- Document Scanner Strings (ТОП-1) -->
+    <string name="tool_scan_title">Сканувати документ</string>
+    <string name="tool_scan_desc">Сканер камерою: автовизначення меж, вирівнювання кутів та чистий PDF без водяних знаків.</string>
+    <string name="scan_error_unavailable">Сканер документів Google недоступний на цьому пристрої.</string>
+    <string name="scan_processing">Обробка відсканованого документа…</string>
+    <string name="filename_scanned">Скан_%1$s.pdf</string>
+    <string name="scan_empty_action">Сканувати документ</string>
     <string name="compress_success_stats">Розмір зменшено на %1$d%% (%2$s → %3$s)</string>
 
     <!-- Tools Flow -->

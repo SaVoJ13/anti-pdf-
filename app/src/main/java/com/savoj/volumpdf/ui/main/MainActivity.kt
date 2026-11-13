@@ -187,6 +187,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_scan -> {
+                com.savoj.volumpdf.ui.scanner.ScanDocumentActivity.start(this)
+                true
+            }
             R.id.action_filter_favorites -> {
                 val isFiltered = viewModel.toggleFavoritesFilter()
                 if (isFiltered) {
