@@ -138,6 +138,26 @@ object SaveNotices {
         if (deleted == DeleteResult.FAILED) listOf(SaveNotice.EMPTY_FILE_LEFT) else emptyList()
 }
 
+/** Як показати повідомлення про підсумок: діалог з «ОК» (не зникає сам) чи короткий Snackbar. */
+enum class NoticeDisplay { SNACKBAR, DIALOG }
+
+/**
+ * Вибір способу показу (Д1b/Д2, QA 2026-11-14): Snackbar зникає сам і ховається під системним запитом пароля
+ * переглядача, тому будь-яке повідомлення, окрім простого «Копію збережено», показується діалогом з «ОК».
+ */
+object NoticePresentation {
+    fun displayFor(notices: List<SaveNotice>): NoticeDisplay =
+        if (notices.isEmpty() || notices == listOf(SaveNotice.COPY_SAVED)) NoticeDisplay.SNACKBAR else NoticeDisplay.DIALOG
+
+    /** Підказка про пароль уже містить «Копію збережено»: окремий рядок про збереження не дублюємо. */
+    fun visible(notices: List<SaveNotice>): List<SaveNotice> =
+        if (SaveNotice.COPY_SAVED_PASSWORD_HINT in notices) notices.filter { it != SaveNotice.COPY_SAVED } else notices
+
+    /** Чи треба відкладати відкриття копії в переглядачі, доки користувач не закриє діалог (підказка Д2). */
+    fun deferViewerUntilDismissed(notices: List<SaveNotice>): Boolean =
+        SaveNotice.COPY_SAVED_PASSWORD_HINT in notices
+}
+
 /** Що робити з результатом системного вибору місця для копії. */
 enum class CopyPickAction { CANCELLED, SAVE, DISCARD_EMPTY }
 

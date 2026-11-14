@@ -208,6 +208,52 @@ class EditAccessTest {
         assertEquals(CopyPickAction.DISCARD_EMPTY, CopyPick.resolve(uriChosen = true, awaitingFlag = false))
     }
 
+    // --- Д1b/Д2 (QA 2026-11-14): повідомлення мають бути помітні; після am kill доступ не залежить від viewerOpened ---
+
+    @Test fun everySaveNoticeHasDisplayDecision() {
+        for (n in SaveNotice.values()) {
+            val expected = if (n == SaveNotice.COPY_SAVED) NoticeDisplay.SNACKBAR else NoticeDisplay.DIALOG
+            assertEquals("$n", expected, NoticePresentation.displayFor(listOf(n)))
+        }
+    }
+
+    @Test fun displayForCombinationsAndEmpty() {
+        assertEquals(NoticeDisplay.SNACKBAR, NoticePresentation.displayFor(emptyList()))
+        assertEquals(NoticeDisplay.DIALOG, NoticePresentation.displayFor(SaveNotices.forCopySaved(passwordUsed = true)))
+        assertEquals(NoticeDisplay.SNACKBAR, NoticePresentation.displayFor(SaveNotices.forCopySaved(passwordUsed = false)))
+        assertEquals(NoticeDisplay.DIALOG, NoticePresentation.displayFor(SaveNotices.forUnfinished(DeleteResult.DELETED)))
+        assertEquals(NoticeDisplay.DIALOG, NoticePresentation.displayFor(SaveNotices.forNothingToSave(true, DeleteResult.DELETED)))
+        assertEquals(NoticeDisplay.DIALOG, NoticePresentation.displayFor(SaveNotices.forFailed(DeleteResult.FAILED)))
+    }
+
+    @Test fun passwordHintReplacesPlainSavedLineAndDefersViewer() {
+        val withPassword = SaveNotices.forCopySaved(passwordUsed = true)
+        assertEquals(listOf(SaveNotice.COPY_SAVED_PASSWORD_HINT), NoticePresentation.visible(withPassword))
+        assertTrue(NoticePresentation.deferViewerUntilDismissed(withPassword))
+        val plain = SaveNotices.forCopySaved(passwordUsed = false)
+        assertEquals(listOf(SaveNotice.COPY_SAVED), NoticePresentation.visible(plain))
+        assertFalse(NoticePresentation.deferViewerUntilDismissed(plain))
+        assertFalse(NoticePresentation.deferViewerUntilDismissed(SaveNotices.forUnfinished(DeleteResult.FAILED)))
+        // інші повідомлення не прибираються
+        val failed = SaveNotices.forUnfinished(DeleteResult.FAILED)
+        assertEquals(failed, NoticePresentation.visible(failed))
+    }
+
+    @Test fun afterKillEncryptedDocAsksPasswordInsteadOfUnreadable() {
+        // до виправлення: переглядач не відкрито (показує свій запит пароля), пароля нема, null -> Unreadable -> копію скасовано
+        assertEquals(EditAccess.Unreadable, EditAccessModel.resolve(null, passwordEntered = false, viewerOpened = false))
+        // після виправлення гілка збереження копії вважає переглядач відкритим: потрібен наш запит пароля
+        assertEquals(EditAccess.PasswordRequired, EditAccessModel.resolve(null, passwordEntered = false, viewerOpened = true))
+        assertTrue(EditAccessModel.needsPassword(EditAccess.PasswordRequired))
+    }
+
+    @Test fun passwordHintStringMentionsSavedCopyInAllLocales() {
+        val saved = mapOf("values" to "saved", "values-uk" to "збережено", "values-de" to "gespeichert", "values-ru" to "сохранена")
+        for ((dir, word) in saved) {
+            assertTrue("$dir", stringsOf(dir).getValue("place_copy_saved_password_hint").contains(word))
+        }
+    }
+
     // --- Локалізація: ключі й плейсхолдери збігаються в усіх мовах ---
 
     private fun stringsOf(dir: String): Map<String, String> {

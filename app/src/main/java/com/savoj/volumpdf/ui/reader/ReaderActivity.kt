@@ -353,7 +353,7 @@ class ReaderActivity : AppCompatActivity() {
     // Доступ до редагування (етап 3e): checkEditability → EditAccess; пароль лише в пам'яті ViewModel.
     // ---------------------------------------------------------------------------------------------
 
-    private suspend fun queryAccess(password: String?): EditAccess {
+    private suspend fun queryAccess(password: String?, assumeViewerOpened: Boolean = false): EditAccess {
         val uri = documentUri ?: return EditAccess.Unreadable
         val editability = withContext(Dispatchers.IO) {
             try {
@@ -363,7 +363,7 @@ class ReaderActivity : AppCompatActivity() {
                 null
             }
         }
-        return EditAccessModel.resolve(editability, passwordEntered = password != null, viewerOpened = viewModel.viewerOpened)
+        return EditAccessModel.resolve(editability, passwordEntered = password != null, viewerOpened = viewModel.viewerOpened || assumeViewerOpened)
     }
 
     /**
@@ -371,11 +371,11 @@ class ReaderActivity : AppCompatActivity() {
      * Unreadable показано повідомлення). Стан «потрібен пароль»: власний діалог із повтором при помилці; успішний
      * пароль живе лише у ViewModel; після нього поля форм читаються знову (з паролем).
      */
-    private suspend fun obtainAccess(): EditAccess? {
-        var access = queryAccess(viewModel.documentPassword)
+    private suspend fun obtainAccess(assumeViewerOpened: Boolean = false): EditAccess? {
+        var access = queryAccess(viewModel.documentPassword, assumeViewerOpened)
         while (EditAccessModel.needsPassword(access)) {
             val entered = askPassword(showError = access === EditAccess.WrongPassword) ?: return null
-            val next = queryAccess(entered)
+            val next = queryAccess(entered, assumeViewerOpened)
             if (next !== EditAccess.WrongPassword) {
                 viewModel.documentPassword = entered
                 if (next is EditAccess.Restricted || next is EditAccess.Open) documentUri?.let { checkForFormFields(it) }
@@ -1263,7 +1263,8 @@ class ReaderActivity : AppCompatActivity() {
             discardUnfinishedCopy(out)
             return
         }
-        val access = obtainAccess()
+        // Після am kill переглядач ще показує свій запит пароля (viewerOpened=false): це не «не відкривається», а «потрібен пароль».
+        val access = obtainAccess(assumeViewerOpened = true)
         val target = access?.let { EditAccessModel.saveTarget(it, viewModel.editor.value.items.isNotEmpty(), viewModel.formEdits.value.isNotEmpty()) }
         if (access == null || (target != EditAccessModel.SaveTarget.NEW_COPY && target != EditAccessModel.SaveTarget.SAME_URI)) {
             discardUnfinishedCopy(out)
@@ -1290,7 +1291,7 @@ class ReaderActivity : AppCompatActivity() {
     private fun discardUnfinishedCopy(out: Uri) {
         val deleted = removeEmptyCopy(out, copy = true)
         ownedCopyUri = null
-        showMessage(withNotices(null, SaveNotices.forUnfinished(deleted)), long = true)
+        showNotices(null, SaveNotices.forUnfinished(deleted))
     }
 
     private val pickImageForReaderLauncher = registerForActivityResult(
@@ -1683,9 +1684,16 @@ class ReaderActivity : AppCompatActivity() {
                     if (copy) {
                         SafUtils.takePersistableUriPermissionSafe(this, output)
                         viewModel.clearAllPending() // незбережене оригіналу: його вже записано в копію
-                        switchToDocument(output) // копія — поточний документ (читач, «Останні»)
                         val savedNotices = SaveNotices.forCopySaved(passwordUsed = password != null)
-                        showMessage(withNotices(null, savedNotices), long = savedNotices.size > 1)
+                        if (NoticePresentation.deferViewerUntilDismissed(savedNotices)) {
+                            // Д2: переглядач попросить пароль системним вікном і закрив би підказку; спершу діалог, потім копія.
+                            showNoticeDialog(withNotices(null, savedNotices)) {
+                                if (!isDestroyed && !isFinishing) { switchToDocument(output); onSuccess() }
+                            }
+                            return
+                        }
+                        switchToDocument(output) // копія — поточний документ (читач, «Останні»)
+                        showNotices(null, savedNotices)
                     } else {
                         reloadViewerDocument()
                         viewModel.clearAllPending()
@@ -1696,19 +1704,19 @@ class ReaderActivity : AppCompatActivity() {
                 }
                 is SaveOutcome.Failed -> {
                     val deleted = removeEmptyCopy(output, copy)
-                    showError(withNotices(outcome.message.ifBlank { getString(R.string.error_title) }, SaveNotices.forFailed(deleted)))
+                    showFailure(outcome.message.ifBlank { getString(R.string.error_title) }, SaveNotices.forFailed(deleted))
                 }
                 SaveOutcome.NothingToSave -> {
                     val deleted = removeEmptyCopy(output, copy)
                     val notices = SaveNotices.forNothingToSave(copy, deleted)
-                    if (notices.isNotEmpty()) showMessage(withNotices(null, notices), long = true)
+                    if (notices.isNotEmpty()) showNotices(null, notices)
                     onSuccess()
                 }
             }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
             val deleted = removeEmptyCopy(output, copy)
-            showError(withNotices(e.localizedMessage ?: getString(R.string.error_title), SaveNotices.forFailed(deleted)))
+            showFailure(e.localizedMessage ?: getString(R.string.error_title), SaveNotices.forFailed(deleted))
         } finally {
             if (copy) ownedCopyUri = null
             hideLoadingOverlay()
@@ -1730,7 +1738,31 @@ class ReaderActivity : AppCompatActivity() {
 
     /** Основний текст (якщо є) і повідомлення про підсумок: одним повідомленням, щоб наступне не перекрило попереднє. */
     private fun withNotices(base: String?, notices: List<SaveNotice>): String =
-        (listOfNotNull(base) + notices.map { noticeText(it) }).joinToString("\n")
+        (listOfNotNull(base) + NoticePresentation.visible(notices).map { noticeText(it) }).joinToString("\n")
+
+    /** Підсумок збереження: діалог з «ОК» для всього, окрім простого «Копію збережено» (його показує короткий Snackbar). */
+    private fun showNotices(base: String?, notices: List<SaveNotice>) {
+        val text = withNotices(base, notices)
+        when (NoticePresentation.displayFor(notices)) {
+            NoticeDisplay.DIALOG -> showNoticeDialog(text)
+            NoticeDisplay.SNACKBAR -> showMessage(text, long = false)
+        }
+    }
+
+    /** Збій збереження: текст помилки + додатки; з додатками (файл лишився) це діалог, без них — звичайний Snackbar помилки. */
+    private fun showFailure(message: String, notices: List<SaveNotice>) {
+        if (notices.isEmpty()) showError(message) else showNoticeDialog(withNotices(message, notices))
+    }
+
+    /** Діалог, який не зникає без дії користувача й не ховається під системним запитом пароля переглядача. */
+    private fun showNoticeDialog(text: String, onDismiss: (() -> Unit)? = null) {
+        if (isDestroyed || isFinishing) return
+        val builder = MaterialAlertDialogBuilder(this)
+            .setMessage(text)
+            .setPositiveButton(R.string.action_ok, null)
+        if (onDismiss != null) builder.setOnDismissListener { onDismiss() }
+        builder.show()
+    }
 
     /**
      * Д1: збій збереження копії не має лишати порожній файл у вибраній папці. Видаляємо лише URI, який повернув наш
