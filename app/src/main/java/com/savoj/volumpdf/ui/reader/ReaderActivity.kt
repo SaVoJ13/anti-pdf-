@@ -1258,7 +1258,11 @@ class ReaderActivity : AppCompatActivity() {
      * зникли, або порожній запит — порожній файл прибираємо за правилами Д1.
      */
     private suspend fun saveIntoChosenCopy(out: Uri, onSuccess: () -> Unit) {
-        viewModel.pendingLoaded.first { it }
+        if (!PendingWait.awaitLoaded(viewModel.pendingLoaded)) {
+            // стан не відновився вчасно: не зависаємо, прибираємо порожній файл і чесно повідомляємо
+            discardUnfinishedCopy(out)
+            return
+        }
         val access = obtainAccess()
         val target = access?.let { EditAccessModel.saveTarget(it, viewModel.editor.value.items.isNotEmpty(), viewModel.formEdits.value.isNotEmpty()) }
         if (access == null || (target != EditAccessModel.SaveTarget.NEW_COPY && target != EditAccessModel.SaveTarget.SAME_URI)) {

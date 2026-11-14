@@ -1,5 +1,8 @@
 package com.savoj.volumpdf.ui.reader
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
@@ -19,4 +22,14 @@ object PendingLoadGuard {
             markLoaded()
         }
     }
+}
+
+/** Очікування відновлення незбереженого з обмеженням у часі: збереження копії не має висіти вічно. */
+object PendingWait {
+    /** Скільки максимум чекаємо відновлення незбереженого, перш ніж чесно припинити збереження копії. */
+    const val TIMEOUT_MS = 10_000L
+
+    /** true, якщо [loaded] став true вчасно; false після таймауту. */
+    suspend fun awaitLoaded(loaded: Flow<Boolean>, timeoutMs: Long = TIMEOUT_MS): Boolean =
+        withTimeoutOrNull(timeoutMs) { loaded.first { it } } != null
 }
