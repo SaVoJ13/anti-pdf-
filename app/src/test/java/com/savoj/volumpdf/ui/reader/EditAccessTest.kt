@@ -134,4 +134,22 @@ class EditAccessTest {
         assertEquals("document_edited.pdf", CopyNaming.suggestedName(null))
         assertEquals("document_edited.pdf", CopyNaming.suggestedName(".pdf"))
     }
+
+    @Test fun emptyCopyIsDeletedOnlyWhenItIsACopyWithZeroBytes() {
+        assertTrue(EmptyCopyCleanup.shouldDelete(isCopy = true, sizeBytes = 0L))
+        assertFalse(EmptyCopyCleanup.shouldDelete(isCopy = true, sizeBytes = 1L))
+        assertFalse("запис у сам оригінал не чіпаємо", EmptyCopyCleanup.shouldDelete(isCopy = false, sizeBytes = 0L))
+    }
+
+    @Test fun saveFailureOnCopyRemovesEmptyFile() {
+        val text = File("src/main/java/com/savoj/volumpdf/ui/reader/ReaderActivity.kt").readText()
+        // усі три шляхи runSave (Failed, NothingToSave, виняток) викликають прибирання
+        assertTrue(Regex("""removeEmptyCopy\(output, copy\)""").findAll(text).count() >= 3)
+    }
+
+    @Test fun passwordDialogIsScrollableAndAvoidsExtractUi() {
+        val xml = File("src/main/res/layout/dialog_document_password.xml").readText()
+        assertTrue("Д3: корінь має бути ScrollView", Regex("""<ScrollView[\s\S]*</ScrollView>""").containsMatchIn(xml))
+        assertTrue(xml.contains("flagNoExtractUi"))
+    }
 }
