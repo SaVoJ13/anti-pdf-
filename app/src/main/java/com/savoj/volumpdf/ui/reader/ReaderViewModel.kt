@@ -235,6 +235,10 @@ class ReaderViewModel(
         documentKey = key
         _pendingLoaded.value = false
         viewModelScope.launch {
+          PendingLoadGuard.run(
+            onFailure = { android.util.Log.w(TAG, "Pending restore failed: ${it.javaClass.simpleName}") },
+            markLoaded = { _pendingLoaded.value = true }
+          ) {
             var restoredForms: List<FormFieldUpdate> = emptyList()
             val items = withContext(Dispatchers.IO) {
                 val state = try {
@@ -266,7 +270,7 @@ class ReaderViewModel(
                 _formEdits.value = FormEditing.toMap(restoredForms)
                 if (_formFields.value.isNotEmpty()) _formEdits.value = FormEditing.prune(_formFields.value, _formEdits.value)
             }
-            _pendingLoaded.value = true
+          }
         }
     }
 
