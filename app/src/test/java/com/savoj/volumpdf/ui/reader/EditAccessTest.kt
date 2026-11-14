@@ -154,4 +154,100 @@ class EditAccessTest {
         assertTrue("Д3: корінь має бути ScrollView", Regex("""<ScrollView[\s\S]*</ScrollView>""").containsMatchIn(xml))
         assertTrue(xml.contains("flagNoExtractUi"))
     }
+
+    // --- Д1/Д2: чисті рішення про видалення порожньої копії, повідомлення й обробку результату вибору місця ---
+
+    @Test fun shouldDeleteAllCombinations() {
+        val sizes = listOf<Long?>(null, 0L, 1L, 4096L)
+        for (isCopy in listOf(true, false)) for (ours in listOf(true, false)) for (size in sizes) {
+            val expected = isCopy && ours && size == 0L
+            assertEquals("isCopy=$isCopy ours=$ours size=$size", expected, EmptyCopyCleanup.shouldDelete(isCopy, size, ours))
+        }
+    }
+
+    @Test fun nothingToSaveOnCopyIsHonestAboutDeletion() {
+        assertEquals(emptyList<SaveNotice>(), SaveNotices.forNothingToSave(false, DeleteResult.NOT_ATTEMPTED))
+        assertEquals(emptyList<SaveNotice>(), SaveNotices.forNothingToSave(false, DeleteResult.DELETED))
+        assertEquals(listOf(SaveNotice.NO_CHANGES_COPY_NOT_CREATED), SaveNotices.forNothingToSave(true, DeleteResult.DELETED))
+        assertEquals(listOf(SaveNotice.NO_CHANGES), SaveNotices.forNothingToSave(true, DeleteResult.NOT_ATTEMPTED))
+        assertEquals(
+            listOf(SaveNotice.NO_CHANGES, SaveNotice.EMPTY_FILE_LEFT),
+            SaveNotices.forNothingToSave(true, DeleteResult.FAILED)
+        )
+    }
+
+    @Test fun failedSaveMentionsLeftoverOnlyWhenDeleteFailed() {
+        assertEquals(emptyList<SaveNotice>(), SaveNotices.forFailed(DeleteResult.NOT_ATTEMPTED))
+        assertEquals(emptyList<SaveNotice>(), SaveNotices.forFailed(DeleteResult.DELETED))
+        assertEquals(listOf(SaveNotice.EMPTY_FILE_LEFT), SaveNotices.forFailed(DeleteResult.FAILED))
+    }
+
+    @Test fun unfinishedSaveMessage() {
+        assertEquals(listOf(SaveNotice.SAVE_NOT_COMPLETED), SaveNotices.forUnfinished(DeleteResult.DELETED))
+        assertEquals(
+            listOf(SaveNotice.SAVE_NOT_COMPLETED, SaveNotice.EMPTY_FILE_LEFT),
+            SaveNotices.forUnfinished(DeleteResult.FAILED)
+        )
+    }
+
+    @Test fun copySavedHintOnlyWhenPasswordWasUsed() {
+        assertEquals(listOf(SaveNotice.COPY_SAVED), SaveNotices.forCopySaved(passwordUsed = false))
+        assertEquals(
+            listOf(SaveNotice.COPY_SAVED, SaveNotice.COPY_SAVED_PASSWORD_HINT),
+            SaveNotices.forCopySaved(passwordUsed = true)
+        )
+    }
+
+    @Test fun copyPickBranches() {
+        // скасовано: нічого не робимо, незалежно від ознаки
+        assertEquals(CopyPickAction.CANCELLED, CopyPick.resolve(uriChosen = false, awaitingFlag = true))
+        assertEquals(CopyPickAction.CANCELLED, CopyPick.resolve(uriChosen = false, awaitingFlag = false))
+        // (а) ознака є: зберігаємо
+        assertEquals(CopyPickAction.SAVE, CopyPick.resolve(uriChosen = true, awaitingFlag = true))
+        // (б) ознаки нема: нічого не зберігаємо, порожній файл прибираємо
+        assertEquals(CopyPickAction.DISCARD_EMPTY, CopyPick.resolve(uriChosen = true, awaitingFlag = false))
+    }
+
+    // --- Локалізація: ключі й плейсхолдери збігаються в усіх мовах ---
+
+    private fun stringsOf(dir: String): Map<String, String> {
+        val file = File("src/main/res/$dir/strings.xml")
+        assertTrue("Missing $dir/strings.xml", file.exists())
+        val doc = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
+        val nodes = doc.getElementsByTagName("string")
+        val map = LinkedHashMap<String, String>()
+        for (i in 0 until nodes.length) {
+            val el = nodes.item(i)
+            val name = el.attributes?.getNamedItem("name")?.nodeValue ?: continue
+            map[name] = el.textContent ?: ""
+        }
+        return map
+    }
+
+    private fun placeholders(text: String): List<String> =
+        Regex("""%(\d+\$)?[sdfx]""").findAll(text).map { it.value.replace(Regex("""^%\d+\$"""), "%") }.sorted().toList()
+
+    @Test fun stringKeysAndPlaceholdersMatchAcrossLocales() {
+        val base = stringsOf("values")
+        for (dir in listOf("values-uk", "values-de", "values-ru")) {
+            val other = stringsOf(dir)
+            assertEquals("$dir: ключі, яких нема в values", emptySet<String>(), base.keys - other.keys)
+            assertEquals("$dir: зайві ключі відносно values", emptySet<String>(), other.keys - base.keys)
+            for ((k, v) in base) {
+                assertEquals("$dir/$k: плейсхолдери", placeholders(v), placeholders(other.getValue(k)))
+                assertFalse("$dir/$k порожній", other.getValue(k).isBlank())
+            }
+        }
+    }
+
+    @Test fun newCopySaveStringsExistInAllLocales() {
+        val keys = listOf(
+            "save_no_changes_copy_not_created", "save_no_changes", "save_empty_file_left",
+            "save_not_completed", "place_copy_saved_password_hint"
+        )
+        for (dir in listOf("values", "values-uk", "values-de", "values-ru")) {
+            val m = stringsOf(dir)
+            keys.forEach { assertTrue("$dir missing $it", !m[it].isNullOrBlank()) }
+        }
+    }
 }
