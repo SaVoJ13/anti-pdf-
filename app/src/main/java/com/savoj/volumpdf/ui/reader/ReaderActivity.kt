@@ -15,6 +15,7 @@ import android.view.MenuItem
 import android.content.res.Configuration
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.view.WindowManager
@@ -685,7 +686,8 @@ class ReaderActivity : AppCompatActivity() {
         val sel = viewModel.editor.value.selected ?: return
         when (sel.tool) {
             PlaceTool.TEXT -> showTextDialog(
-                initial = sel.rawText ?: sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply
+                initial = sel.rawText ?: sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply,
+                allowStyle = false
             ) { raw ->
                 val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
                 val wrapped = PlaceMarkupLogic.wrapText(
@@ -1016,45 +1018,54 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * Діалог введення тексту (додавання й повторне введення). Перевірка символів — при кожній зміні тексту
-     * (TextWatcher, debounce [TEXT_VALIDATE_DEBOUNCE_MS]); «Додати» вимкнена, поки текст порожній або містить
-     * непідтримувані символи. Шрифт розбирається один раз (кеш у двигуні) і прогрівається при вході в режим.
-     * Кнопки діалогу лежать поза прокруткою й завжди ≥ 48 dp.
+     * Введення тексту (додавання й повторне введення): темна картка, прикріплена знизу над клавіатурою
+     * (відступ за WindowInsets ime), з рядком керування «розмір ▾, колір, скасувати, додати». Рішення A1: поле лишається
+     * у вікні, а не прямо на сторінці, бо PlaceEditor і міст розміщують текст лише готовим об'єктом після підтвердження
+     * (введення на сторінці потребує нового стану «текст у редагуванні» в мості й ядрі). Перевірка символів: при кожній
+     * зміні тексту (TextWatcher, debounce [TEXT_VALIDATE_DEBOUNCE_MS]); «Додати» вимкнена, поки текст порожній або
+     * містить непідтримувані символи. Шрифт розбирається один раз і прогрівається при вході в режим. Усі кнопки ≥ 48 dp.
+     * [allowStyle] = false (повторне введення виділеного тексту): розмір і колір змінюються у картці параметрів.
      */
-    private fun showTextDialog(initial: String, titleRes: Int, confirmRes: Int, onAccept: (String) -> Unit) {
+    private fun showTextDialog(
+        initial: String, titleRes: Int, confirmRes: Int, allowStyle: Boolean = true, onAccept: (String) -> Unit
+    ) {
         val dialogBinding = DialogPlaceTextBinding.inflate(layoutInflater)
         dialogBinding.placeTextTitle.setText(titleRes)
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogBinding.root)
-            .setPositiveButton(confirmRes, null)
-            .setNegativeButton(R.string.action_cancel, null)
-            .create()
-        dialog.window?.setSoftInputMode(
-            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
-        )
+        dialogBinding.btnTextConfirm.setText(confirmRes)
+        val dialog = androidx.appcompat.app.AppCompatDialog(this, R.style.Theme_VolumPdf_TextCard)
+        dialog.setContentView(dialogBinding.root)
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+            setDimAmount(0.25f)
+            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            // Картка сама піднімається над клавіатурою за ime-відступом нижче.
+            WindowCompat.setDecorFitsSystemWindows(this, false)
+            setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(dialogBinding.placeTextRoot) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
+            insets
+        }
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         lateinit var validate: Runnable
+        val confirm = dialogBinding.btnTextConfirm
 
-        // Z2: у ландшафті з клавіатурою видима частина діалогу низька (≈65 dp) — заголовок прибираємо, а
-        // після появи помилки прокручуємо вміст так, щоб поле разом із рядком помилки було видно.
-        val scroll = dialogBinding.root as ScrollView
+        // Ширина картки: не ширше за max (ландшафт/планшет), портрет — на всю ширину з полями.
+        val maxW = resources.getDimensionPixelSize(R.dimen.place_card_max_width) * 4 / 3
+        dialogBinding.placeTextCard.layoutParams = (dialogBinding.placeTextCard.layoutParams as FrameLayout.LayoutParams).apply {
+            width = minOf(maxW, resources.displayMetrics.widthPixels - 2 * resources.getDimensionPixelSize(R.dimen.place_card_margin))
+        }
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        if (landscape) {
-            dialogBinding.placeTextTitle.visibility = View.GONE
-            scroll.setPadding(scroll.paddingLeft, 0, scroll.paddingRight, 0)
-        }
-        fun revealError() {
-            scroll.post {
-                val content = scroll.getChildAt(0) ?: return@post
-                scroll.scrollTo(0, (content.height - scroll.height).coerceAtLeast(0))
-            }
-        }
+        if (landscape) dialogBinding.placeTextTitle.visibility = View.GONE // низька видима частина з клавіатурою
 
         fun render(raw: String): Boolean {
             val unsupported = safeUnsupported(raw)
             if (unsupported == null) {
                 dialogBinding.placeTextInputLayout.error = getString(R.string.error_title)
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = false
+                confirm.isEnabled = false
                 return false
             }
             val verdict = PlaceMarkupLogic.checkText(raw, unsupported)
@@ -1063,9 +1074,54 @@ class ReaderActivity : AppCompatActivity() {
                 TextVerdict.Empty -> if (raw.isEmpty()) null else getString(R.string.text_error_empty)
                 is TextVerdict.Unsupported -> getString(R.string.place_text_unsupported, verdict.chars)
             }
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = verdict == TextVerdict.Ok
-            if (verdict != TextVerdict.Ok && dialogBinding.placeTextInputLayout.error != null) revealError()
+            confirm.isEnabled = verdict == TextVerdict.Ok
             return verdict == TextVerdict.Ok
+        }
+
+        // Розмір ▾ і колір: попередній перегляд у самому полі (кегль у sp-пропорції, колір тексту).
+        fun refreshStyle() {
+            val size = viewModel.placeSize(PlaceTool.TEXT)
+            dialogBinding.btnTextSize.text = getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(size))
+            dialogBinding.btnTextColor.swatchColor = viewModel.placeColor or PlaceMarkupLogic.ALPHA_MASK
+            dialogBinding.placeTextInput.setTextColor(viewModel.placeColor or PlaceMarkupLogic.ALPHA_MASK)
+            dialogBinding.placeTextInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, size.coerceIn(12f, 28f))
+        }
+        if (allowStyle) {
+            refreshStyle()
+            dialogBinding.btnTextSize.setOnClickListener { anchor ->
+                val menu = android.widget.PopupMenu(this, anchor)
+                TEXT_SIZE_CHOICES.forEachIndexed { i, size ->
+                    menu.menu.add(0, i, i, getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(size)))
+                }
+                menu.setOnMenuItemClickListener { item ->
+                    viewModel.setPlaceSize(PlaceTool.TEXT, TEXT_SIZE_CHOICES[item.itemId])
+                    refreshStyle()
+                    true
+                }
+                menu.show()
+            }
+            val row = dialogBinding.placeTextColorRow
+            PlaceBarLogic.PALETTE.forEach { color ->
+                row.addView(SwatchView(this).apply {
+                    swatchColor = color
+                    picked = (viewModel.placeColor and 0xFFFFFF) == (color and 0xFFFFFF)
+                    contentDescription = getString(R.string.place_text_color_toggle)
+                    setOnClickListener {
+                        viewModel.placeColor = color
+                        for (i in 0 until row.childCount) {
+                            (row.getChildAt(i) as SwatchView).picked = row.getChildAt(i) === this
+                        }
+                        refreshStyle()
+                    }
+                })
+            }
+            dialogBinding.btnTextColor.setOnClickListener {
+                dialogBinding.placeTextColorScroll.visibility =
+                    if (dialogBinding.placeTextColorScroll.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            }
+        } else {
+            dialogBinding.btnTextSize.visibility = View.GONE
+            dialogBinding.btnTextColor.visibility = View.GONE
         }
 
         validate = Runnable { render(dialogBinding.placeTextInput.text?.toString().orEmpty()) }
@@ -1083,25 +1139,23 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
         })
+        dialogBinding.btnTextCancel.setOnClickListener { dialog.dismiss() }
+        dialogBinding.placeTextRoot.setOnClickListener { dialog.dismiss() } // тап поза карткою
+        confirm.setOnClickListener {
+            handler.removeCallbacks(validate)
+            val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
+            if (render(raw)) { // остаточна перевірка без затримки
+                onAccept(raw)
+                dialog.dismiss()
+            }
+        }
         dialog.setOnShowListener {
-            val min = dp(48)
-            val confirm = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-            listOf(confirm, cancel).forEach { it.minHeight = min; it.minimumHeight = min; it.minWidth = min; it.minimumWidth = min }
             render(dialogBinding.placeTextInput.text?.toString().orEmpty())
-            // Z1: SOFT_INPUT_STATE_VISIBLE сам клавіатуру не показує (Gboard на S24 Ultra): фокус + явний показ IME.
+            // SOFT_INPUT_STATE_VISIBLE сам клавіатуру не показує (Gboard на S24 Ultra): фокус + явний показ IME.
             val input = dialogBinding.placeTextInput
             input.requestFocus()
             input.post {
                 dialog.window?.let { w -> WindowCompat.getInsetsController(w, input).show(WindowInsetsCompat.Type.ime()) }
-            }
-            confirm.setOnClickListener {
-                handler.removeCallbacks(validate)
-                val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
-                if (render(raw)) { // остаточна перевірка без затримки
-                    onAccept(raw)
-                    dialog.dismiss()
-                }
             }
         }
         dialog.setOnDismissListener { handler.removeCallbacks(validate) }
@@ -2085,6 +2139,7 @@ class ReaderActivity : AppCompatActivity() {
         const val EXTRA_DOCUMENT_TITLE = "extra_document_title"
         private const val TAG = "ReaderActivity"
         private const val TEXT_VALIDATE_DEBOUNCE_MS = 120L
+        private val TEXT_SIZE_CHOICES = floatArrayOf(8f, 10f, 12f, 14f, 16f, 18f, 24f, 32f, 48f, 72f)
         private const val TAG_PDF_VIEWER = "tag_pdf_viewer_fragment"
         private const val KEY_SAVED_URI = "key_saved_reader_uri"
 

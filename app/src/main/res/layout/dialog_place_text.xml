@@ -1,44 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Вміст шторки введення тексту. Кнопки «Додати»/«Скасувати» — кнопки самого діалогу (поза прокруткою),
-     тому з клавіатурою (зокрема в ландшафті) лишаються видимими; вміст прокручується. -->
-<ScrollView
+<!-- Введення тексту: темна картка, прикріплена знизу над клавіатурою (відступ за WindowInsets ime), а не діалог посеред
+     екрана. Тап поза карткою закриває її. Рядок керування: розмір ▾, колір, скасувати, додати. Вміст прокручується,
+     тож у ландшафті з клавіатурою кнопки лишаються видимими. -->
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/placeTextRoot"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:fillViewport="false"
-    android:scrollbars="vertical">
+    android:layout_height="match_parent"
+    android:clickable="true"
+    android:focusable="false">
 
     <LinearLayout
+        android:id="@+id/placeTextCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_margin="@dimen/place_card_margin"
+        android:background="@drawable/bg_place_card"
+        android:clickable="true"
+        android:elevation="@dimen/place_card_elevation"
+        android:focusable="false"
         android:orientation="vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="8dp">
+        android:paddingStart="@dimen/place_card_padding"
+        android:paddingTop="12dp"
+        android:paddingEnd="@dimen/place_card_padding"
+        android:paddingBottom="4dp"
+        android:theme="@style/ThemeOverlay.Material3.Dark">
 
         <TextView
             android:id="@+id/placeTextTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/place_text_title"
-            android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textColor="@color/place_card_on" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/placeTextInputLayout"
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/text_input_hint"
-            app:boxBackgroundMode="outline">
+            android:layout_marginTop="8dp"
+            android:fillViewport="false"
+            android:scrollbars="vertical">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/placeTextInput"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/placeTextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:imeOptions="flagNoExtractUi"
-                android:inputType="textMultiLine|textCapSentences"
-                android:maxLines="8" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:hint="@string/text_input_hint"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/place_card_accent"
+                app:hintTextColor="@color/place_card_accent">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/placeTextInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="flagNoExtractUi"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLines="6"
+                    android:textColor="@color/place_card_on" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </ScrollView>
+
+        <!-- Швидка смуга кольорів (відкривається кнопкою кольору) -->
+        <HorizontalScrollView
+            android:id="@+id/placeTextColorScroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/placeTextColorRow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <LinearLayout
+            android:id="@+id/placeTextControls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTextSize"
+                style="@style/Widget.VolumPdf.CardChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/place_text_size_menu"
+                app:icon="@drawable/ic_arrow_drop_down"
+                app:iconGravity="end" />
+
+            <com.savoj.volumpdf.ui.reader.SwatchView
+                android:id="@+id/btnTextColor"
+                android:layout_width="@dimen/place_swatch_size"
+                android:layout_height="@dimen/place_swatch_size"
+                android:contentDescription="@string/place_text_color_toggle" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTextCancel"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="@dimen/place_slot_min_size"
+                android:minHeight="@dimen/place_slot_min_size"
+                android:text="@string/action_cancel"
+                android:textColor="@color/place_card_accent" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTextConfirm"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="@dimen/place_slot_min_size"
+                android:minHeight="@dimen/place_slot_min_size"
+                android:text="@string/place_text_add" />
+        </LinearLayout>
     </LinearLayout>
-</ScrollView>
+</FrameLayout>
