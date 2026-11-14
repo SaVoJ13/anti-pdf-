@@ -1236,9 +1236,57 @@ class ReaderActivity : AppCompatActivity() {
     private val createCopyLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { out ->
         val onSuccess = copyOnSuccess
         copyOnSuccess = null
-        if (out == null) return@registerForActivityResult // вибір скасовано: нічого не втрачено, незбережене на місці
-        ownedCopyUri = out // Д1: лише цей URI (його створив наш CreateDocument) дозволено прибрати, якщо він лишиться порожнім
-        lifecycleScope.launch { runSave(out, copy = true, onSuccess = onSuccess ?: {}) }
+        when (CopyPick.resolve(uriChosen = out != null, awaitingFlag = viewModel.awaitingCopyLocation)) {
+            CopyPickAction.CANCELLED -> viewModel.awaitingCopyLocation = false // нічого не втрачено, незбережене на місці
+            CopyPickAction.SAVE -> {
+                ownedCopyUri = out // Д1: лише цей URI (його створив наш CreateDocument) дозволено прибрати, якщо він лишиться порожнім
+                lifecycleScope.launch {
+                    try { saveIntoChosenCopy(out ?: return@launch, onSuccess ?: {}) } finally { viewModel.awaitingCopyLocation = false }
+                }
+            }
+            CopyPickAction.DISCARD_EMPTY -> {
+                viewModel.awaitingCopyLocation = false
+                ownedCopyUri = out
+                lifecycleScope.launch { discardUnfinishedCopy(out ?: return@launch) }
+            }
+        }
+    }
+
+    /**
+     * Результат вибору місця, коли стан є. Після am kill процес новий: чекаємо відновлення незбереженого, за потреби
+     * просимо пароль нашим вікном (у пам'яті його вже нема), потім зберігаємо в цей URI. Скасування пароля, права, що
+     * зникли, або порожній запит — порожній файл прибираємо за правилами Д1.
+     */
+    private suspend fun saveIntoChosenCopy(out: Uri, onSuccess: () -> Unit) {
+        viewModel.pendingLoaded.first { it }
+        val access = obtainAccess()
+        val target = access?.let { EditAccessModel.saveTarget(it, viewModel.editor.value.items.isNotEmpty(), viewModel.formEdits.value.isNotEmpty()) }
+        if (access == null || (target != EditAccessModel.SaveTarget.NEW_COPY && target != EditAccessModel.SaveTarget.SAME_URI)) {
+            discardUnfinishedCopy(out)
+            return
+        }
+        val uri = documentUri
+        if (uri != null && viewModel.formFields.value.isEmpty() && viewModel.formEdits.value.isNotEmpty()) {
+            // після перезапуску поля форм ще не прочитані: без них значення форм не потраплять у копію
+            val fields = withContext(Dispatchers.IO) {
+                try { formEngine.extractFormFields(applicationContext, uri, viewModel.documentPassword) }
+                catch (e: Throwable) { if (e is CancellationException) throw e; emptyList() }
+            }
+            viewModel.setFormFields(fields)
+        }
+        val request = buildSaveRequest()
+        if (request.markups.isEmpty() && request.formUpdates.isEmpty()) {
+            discardUnfinishedCopy(out)
+            return
+        }
+        runSave(out, copy = true, onSuccess = onSuccess)
+    }
+
+    /** Збереження в обраний URI не відбулося: прибрати порожній файл (Д1) і чесно повідомити. */
+    private fun discardUnfinishedCopy(out: Uri) {
+        val deleted = removeEmptyCopy(out, copy = true)
+        ownedCopyUri = null
+        showMessage(withNotices(null, SaveNotices.forUnfinished(deleted)), long = true)
     }
 
     private val pickImageForReaderLauncher = registerForActivityResult(
@@ -1599,6 +1647,7 @@ class ReaderActivity : AppCompatActivity() {
             .setMessage(R.string.copy_warning_message)
             .setPositiveButton(R.string.copy_save) { _, _ ->
                 copyOnSuccess = onSuccess
+                viewModel.awaitingCopyLocation = true // переживе am kill; після будь-якого завершення скидається
                 createCopyLauncher.launch(CopyNaming.suggestedName(documentTitle))
             }
             .setNegativeButton(R.string.action_cancel, null)
@@ -1668,6 +1717,7 @@ class ReaderActivity : AppCompatActivity() {
             SaveNotice.NO_CHANGES_COPY_NOT_CREATED -> R.string.save_no_changes_copy_not_created
             SaveNotice.NO_CHANGES -> R.string.save_no_changes
             SaveNotice.EMPTY_FILE_LEFT -> R.string.save_empty_file_left
+            SaveNotice.SAVE_NOT_COMPLETED -> R.string.save_not_completed
         }
     )
 

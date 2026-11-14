@@ -107,7 +107,7 @@ object EmptyCopyCleanup {
 enum class DeleteResult { NOT_ATTEMPTED, DELETED, FAILED }
 
 /** Повідомлення про підсумок збереження (тексти беруться з ресурсів у активності). */
-enum class SaveNotice { NO_CHANGES_COPY_NOT_CREATED, NO_CHANGES, EMPTY_FILE_LEFT }
+enum class SaveNotice { NO_CHANGES_COPY_NOT_CREATED, NO_CHANGES, EMPTY_FILE_LEFT, SAVE_NOT_COMPLETED }
 
 /** Чистий вибір повідомлень: без Android, тестується в JVM. */
 object SaveNotices {
@@ -122,7 +122,27 @@ object SaveNotices {
         else -> listOf(SaveNotice.NO_CHANGES)
     }
 
+    /** Збереження копії не завершено (скасовано пароль або втрачено стан): «Збереження не завершено» (+ файл лишився). */
+    fun forUnfinished(deleted: DeleteResult): List<SaveNotice> =
+        listOf(SaveNotice.SAVE_NOT_COMPLETED) + forFailed(deleted)
+
     /** Додаток до повідомлення про збій: не мовчимо, якщо прибрати порожній файл не вдалося. */
     fun forFailed(deleted: DeleteResult): List<SaveNotice> =
         if (deleted == DeleteResult.FAILED) listOf(SaveNotice.EMPTY_FILE_LEFT) else emptyList()
+}
+
+/** Що робити з результатом системного вибору місця для копії. */
+enum class CopyPickAction { CANCELLED, SAVE, DISCARD_EMPTY }
+
+object CopyPick {
+    /**
+     * @param uriChosen користувач обрав місце (CreateDocument повернув URI)
+     * @param awaitingFlag ознака «чекаю місце для копії», збережена в SavedStateHandle перед запуском вибору
+     * Ознаки нема (процес був вбитий і стан не відновлено, або це не наш запит) — нічого не зберігаємо, порожній файл прибираємо.
+     */
+    fun resolve(uriChosen: Boolean, awaitingFlag: Boolean): CopyPickAction = when {
+        !uriChosen -> CopyPickAction.CANCELLED
+        awaitingFlag -> CopyPickAction.SAVE
+        else -> CopyPickAction.DISCARD_EMPTY
+    }
 }
