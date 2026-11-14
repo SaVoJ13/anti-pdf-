@@ -19,14 +19,4 @@
     <color name="place_card_accent">#BAC3FF</color>
     <color name="place_card_ring">#EEF0FA</color>
 
-    <!-- Палітра кольорів (9 + власний): збігається з PlaceBarLogic.PALETTE -->
-    <color name="place_color_black">#000000</color>
-    <color name="place_color_red">#D32F2F</color>
-    <color name="place_color_orange">#F57C00</color>
-    <color name="place_color_yellow">#FBC02D</color>
-    <color name="place_color_green">#388E3C</color>
-    <color name="place_color_blue">#1976D2</color>
-    <color name="place_color_indigo">#3949AB</color>
-    <color name="place_color_purple">#7B1FA2</color>
-    <color name="place_color_gray">#757575</color>
 </resources>

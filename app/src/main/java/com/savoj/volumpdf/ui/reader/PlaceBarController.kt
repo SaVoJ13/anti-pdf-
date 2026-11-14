@@ -1,5 +1,6 @@
 package com.savoj.volumpdf.ui.reader
 
+import androidx.core.view.isVisible
 import android.content.res.Configuration
 import android.view.View
 import android.view.ViewGroup
@@ -125,7 +126,7 @@ class PlaceBarController(
     fun closeCard(animate: Boolean = true) = setCard(false, animate)
 
     private fun setCard(open: Boolean, animate: Boolean = true) {
-        if (open == cardOpen && (open == (b.placeOptionsCard.visibility == View.VISIBLE))) return
+        if (open == cardOpen && (open == b.placeOptionsCard.isVisible)) return
         cardOpen = open
         val card = b.placeOptionsCard
         card.animate().cancel()
@@ -144,7 +145,7 @@ class PlaceBarController(
             }
         } else {
             b.placeCardScrim.visibility = View.GONE
-            if (animate && card.visibility == View.VISIBLE) {
+            if (animate && card.isVisible) {
                 card.animate().alpha(0f).translationY(16f * density).setDuration(animMs)
                     .withEndAction { if (!cardOpen) card.visibility = View.GONE }.start()
             } else {

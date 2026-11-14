@@ -211,8 +211,6 @@
     <string name="place_tool_check">Häkchen</string>
     <string name="place_tool_cross">Kreuz</string>
     <string name="place_tool_text">Text</string>
-    <string name="place_size_decrease">Kleiner</string>
-    <string name="place_size_increase">Größer</string>
     <string name="place_size_format">%1$s pt</string>
     <string name="place_done">Fertig</string>
     <string name="place_text_title">Text hinzufügen</string>
@@ -234,7 +232,6 @@
     <string name="place_tool_ink">Zeichnen</string>
     <string name="place_tool_hand">Hand (Scrollen und Zoomen)</string>
     <string name="place_tool_signature">Unterschrift</string>
-    <string name="place_signature_width">Breite der Unterschrift</string>
     <string name="place_signature_tap_hint">Tippen Sie auf die Seite, um die Unterschrift zu setzen</string>
     <string name="form_choice_none">Nicht ausgewählt</string>
     <string name="forms_apply">Übernehmen</string>
@@ -261,6 +258,7 @@
     <string name="tool_create_blank_desc">Neues leeres Dokument für Notizen und Text erstellen</string>
     <string name="tool_add_page">+ Seite</string>
     <string name="tool_add_page_desc">Leere Seite zum Dokument hinzufügen</string>
+    <string name="place_add_page_short">Leere Seite</string>
     <string name="tool_insert_file">Datei hinzufügen</string>
     <string name="tool_insert_file_desc">Seiten aus PDF oder Bildern anfügen</string>
     <string name="action_tools">Werkzeuge</string>

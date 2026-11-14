@@ -252,7 +252,8 @@
             android:visibility="gone" />
 
         <!-- Темна плаваюча картка параметрів інструмента: з'являється над нижнім рядком лише за повторним тапом -->
-        <LinearLayout
+        <!-- Картка прокручується: у ландшафті та при великому шрифті вміст не вміщається по висоті -->
+        <ScrollView
             android:id="@+id/placeOptionsCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -261,13 +262,19 @@
             android:background="@drawable/bg_place_card"
             android:clickable="true"
             android:elevation="@dimen/place_card_elevation"
+            android:fillViewport="false"
             android:focusable="false"
+            android:overScrollMode="ifContentScrolls"
+            android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingStart="@dimen/place_card_padding"
             android:paddingTop="4dp"
             android:paddingEnd="4dp"
-            android:paddingBottom="8dp"
-            android:visibility="gone">
+            android:paddingBottom="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -300,6 +307,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:paddingStart="0dp"
                 android:paddingEnd="12dp">
                 <ImageButton
                     android:id="@+id/btnToolCheck"
@@ -345,6 +353,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:paddingStart="0dp"
                 android:paddingEnd="12dp">
 
                 <TextView
@@ -417,6 +426,7 @@
                 android:gravity="center_vertical"
                 android:minHeight="@dimen/place_slot_min_size"
                 android:orientation="horizontal"
+                android:paddingStart="0dp"
                 android:paddingEnd="12dp">
 
                 <TextView
@@ -442,6 +452,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
+                android:paddingStart="0dp"
                 android:paddingEnd="12dp">
 
                 <ImageButton
@@ -491,9 +502,11 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="horizontal"
+                android:paddingStart="0dp"
                 android:paddingEnd="12dp"
                 android:visibility="gone" />
         </LinearLayout>
+        </ScrollView>
 
         <!-- Прогрес індикатор при збереженні анотацій -->
         <FrameLayout

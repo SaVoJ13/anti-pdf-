@@ -53,6 +53,9 @@
     <!-- Вікно введення тексту: прозорий фон, картку малює сама розмітка -->
     <style name="Theme.VolumPdf.TextCard" parent="Theme.Material3.DayNight.Dialog">
         <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- AppCompatDialog вимагає windowNoTitle/windowActionBar БЕЗ префікса android: (інакше IllegalArgumentException) -->
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowIsFloating">false</item>
         <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>

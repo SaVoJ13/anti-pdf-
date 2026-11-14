@@ -1,5 +1,7 @@
 package com.savoj.volumpdf.ui.reader
 
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.isVisible
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -730,7 +732,7 @@ class ReaderActivity : AppCompatActivity() {
     /** Перевірка прав → показ панелі й увімкнення тапу в мості. Для захищених/заборонених — лише пояснення. */
     private fun enterPlaceMode() {
         if (enteringPlaceMode) return
-        if (viewModel.placeModeActive && binding.placeToolBar.visibility == View.VISIBLE) return
+        if (viewModel.placeModeActive && binding.placeToolBar.isVisible) return
         documentUri ?: return
         enteringPlaceMode = true
         lifecycleScope.launch {
@@ -1036,7 +1038,7 @@ class ReaderActivity : AppCompatActivity() {
         dialog.setContentView(dialogBinding.root)
         dialog.window?.apply {
             setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+            setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
             setDimAmount(0.25f)
             addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
             // Картка сама піднімається над клавіатурою за ime-відступом нижче.
@@ -1117,7 +1119,7 @@ class ReaderActivity : AppCompatActivity() {
             }
             dialogBinding.btnTextColor.setOnClickListener {
                 dialogBinding.placeTextColorScroll.visibility =
-                    if (dialogBinding.placeTextColorScroll.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+                    if (dialogBinding.placeTextColorScroll.isVisible) View.GONE else View.VISIBLE
             }
         } else {
             dialogBinding.btnTextSize.visibility = View.GONE
@@ -1772,7 +1774,7 @@ class ReaderActivity : AppCompatActivity() {
         val snackbar = Snackbar.make(binding.root, text, Snackbar.LENGTH_INDEFINITE)
             .setAction(R.string.action_ok) { }
         snackbar.view.findViewById<android.widget.TextView>(com.google.android.material.R.id.snackbar_text)?.maxLines = 6
-        if (binding.placeToolBar.visibility == View.VISIBLE) snackbar.setAnchorView(binding.placeToolBar)
+        if (binding.placeToolBar.isVisible) snackbar.setAnchorView(binding.placeToolBar)
         snackbar.show()
         errorSnackbar = snackbar
         return snackbar
@@ -1780,7 +1782,7 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showMessage(text: String, long: Boolean, indefinite: Boolean = false): Snackbar {
         val snackbar = Snackbar.make(binding.root, text, if (indefinite) Snackbar.LENGTH_INDEFINITE else if (long) Snackbar.LENGTH_LONG else Snackbar.LENGTH_SHORT)
-        if (binding.placeToolBar.visibility == View.VISIBLE) snackbar.setAnchorView(binding.placeToolBar)
+        if (binding.placeToolBar.isVisible) snackbar.setAnchorView(binding.placeToolBar)
         snackbar.show()
         return snackbar
     }
@@ -1935,7 +1937,7 @@ class ReaderActivity : AppCompatActivity() {
     private fun showAddMenu() {
         val anchor = binding.toolbar.findViewById<View>(R.id.action_add) ?: binding.toolbar
         val popup = android.widget.PopupMenu(this, anchor)
-        popup.menu.add(0, 1, 0, R.string.tool_add_page_desc)
+        popup.menu.add(0, 1, 0, R.string.place_add_page_short)
         popup.menu.add(0, 2, 1, R.string.action_add_image)
         popup.menu.add(0, 3, 2, R.string.tool_insert_file)
         popup.menu.add(0, 4, 3, R.string.tool_scan_title)
