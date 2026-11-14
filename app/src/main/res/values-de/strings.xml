@@ -253,6 +253,7 @@
     <string name="save_no_changes">Keine Änderungen</string>
     <string name="save_empty_file_left">Eine leere Datei ist im gewählten Ordner geblieben</string>
     <string name="save_not_completed">Das Speichern wurde nicht abgeschlossen</string>
+    <string name="place_copy_saved_password_hint">Die Kopie ist geöffnet; geben Sie das Passwort im Viewer erneut ein</string>
     <string name="action_licenses">Open-Source-Lizenzen</string>
     <string name="dialog_licenses_title">Open-Source-Lizenzen</string>
     <string name="action_create_pdf">PDF erstellen</string>

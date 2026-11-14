@@ -107,7 +107,7 @@ object EmptyCopyCleanup {
 enum class DeleteResult { NOT_ATTEMPTED, DELETED, FAILED }
 
 /** Повідомлення про підсумок збереження (тексти беруться з ресурсів у активності). */
-enum class SaveNotice { NO_CHANGES_COPY_NOT_CREATED, NO_CHANGES, EMPTY_FILE_LEFT, SAVE_NOT_COMPLETED }
+enum class SaveNotice { NO_CHANGES_COPY_NOT_CREATED, NO_CHANGES, EMPTY_FILE_LEFT, SAVE_NOT_COMPLETED, COPY_SAVED, COPY_SAVED_PASSWORD_HINT }
 
 /** Чистий вибір повідомлень: без Android, тестується в JVM. */
 object SaveNotices {
@@ -121,6 +121,13 @@ object SaveNotices {
         deleted == DeleteResult.FAILED -> listOf(SaveNotice.NO_CHANGES, SaveNotice.EMPTY_FILE_LEFT)
         else -> listOf(SaveNotice.NO_CHANGES)
     }
+
+    /**
+     * Успіх збереження копії (Д2). Якщо копію записано з паролем, переглядач відкриє її без пароля в пам'яті (розшифровану
+     * копію в кеш не кладемо, пароль у бібліотеку не передаємо) і попросить пароль ще раз: попереджаємо про це.
+     */
+    fun forCopySaved(passwordUsed: Boolean): List<SaveNotice> =
+        if (passwordUsed) listOf(SaveNotice.COPY_SAVED, SaveNotice.COPY_SAVED_PASSWORD_HINT) else listOf(SaveNotice.COPY_SAVED)
 
     /** Збереження копії не завершено (скасовано пароль або втрачено стан): «Збереження не завершено» (+ файл лишився). */
     fun forUnfinished(deleted: DeleteResult): List<SaveNotice> =

@@ -253,6 +253,7 @@
     <string name="save_no_changes">Змін немає</string>
     <string name="save_empty_file_left">Порожній файл лишився в обраній папці</string>
     <string name="save_not_completed">Збереження не завершено</string>
+    <string name="place_copy_saved_password_hint">Копію відкрито; введіть пароль ще раз у переглядачі</string>
     <string name="action_licenses">Ліцензії відкритого коду</string>
     <string name="dialog_licenses_title">Ліцензії відкритого коду</string>
     <string name="action_create_pdf">Створити PDF</string>

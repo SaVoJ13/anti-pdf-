@@ -1680,7 +1680,8 @@ class ReaderActivity : AppCompatActivity() {
                         SafUtils.takePersistableUriPermissionSafe(this, output)
                         viewModel.clearAllPending() // незбережене оригіналу: його вже записано в копію
                         switchToDocument(output) // копія — поточний документ (читач, «Останні»)
-                        showMessage(getString(R.string.place_copy_saved), long = false)
+                        val savedNotices = SaveNotices.forCopySaved(passwordUsed = password != null)
+                        showMessage(withNotices(null, savedNotices), long = savedNotices.size > 1)
                     } else {
                         reloadViewerDocument()
                         viewModel.clearAllPending()
@@ -1718,6 +1719,8 @@ class ReaderActivity : AppCompatActivity() {
             SaveNotice.NO_CHANGES -> R.string.save_no_changes
             SaveNotice.EMPTY_FILE_LEFT -> R.string.save_empty_file_left
             SaveNotice.SAVE_NOT_COMPLETED -> R.string.save_not_completed
+            SaveNotice.COPY_SAVED -> R.string.place_copy_saved
+            SaveNotice.COPY_SAVED_PASSWORD_HINT -> R.string.place_copy_saved_password_hint
         }
     )
 
