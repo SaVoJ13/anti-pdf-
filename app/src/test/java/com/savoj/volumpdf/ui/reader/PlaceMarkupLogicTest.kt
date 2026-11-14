@@ -347,4 +347,51 @@ class PlaceMarkupLogicTest {
         assertTrue(!placed.canFitOnPage)
         assertTrue(placed.isOutsideBounds)
     }
+
+    @Test
+    fun `resolveDragPlacement keeps text at drop point when inside page bounds`() {
+        val page = PageSizePt(595f, 842f)
+        val txt = PendingMarkup(
+            id = "t1", tool = PlaceTool.TEXT, pageIndex = 0,
+            x = 36f, y = 40f, text = "Привіт\nДругий рядок", sizePt = 16f, color = 0xFF000000.toInt()
+        )
+        val placed = PlaceMarkupLogic.resolveDragPlacement(txt, 140f, 320f, page)
+        assertTrue(placed.canFitOnPage)
+        assertTrue(!placed.isOutsideBounds)
+        assertEquals(140f, placed.x, 0.01f)
+        assertEquals(320f, placed.y, 0.01f)
+    }
+
+    @Test
+    fun `resolveDragPlacement clamps text to nearest valid point using block width and height`() {
+        val page = PageSizePt(595f, 842f)
+        val txt = PendingMarkup(
+            id = "t1", tool = PlaceTool.TEXT, pageIndex = 0,
+            x = 50f, y = 50f, text = "Рядок 1\nДовший рядок тексту 2\nРядок 3", sizePt = 18f, color = 0xFF000000.toInt()
+        )
+        val (w, h) = PlaceMarkupLogic.textBlockSizePt(txt)
+        val placedRB = PlaceMarkupLogic.resolveDragPlacement(txt, 580f, 830f, page)
+        assertTrue(placedRB.canFitOnPage)
+        assertTrue(placedRB.isOutsideBounds)
+        assertEquals(595f - PlaceMarkupLogic.PAGE_EDGE_MARGIN_PT - w, placedRB.x, 0.05f)
+        assertEquals(842f - h, placedRB.y, 0.05f)
+
+        val placedLT = PlaceMarkupLogic.resolveDragPlacement(txt, -30f, -15f, page)
+        assertTrue(placedLT.canFitOnPage)
+        assertTrue(placedLT.isOutsideBounds)
+        assertEquals(0f, placedLT.x, 0.01f)
+        assertEquals(0f, placedLT.y, 0.01f)
+    }
+
+    @Test
+    fun `resolveDragPlacement reports canFitOnPage false when text block is wider than page`() {
+        val narrowPage = PageSizePt(120f, 400f)
+        val wideText = PendingMarkup(
+            id = "t1", tool = PlaceTool.TEXT, pageIndex = 0,
+            x = 10f, y = 10f, text = "Дуже довгий нерозривний рядок тексту", sizePt = 20f, color = 0xFF000000.toInt()
+        )
+        val placed = PlaceMarkupLogic.resolveDragPlacement(wideText, 20f, 20f, narrowPage)
+        assertTrue(!placed.canFitOnPage)
+        assertTrue(placed.isOutsideBounds)
+    }
 }

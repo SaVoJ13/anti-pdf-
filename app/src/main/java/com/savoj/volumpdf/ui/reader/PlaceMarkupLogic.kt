@@ -590,12 +590,12 @@ object PlaceMarkupLogic {
         measureWidthPt: ((String) -> Float)? = null
     ): Pair<Float, Float> {
         if (item.tool == PlaceTool.TEXT && page != null) {
-            val (baseX, baseY) = clampToPage(x, y, page)
-            val measure = measureWidthPt ?: { str -> estimateTextWidthPt(str, item.sizePt) }
-            val lines = item.text.replace("\r", "").split('\n')
-            val maxLineW = lines.maxOfOrNull { measure(it) } ?: 0f
-            val maxX = (page.widthPt - PAGE_EDGE_MARGIN_PT - maxLineW).coerceAtLeast(0f)
-            return Pair(baseX.coerceIn(0f, maxX), baseY)
+            val (w, h) = textBlockSizePt(item, measureWidthPt)
+            val maxX = (page.widthPt - PAGE_EDGE_MARGIN_PT - w).coerceAtLeast(0f)
+            val maxY = (page.heightPt - h).coerceAtLeast(0f)
+            val sx = if (x.isNaN()) item.x else x
+            val sy = if (y.isNaN()) item.y else y
+            return Pair(sx.coerceIn(0f, maxX), sy.coerceIn(0f, maxY))
         }
         if (item.tool == PlaceTool.IMAGE && page != null) {
             val w = item.sizePt
@@ -631,8 +631,29 @@ object PlaceMarkupLogic {
         val canFitOnPage: Boolean
     )
 
+    /** Повертає актуальні ширину й висоту текстового блоку в pt (з урахуванням переносів і розміру шрифту). */
+    fun textBlockSizePt(
+        item: PendingMarkup,
+        measureWidthPt: ((String) -> Float)? = null
+    ): Pair<Float, Float> {
+        val measure = measureWidthPt ?: { str -> estimateTextWidthPt(str, item.sizePt) }
+        val lines = item.text.replace("\r", "").split('\n')
+        val width = lines.maxOfOrNull { if (it.isEmpty()) 0f else measure(it) } ?: 0f
+        val height = (MarkupLayout.TEXT_ASCENT_RATIO + PlaceBounds.TEXT_DESCENT_RATIO +
+            (lines.size - 1) * MarkupLayout.TEXT_LINE_HEIGHT_RATIO) * item.sizePt
+        return Pair(width, height)
+    }
+
     /** Перевіряє, чи вміщується об'єкт [item] з актуальними розмірами в межах сторінки [page]. */
-    fun fitsOnPage(item: PendingMarkup, page: PageSizePt): Boolean {
+    fun fitsOnPage(
+        item: PendingMarkup,
+        page: PageSizePt,
+        measureWidthPt: ((String) -> Float)? = null
+    ): Boolean {
+        if (item.tool == PlaceTool.TEXT) {
+            val (w, h) = textBlockSizePt(item, measureWidthPt)
+            return w <= page.widthPt - PAGE_EDGE_MARGIN_PT + 0.5f && h <= page.heightPt + 0.5f
+        }
         if (item.tool != PlaceTool.IMAGE && item.tool != PlaceTool.SIGNATURE) return true
         val w = item.sizePt
         val h = item.sizePt * item.aspect
@@ -659,7 +680,7 @@ object PlaceMarkupLogic {
                 canFitOnPage = false
             )
         }
-        val canFit = fitsOnPage(item, page)
+        val canFit = fitsOnPage(item, page, measureWidthPt)
         val sx = if (candidateX.isNaN()) item.x else candidateX
         val sy = if (candidateY.isNaN()) item.y else candidateY
         val (cx, cy) = clampedAnchor(item, sx, sy, page, measureWidthPt)

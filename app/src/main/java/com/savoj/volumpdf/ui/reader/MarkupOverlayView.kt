@@ -500,16 +500,29 @@ class MarkupOverlayView @JvmOverloads constructor(
                             dragY = 40f
                             isOutsideAllowedBounds = false
                             canFitOnTargetPage = true
-                        } else if (item.tool == PlaceTool.IMAGE || item.tool == PlaceTool.SIGNATURE) {
+                        } else if (item.tool == PlaceTool.IMAGE || item.tool == PlaceTool.SIGNATURE || item.tool == PlaceTool.TEXT) {
                             val activeSize = dragSizePt ?: item.sizePt
                             val activeItem = item.copy(sizePt = activeSize)
                             val zoomNow = b?.zoom?.takeIf { it > 0f } ?: startZoom
+                            val measureTextPt: ((String) -> Float)? = if (activeItem.tool == PlaceTool.TEXT) {
+                                { str ->
+                                    textPaint.textSize = MarkupOverlayMath.ptToPx(activeItem.sizePt, zoomNow)
+                                    textPaint.measureText(str) / zoomNow
+                                }
+                            } else {
+                                null
+                            }
+                            val (itemW, itemH) = if (activeItem.tool == PlaceTool.TEXT) {
+                                PlaceMarkupLogic.textBlockSizePt(activeItem, measureTextPt)
+                            } else {
+                                Pair(activeItem.sizePt, activeItem.sizePt * activeItem.aspect)
+                            }
                             val startOriginView = b?.pageToView(PageViewPoint(startPageIndex, startX, startY))
                             if (b != null && startOriginView != null) {
                                 val candViewX = startOriginView.x + dx
                                 val candViewY = startOriginView.y + dy
-                                val centerViewX = candViewX + (activeItem.sizePt * zoomNow) / 2f
-                                val centerViewY = candViewY + (activeItem.sizePt * activeItem.aspect * zoomNow) / 2f
+                                val centerViewX = candViewX + (itemW * zoomNow) / 2f
+                                val centerViewY = candViewY + (itemH * zoomNow) / 2f
                                 val hitPage = try {
                                     b.viewToPage(centerViewX, centerViewY)
                                 } catch (_: Throwable) {
@@ -528,7 +541,8 @@ class MarkupOverlayView @JvmOverloads constructor(
                                         activeItem.copy(pageIndex = targetIdx),
                                         rawPagePt.x,
                                         rawPagePt.y,
-                                        targetPageSize
+                                        targetPageSize,
+                                        measureTextPt
                                     )
                                     dragX = placed.x
                                     dragY = placed.y
@@ -545,7 +559,8 @@ class MarkupOverlayView @JvmOverloads constructor(
                                     activeItem.copy(pageIndex = fallbackIdx),
                                     startX + dx / zoomNow,
                                     startY + dy / zoomNow,
-                                    targetPageSize
+                                    targetPageSize,
+                                    measureTextPt
                                 )
                                 dragX = placed.x
                                 dragY = placed.y
