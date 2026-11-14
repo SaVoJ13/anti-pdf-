@@ -1658,7 +1658,7 @@ class ReaderActivity : AppCompatActivity() {
 
     /** Д1: збій збереження копії не має лишати порожній файл у вибраній папці. */
     private fun removeEmptyCopy(output: Uri, copy: Boolean) {
-        if (EmptyCopyCleanup.shouldDelete(copy, SafUtils.queryFileSize(this, output))) {
+        if (EmptyCopyCleanup.shouldDelete(copy, SafUtils.queryFileSizeOrNull(this, output), createdByThisFlow = copy)) {
             SafUtils.deleteDocumentQuietly(this, output)
         }
     }

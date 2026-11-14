@@ -95,8 +95,10 @@ object CopyNaming {
 
 /**
  * Д1 (QA 3e): якщо збереження копії не вдалося, у вибраній папці лишається порожній файл «<ім'я>_edited.pdf».
- * Рішення чисте (тестується без Android): видаляти лише власну нову копію, і лише якщо в ній 0 байт.
+ * Рішення чисте (тестується без Android): видаляти лише URI, який повернув наш CreateDocument у цьому потоці,
+ * і лише якщо розмір відомо й він дорівнює 0. Невідомий розмір (null) — НЕ видаляти.
  */
 object EmptyCopyCleanup {
-    fun shouldDelete(isCopy: Boolean, sizeBytes: Long): Boolean = isCopy && sizeBytes == 0L
+    fun shouldDelete(isCopy: Boolean, sizeBytes: Long?, createdByThisFlow: Boolean): Boolean =
+        isCopy && createdByThisFlow && sizeBytes == 0L
 }

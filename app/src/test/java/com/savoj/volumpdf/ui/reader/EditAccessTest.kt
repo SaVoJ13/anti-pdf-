@@ -135,10 +135,12 @@ class EditAccessTest {
         assertEquals("document_edited.pdf", CopyNaming.suggestedName(".pdf"))
     }
 
-    @Test fun emptyCopyIsDeletedOnlyWhenItIsACopyWithZeroBytes() {
-        assertTrue(EmptyCopyCleanup.shouldDelete(isCopy = true, sizeBytes = 0L))
-        assertFalse(EmptyCopyCleanup.shouldDelete(isCopy = true, sizeBytes = 1L))
-        assertFalse("запис у сам оригінал не чіпаємо", EmptyCopyCleanup.shouldDelete(isCopy = false, sizeBytes = 0L))
+    @Test fun emptyCopyIsDeletedOnlyWhenOurFlowCreatedItAndSizeIsKnownZero() {
+        assertTrue(EmptyCopyCleanup.shouldDelete(isCopy = true, sizeBytes = 0L, createdByThisFlow = true))
+        assertFalse("розмір невідомий — не видаляти", EmptyCopyCleanup.shouldDelete(true, null, true))
+        assertFalse(EmptyCopyCleanup.shouldDelete(true, 1L, true))
+        assertFalse("запис у сам оригінал не чіпаємо", EmptyCopyCleanup.shouldDelete(false, 0L, true))
+        assertFalse("не наш потік", EmptyCopyCleanup.shouldDelete(true, 0L, false))
     }
 
     @Test fun saveFailureOnCopyRemovesEmptyFile() {
