@@ -1230,10 +1230,14 @@ class ReaderActivity : AppCompatActivity() {
     /** Дія після успішного збереження копії; тримається поки відкрито системний вибір місця (поворот його не губить, процес — так). */
     private var copyOnSuccess: (() -> Unit)? = null
 
+    /** URI копії, який повернув наш CreateDocument на час поточного збереження. Лише в пам'яті: не пароль, не стан форм. */
+    private var ownedCopyUri: Uri? = null
+
     private val createCopyLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { out ->
         val onSuccess = copyOnSuccess
         copyOnSuccess = null
         if (out == null) return@registerForActivityResult // вибір скасовано: нічого не втрачено, незбережене на місці
+        ownedCopyUri = out // Д1: лише цей URI (його створив наш CreateDocument) дозволено прибрати, якщо він лишиться порожнім
         lifecycleScope.launch { runSave(out, copy = true, onSuccess = onSuccess ?: {}) }
     }
 
@@ -1641,7 +1645,8 @@ class ReaderActivity : AppCompatActivity() {
                     showError(outcome.message.ifBlank { getString(R.string.error_title) })
                 }
                 SaveOutcome.NothingToSave -> {
-                    removeEmptyCopy(output, copy)
+                    val deleted = removeEmptyCopy(output, copy)
+                    SaveNotices.forNothingToSave(copy, deleted).forEach { showMessage(noticeText(it), long = true) }
                     onSuccess()
                 }
             }
@@ -1650,17 +1655,30 @@ class ReaderActivity : AppCompatActivity() {
             removeEmptyCopy(output, copy)
             showError(e.localizedMessage ?: getString(R.string.error_title))
         } finally {
+            if (copy) ownedCopyUri = null
             hideLoadingOverlay()
             savingPlace = false
             binding.markupOverlay.editingEnabled = viewModel.placeModeActive
         }
     }
 
-    /** Д1: збій збереження копії не має лишати порожній файл у вибраній папці. */
-    private fun removeEmptyCopy(output: Uri, copy: Boolean) {
-        if (EmptyCopyCleanup.shouldDelete(copy, SafUtils.queryFileSizeOrNull(this, output), createdByThisFlow = copy)) {
-            SafUtils.deleteDocumentQuietly(this, output)
+    private fun noticeText(notice: SaveNotice): String = getString(
+        when (notice) {
+            SaveNotice.NO_CHANGES_COPY_NOT_CREATED -> R.string.save_no_changes_copy_not_created
+            SaveNotice.NO_CHANGES -> R.string.save_no_changes
         }
+    )
+
+    /**
+     * Д1: збій збереження копії не має лишати порожній файл у вибраній папці. Видаляємо лише URI, який повернув наш
+     * CreateDocument у цьому потоці ([ownedCopyUri]), і лише якщо розмір відомо й він 0.
+     */
+    private fun removeEmptyCopy(output: Uri, copy: Boolean): DeleteResult {
+        val ours = copy && output == ownedCopyUri
+        if (!EmptyCopyCleanup.shouldDelete(copy, SafUtils.queryFileSizeOrNull(this, output), createdByThisFlow = ours)) {
+            return DeleteResult.NOT_ATTEMPTED
+        }
+        return if (SafUtils.deleteDocumentQuietly(this, output)) DeleteResult.DELETED else DeleteResult.FAILED
     }
 
     /** Копія стає поточним документом: URI, назва, запис у «Останніх», переглядач (з відновленням позиції), поля форм. */

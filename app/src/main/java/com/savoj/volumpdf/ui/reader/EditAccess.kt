@@ -102,3 +102,22 @@ object EmptyCopyCleanup {
     fun shouldDelete(isCopy: Boolean, sizeBytes: Long?, createdByThisFlow: Boolean): Boolean =
         isCopy && createdByThisFlow && sizeBytes == 0L
 }
+
+/** Результат спроби прибрати порожню копію. */
+enum class DeleteResult { NOT_ATTEMPTED, DELETED, FAILED }
+
+/** Повідомлення про підсумок збереження (тексти беруться з ресурсів у активності). */
+enum class SaveNotice { NO_CHANGES_COPY_NOT_CREATED, NO_CHANGES }
+
+/** Чистий вибір повідомлень: без Android, тестується в JVM. */
+object SaveNotices {
+    /**
+     * Нічого зберігати. Для копії: якщо порожній файл прибрано — «Змін немає, копію не створено» (не «успіх»);
+     * якщо файл лишився з іншої причини — просто «Змін немає». Запис у сам документ мовчки завершується, як раніше.
+     */
+    fun forNothingToSave(copy: Boolean, deleted: DeleteResult): List<SaveNotice> = when {
+        !copy -> emptyList()
+        deleted == DeleteResult.DELETED -> listOf(SaveNotice.NO_CHANGES_COPY_NOT_CREATED)
+        else -> listOf(SaveNotice.NO_CHANGES)
+    }
+}

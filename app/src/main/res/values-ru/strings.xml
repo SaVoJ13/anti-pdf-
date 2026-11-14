@@ -249,6 +249,8 @@
     <string name="copy_warning_message">Файл защищён. Копия будет сохранена с тем же паролем; пароль владельца и ограничения прав не переносятся.</string>
     <string name="copy_save">Сохранить копию</string>
     <string name="place_copy_saved">Копия сохранена</string>
+    <string name="save_no_changes_copy_not_created">Изменений нет, копия не создана</string>
+    <string name="save_no_changes">Изменений нет</string>
     <string name="action_licenses">Лицензии открытого ПО</string>
     <string name="dialog_licenses_title">Лицензии открытого ПО</string>
     <string name="action_create_pdf">Создать PDF</string>
