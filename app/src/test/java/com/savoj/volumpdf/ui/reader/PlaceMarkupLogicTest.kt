@@ -270,4 +270,81 @@ class PlaceMarkupLogicTest {
         ) as TextCheck.Ok
         assertEquals(raw, check.markup.rawText)
     }
+
+    @Test
+    fun `resolveDragPlacement keeps image at drop point when inside page bounds`() {
+        val page = PageSizePt(595f, 842f)
+        val img = PendingMarkup(
+            id = "img1", tool = PlaceTool.IMAGE, pageIndex = 0,
+            x = 20f, y = 20f, sizePt = 200f, color = 0, text = "", aspect = 0.5f
+        )
+        val placed = PlaceMarkupLogic.resolveDragPlacement(img, 180f, 400f, page)
+        assertTrue(placed.canFitOnPage)
+        assertTrue(!placed.isOutsideBounds)
+        assertEquals(180f, placed.x, 0.01f)
+        assertEquals(400f, placed.y, 0.01f)
+    }
+
+    @Test
+    fun `resolveDragPlacement clamps to nearest valid point when dragged past page edge`() {
+        val page = PageSizePt(595f, 842f)
+        val img = PendingMarkup(
+            id = "img1", tool = PlaceTool.IMAGE, pageIndex = 0,
+            x = 50f, y = 50f, sizePt = 200f, color = 0, text = "", aspect = 0.5f // w=200, h=100
+        )
+        val placedRightBottom = PlaceMarkupLogic.resolveDragPlacement(img, 500f, 800f, page)
+        assertTrue(placedRightBottom.canFitOnPage)
+        assertTrue(placedRightBottom.isOutsideBounds)
+        assertEquals(395f, placedRightBottom.x, 0.01f) // 595 - 200
+        assertEquals(742f, placedRightBottom.y, 0.01f) // 842 - 100
+
+        val placedLeftTop = PlaceMarkupLogic.resolveDragPlacement(img, -40f, -25f, page)
+        assertTrue(placedLeftTop.canFitOnPage)
+        assertTrue(placedLeftTop.isOutsideBounds)
+        assertEquals(0f, placedLeftTop.x, 0.01f)
+        assertEquals(0f, placedLeftTop.y, 0.01f)
+    }
+
+    @Test
+    fun `resolveDragPlacement accounts for 90 180 270 rotation and scaled size`() {
+        val page = PageSizePt(595f, 842f)
+        val img = PendingMarkup(
+            id = "img1", tool = PlaceTool.IMAGE, pageIndex = 0,
+            x = 100f, y = 100f, sizePt = 200f, color = 0, text = "", aspect = 0.5f // w=200, h=100
+        )
+        var state = PlaceEditor.add(PlaceEditorState(), img)
+        // Поворот на 90°: w=100, h=200 (aspect=2.0)
+        state = PlaceEditor.rotate(state, "img1", 90, page)
+        val rot90 = state.items.single()
+        val p90 = PlaceMarkupLogic.resolveDragPlacement(rot90, 520f, 700f, page)
+        assertEquals(495f, p90.x, 0.01f) // 595 - 100
+        assertEquals(642f, p90.y, 0.01f) // 842 - 200
+
+        // Поворот ще на 90° (180°): w=200, h=100
+        state = PlaceEditor.rotate(state, "img1", 90, page)
+        val rot180 = state.items.single()
+        val p180 = PlaceMarkupLogic.resolveDragPlacement(rot180, 520f, 700f, page)
+        assertEquals(395f, p180.x, 0.01f) // 595 - 200
+        assertEquals(700f, p180.y, 0.01f) // 700 <= 842 - 100
+
+        // Поворот ще на 90° (270°) і збільшення ширини щипком до 300 (h=600)
+        state = PlaceEditor.rotate(state, "img1", 90, page)
+        state = PlaceEditor.setSizeAndPosition(state, "img1", 300f, 100f, 100f, page)
+        val rot270Scaled = state.items.single()
+        val p270 = PlaceMarkupLogic.resolveDragPlacement(rot270Scaled, 400f, 400f, page)
+        assertEquals(295f, p270.x, 0.01f) // 595 - 300
+        assertEquals(242f, p270.y, 0.01f) // 842 - 600
+    }
+
+    @Test
+    fun `resolveDragPlacement reports canFitOnPage false when image cannot fit on page`() {
+        val smallPage = PageSizePt(300f, 400f)
+        val oversized = PendingMarkup(
+            id = "img1", tool = PlaceTool.IMAGE, pageIndex = 0,
+            x = 10f, y = 10f, sizePt = 350f, color = 0, text = "", aspect = 1f
+        )
+        val placed = PlaceMarkupLogic.resolveDragPlacement(oversized, 20f, 20f, smallPage)
+        assertTrue(!placed.canFitOnPage)
+        assertTrue(placed.isOutsideBounds)
+    }
 }

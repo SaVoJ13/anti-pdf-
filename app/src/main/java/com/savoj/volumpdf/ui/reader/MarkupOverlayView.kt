@@ -208,8 +208,9 @@ class MarkupOverlayView @JvmOverloads constructor(
     private var pinchStartY = 0f
     private var pinchAspect = 0f
 
-    /** Прапорець перетягування за межі сторінки (для захисту від крашу та Snap-back). */
+    /** Прапорець перетягування за межі сторінки (для захисту від крашу та візуальної індикації меж). */
     private var isOutsideAllowedBounds = false
+    private var canFitOnTargetPage = true
     private var startPageIndex = 0
 
     private val pageSafeGuidePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -244,7 +245,7 @@ class MarkupOverlayView @JvmOverloads constructor(
     /** Опорна точка об'єкта в пікселях цього в'ю з урахуванням перетягування; null — сторінка ще не розкладена. */
     private fun originPx(item: PendingMarkup, offset: IntArray): Pair<Float, Float>? {
         val b = bridge ?: return null
-        val useDrag = item.id == dragId && moved
+        val useDrag = (item.id == dragId && moved) || (isPinching && item.id == (dragId ?: selectedId))
         val pIndex = if (useDrag && dragPageIndex != null) dragPageIndex!! else item.pageIndex
         val x = if (useDrag) dragX else item.x
         val y = if (useDrag) dragY else item.y
@@ -382,6 +383,7 @@ class MarkupOverlayView @JvmOverloads constructor(
                 dragPageIndex = item.pageIndex
                 isDragBelowDocument = false
                 isOutsideAllowedBounds = false
+                canFitOnTargetPage = true
                 dragX = item.x
                 dragY = item.y
                 parent?.requestDisallowInterceptTouchEvent(true)
@@ -497,6 +499,59 @@ class MarkupOverlayView @JvmOverloads constructor(
                             dragX = 36f
                             dragY = 40f
                             isOutsideAllowedBounds = false
+                            canFitOnTargetPage = true
+                        } else if (item.tool == PlaceTool.IMAGE || item.tool == PlaceTool.SIGNATURE) {
+                            val activeSize = dragSizePt ?: item.sizePt
+                            val activeItem = item.copy(sizePt = activeSize)
+                            val zoomNow = b?.zoom?.takeIf { it > 0f } ?: startZoom
+                            val startOriginView = b?.pageToView(PageViewPoint(startPageIndex, startX, startY))
+                            if (b != null && startOriginView != null) {
+                                val candViewX = startOriginView.x + dx
+                                val candViewY = startOriginView.y + dy
+                                val centerViewX = candViewX + (activeItem.sizePt * zoomNow) / 2f
+                                val centerViewY = candViewY + (activeItem.sizePt * activeItem.aspect * zoomNow) / 2f
+                                val hitPage = try {
+                                    b.viewToPage(centerViewX, centerViewY)
+                                } catch (_: Throwable) {
+                                    null
+                                }
+                                val targetIdx = if (hitPage != null && hitPage.pageIndex in 0 until totalPages) {
+                                    hitPage.pageIndex
+                                } else {
+                                    (dragPageIndex ?: startPageIndex).coerceIn(0, (totalPages - 1).coerceAtLeast(0))
+                                }
+                                dragPageIndex = targetIdx
+                                val rawPagePt = b.viewToPageSpace(targetIdx, candViewX, candViewY)
+                                val targetPageSize = b.pageSizePt(targetIdx)
+                                if (rawPagePt != null) {
+                                    val placed = PlaceMarkupLogic.resolveDragPlacement(
+                                        activeItem.copy(pageIndex = targetIdx),
+                                        rawPagePt.x,
+                                        rawPagePt.y,
+                                        targetPageSize
+                                    )
+                                    dragX = placed.x
+                                    dragY = placed.y
+                                    isOutsideAllowedBounds = placed.isOutsideBounds
+                                    canFitOnTargetPage = placed.canFitOnPage
+                                } else {
+                                    isOutsideAllowedBounds = true
+                                    canFitOnTargetPage = false
+                                }
+                            } else {
+                                val fallbackIdx = dragPageIndex ?: item.pageIndex
+                                val targetPageSize = b?.pageSizePt(fallbackIdx)
+                                val placed = PlaceMarkupLogic.resolveDragPlacement(
+                                    activeItem.copy(pageIndex = fallbackIdx),
+                                    startX + dx / zoomNow,
+                                    startY + dy / zoomNow,
+                                    targetPageSize
+                                )
+                                dragX = placed.x
+                                dragY = placed.y
+                                isOutsideAllowedBounds = placed.isOutsideBounds
+                                canFitOnTargetPage = placed.canFitOnPage
+                            }
                         } else {
                             val targetPoint = try {
                                 b?.viewToPage(pdfX, pdfY)
@@ -510,9 +565,10 @@ class MarkupOverlayView @JvmOverloads constructor(
                                 dragX = c.first
                                 dragY = c.second
                                 isOutsideAllowedBounds = false
+                                canFitOnTargetPage = true
                             } else {
-                                // Дотик за межами сторінки: фіксуємо вихід за поля для безпечного Snap-back
                                 isOutsideAllowedBounds = true
+                                canFitOnTargetPage = true
                                 val currPageIdx = dragPageIndex ?: item.pageIndex
                                 val page = b?.pageSizePt(currPageIdx)
                                 val c = PlaceMarkupLogic.clampedAnchor(item.copy(pageIndex = currPageIdx), startX + dx / startZoom, startY + dy / startZoom, page)
@@ -555,6 +611,17 @@ class MarkupOverlayView @JvmOverloads constructor(
                     val finalX = dragX
                     val finalY = dragY
                     dragSizePt = null
+                    val upIdx = event.actionIndex
+                    val remIdx = if (upIdx == 0) 1 else 0
+                    if (remIdx < event.pointerCount) {
+                        activePointerId = event.getPointerId(remIdx)
+                        downX = event.getX(remIdx)
+                        downY = event.getY(remIdx)
+                        startX = finalX
+                        startY = finalY
+                        startPageIndex = dragPageIndex ?: sel?.pageIndex ?: startPageIndex
+                        moved = false
+                    }
                     invalidate()
                     if (sel != null && finalSize != null) {
                         editListener?.onItemSizeAndPositionChanged(sel.id, finalSize, finalX, finalY)
@@ -576,6 +643,17 @@ class MarkupOverlayView @JvmOverloads constructor(
                     val finalX = dragX
                     val finalY = dragY
                     dragSizePt = null
+                    val upIdx = event.actionIndex
+                    val remIdx = if (upIdx == 0) 1 else 0
+                    if (remIdx < event.pointerCount) {
+                        activePointerId = event.getPointerId(remIdx)
+                        downX = event.getX(remIdx)
+                        downY = event.getY(remIdx)
+                        startX = finalX
+                        startY = finalY
+                        startPageIndex = dragPageIndex ?: sel?.pageIndex ?: startPageIndex
+                        moved = false
+                    }
                     invalidate()
                     if (sel != null && finalSize != null) {
                         editListener?.onItemSizeAndPositionChanged(sel.id, finalSize, finalX, finalY)
@@ -628,17 +706,18 @@ class MarkupOverlayView @JvmOverloads constructor(
         val y = dragY
         val targetPage = dragPageIndex
         val below = isDragBelowDocument
-        val outside = isOutsideAllowedBounds
+        val canFit = canFitOnTargetPage
         dragId = null
         dragPageIndex = null
         isDragBelowDocument = false
         isOutsideAllowedBounds = false
+        canFitOnTargetPage = true
         moved = false
         invalidate()
         if (!commit) return
         if (wasMoved) {
-            if (outside && !below) {
-                // Відпускання за межами сторінки: Snap-back повертає об'єкт у початкову позицію
+            if (!canFit && !below) {
+                // Зображення не може бути розміщене в межах цільової сторінки: повертаємо в початкову позицію
                 editListener?.onItemMoved(id, startPageIndex, startX, startY)
                 editListener?.onItemDragSnappedBack(id)
             } else if (below) {
@@ -662,11 +741,14 @@ class MarkupOverlayView @JvmOverloads constructor(
     private fun endGesture() {
         gestureActive = false
         isResizing = false
+        isPinching = false
         resizeId = null
         dragText = null
         dragSizePt = null
         dragPageIndex = null
         isDragBelowDocument = false
+        isOutsideAllowedBounds = false
+        canFitOnTargetPage = true
         activePointerId = -1
         dragId = null
         moved = false
@@ -674,11 +756,14 @@ class MarkupOverlayView @JvmOverloads constructor(
 
     private fun cancelGesture() {
         isResizing = false
+        isPinching = false
         resizeId = null
         dragText = null
         dragSizePt = null
         dragPageIndex = null
         isDragBelowDocument = false
+        isOutsideAllowedBounds = false
+        canFitOnTargetPage = true
         dragId = null
         moved = false
         gestureActive = false
@@ -793,7 +878,7 @@ class MarkupOverlayView @JvmOverloads constructor(
         val zoom = b.zoom
         for (item in list) {
             val o = originPx(item, offset) ?: continue
-            val activeItem = if (isResizing && item.id == resizeId) {
+            val activeItem = if ((isResizing && item.id == resizeId) || (isPinching && item.id == (dragId ?: selectedId))) {
                 if (dragText != null) item.copy(text = dragText!!)
                 else if (dragSizePt != null) item.copy(sizePt = dragSizePt!!)
                 else item
@@ -832,7 +917,7 @@ class MarkupOverlayView @JvmOverloads constructor(
 
         val sel = selectedId?.let { id -> list.firstOrNull { it.id == id } }
         if (sel != null) {
-            val activeSel = if (isResizing && sel.id == resizeId) {
+            val activeSel = if ((isResizing && sel.id == resizeId) || (isPinching && sel.id == (dragId ?: selectedId))) {
                 if (dragText != null) sel.copy(text = dragText!!)
                 else if (dragSizePt != null) sel.copy(sizePt = dragSizePt!!)
                 else sel

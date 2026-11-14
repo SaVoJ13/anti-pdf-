@@ -624,6 +624,54 @@ object PlaceMarkupLogic {
         return Pair(item.x + dx, item.y + dy)
     }
 
+    data class DragPlacementResult(
+        val x: Float,
+        val y: Float,
+        val isOutsideBounds: Boolean,
+        val canFitOnPage: Boolean
+    )
+
+    /** Перевіряє, чи вміщується об'єкт [item] з актуальними розмірами в межах сторінки [page]. */
+    fun fitsOnPage(item: PendingMarkup, page: PageSizePt): Boolean {
+        if (item.tool != PlaceTool.IMAGE && item.tool != PlaceTool.SIGNATURE) return true
+        val w = item.sizePt
+        val h = item.sizePt * item.aspect
+        return w <= page.widthPt + 0.5f && h <= page.heightPt + 0.5f
+    }
+
+    /**
+     * Обчислює безпечну позицію [item] при перетягуванні на сторінку [page].
+     * Якщо кандидатна позиція виходить за межі допустимої області — обмежує найближчою допустимою точкою;
+     * [canFitOnPage] показує, чи об'єкт у принципі може бути розміщений на цій сторінці.
+     */
+    fun resolveDragPlacement(
+        item: PendingMarkup,
+        candidateX: Float,
+        candidateY: Float,
+        page: PageSizePt?,
+        measureWidthPt: ((String) -> Float)? = null
+    ): DragPlacementResult {
+        if (page == null) {
+            return DragPlacementResult(
+                x = if (candidateX.isNaN()) item.x else candidateX,
+                y = if (candidateY.isNaN()) item.y else candidateY,
+                isOutsideBounds = true,
+                canFitOnPage = false
+            )
+        }
+        val canFit = fitsOnPage(item, page)
+        val sx = if (candidateX.isNaN()) item.x else candidateX
+        val sy = if (candidateY.isNaN()) item.y else candidateY
+        val (cx, cy) = clampedAnchor(item, sx, sy, page, measureWidthPt)
+        val outside = Math.abs(cx - sx) > 0.01f || Math.abs(cy - sy) > 0.01f
+        return DragPlacementResult(
+            x = cx,
+            y = cy,
+            isOutsideBounds = outside || !canFit,
+            canFitOnPage = canFit
+        )
+    }
+
     /** Переносить опорну точку в [x], [y] (вже обмежену [clampedAnchor]); штрих зсувається цілком. */
     fun withAnchor(item: PendingMarkup, x: Float, y: Float): PendingMarkup {
         if (item.x == x && item.y == y) return item
