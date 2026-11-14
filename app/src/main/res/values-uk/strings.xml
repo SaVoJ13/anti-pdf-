@@ -298,4 +298,23 @@
     <string name="action_fit_page">На всю сторінку</string>
     <string name="place_drag_outside_snapped_back">Зображення повернуто в межі сторінки</string>
     <string name="image_rotation_angle">%1$d°</string>
+    <string name="action_redo">Повторити</string>
+    <string name="action_add">Додати</string>
+    <string name="place_slot_action">Галочка, хрестик, підпис, зображення</string>
+    <string name="place_slot_select">Виділення й переміщення</string>
+    <string name="place_options">Параметри інструмента</string>
+    <string name="place_options_close">Закрити параметри</string>
+    <string name="place_options_page">Сторінка налаштувань %1$d з %2$d</string>
+    <string name="place_width_label">Товщина</string>
+    <string name="place_size_label">Розмір</string>
+    <string name="place_straighten">Випрямлення ліній</string>
+    <string name="color_orange">Помаранчевий</string>
+    <string name="color_indigo">Індиго</string>
+    <string name="color_purple">Фіолетовий</string>
+    <string name="color_gray">Сірий</string>
+    <string name="color_custom">Власний колір</string>
+    <string name="place_custom_color_title">Власний колір</string>
+    <string name="place_text_size_menu">Розмір тексту</string>
+    <string name="place_text_color_toggle">Колір тексту</string>
+    <string name="place_menu_reading_mode">Режим читання</string>
 </resources>

@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Кнопка нижнього рядка: активний інструмент підсвічено колом, дотик дає коло-хвилю. -->
+<!-- Кнопка нижнього рядка: активний інструмент підсвічено колом 44 dp, дотик дає хвилю. -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
     android:color="?attr/colorControlHighlight">
     <item>
         <selector>
             <item android:state_selected="true">
-                <shape android:shape="oval">
-                    <solid android:color="?attr/colorPrimaryContainer" />
-                    <size android:width="44dp" android:height="44dp" />
-                </shape>
+                <layer-list>
+                    <item android:width="44dp" android:height="44dp" android:gravity="center">
+                        <shape android:shape="oval">
+                            <solid android:color="?attr/colorPrimaryContainer" />
+                        </shape>
+                    </item>
+                </layer-list>
             </item>
             <item>
                 <shape android:shape="oval">
                     <solid android:color="@android:color/transparent" />
-                    <size android:width="44dp" android:height="44dp" />
                 </shape>
             </item>
         </selector>

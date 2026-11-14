@@ -298,4 +298,23 @@
     <string name="action_fit_page">Fit to page</string>
     <string name="place_drag_outside_snapped_back">Image returned to safe page bounds</string>
     <string name="image_rotation_angle">%1$d°</string>
+    <string name="action_redo">Redo</string>
+    <string name="action_add">Add</string>
+    <string name="place_slot_action">Checkmark, cross, signature, image</string>
+    <string name="place_slot_select">Select and move</string>
+    <string name="place_options">Tool options</string>
+    <string name="place_options_close">Close options</string>
+    <string name="place_options_page">Settings page %1$d of %2$d</string>
+    <string name="place_width_label">Width</string>
+    <string name="place_size_label">Size</string>
+    <string name="place_straighten">Straighten lines</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_indigo">Indigo</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_gray">Gray</string>
+    <string name="color_custom">Custom color</string>
+    <string name="place_custom_color_title">Custom color</string>
+    <string name="place_text_size_menu">Text size</string>
+    <string name="place_text_color_toggle">Text color</string>
+    <string name="place_menu_reading_mode">Reading mode</string>
 </resources>

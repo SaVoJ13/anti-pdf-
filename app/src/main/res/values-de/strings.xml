@@ -298,4 +298,23 @@
     <string name="action_fit_page">An Seite anpassen</string>
     <string name="place_drag_outside_snapped_back">Bild in den Seitenbereich zurückgesetzt</string>
     <string name="image_rotation_angle">%1$d°</string>
+    <string name="action_redo">Wiederholen</string>
+    <string name="action_add">Hinzufügen</string>
+    <string name="place_slot_action">Haken, Kreuz, Unterschrift, Bild</string>
+    <string name="place_slot_select">Auswählen und verschieben</string>
+    <string name="place_options">Werkzeugoptionen</string>
+    <string name="place_options_close">Optionen schließen</string>
+    <string name="place_options_page">Einstellungsseite %1$d von %2$d</string>
+    <string name="place_width_label">Stärke</string>
+    <string name="place_size_label">Größe</string>
+    <string name="place_straighten">Linien begradigen</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_indigo">Indigo</string>
+    <string name="color_purple">Violett</string>
+    <string name="color_gray">Grau</string>
+    <string name="color_custom">Eigene Farbe</string>
+    <string name="place_custom_color_title">Eigene Farbe</string>
+    <string name="place_text_size_menu">Textgröße</string>
+    <string name="place_text_color_toggle">Textfarbe</string>
+    <string name="place_menu_reading_mode">Lesemodus</string>
 </resources>
