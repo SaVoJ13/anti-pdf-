@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import java.io.File
 import java.text.DateFormat
@@ -104,6 +105,40 @@ object SafUtils {
         }
 
         return 0L
+    }
+
+    /**
+     * Розмір файлу або null, якщо його не вдалося дізнатись (колонки SIZE немає, значення null, запит не вдався).
+     * На відміну від [queryFileSize], невідомий розмір не видає за 0: за ним не можна вирішувати про видалення.
+     */
+    fun queryFileSizeOrNull(context: Context, uri: Uri): Long? {
+        try {
+            when (uri.scheme) {
+                "content" -> context.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val colIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                        if (colIndex != -1 && !cursor.isNull(colIndex)) return cursor.getLong(colIndex)
+                    }
+                }
+                "file" -> uri.path?.let { path ->
+                    val file = File(path)
+                    if (file.exists()) return file.length()
+                }
+            }
+        } catch (_: Throwable) {
+            // розмір невідомий
+        }
+        return null
+    }
+
+    /** Видаляє документ SAF; true, якщо видалено. Помилки не кидає (best effort). */
+    fun deleteDocumentQuietly(context: Context, uri: Uri): Boolean = try {
+        when (uri.scheme) {
+            "file" -> uri.path?.let { File(it).delete() } ?: false
+            else -> DocumentsContract.deleteDocument(context.contentResolver, uri)
+        }
+    } catch (_: Throwable) {
+        false
     }
 
     /**

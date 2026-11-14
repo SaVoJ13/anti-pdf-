@@ -353,7 +353,7 @@ class ReaderActivity : AppCompatActivity() {
     // Доступ до редагування (етап 3e): checkEditability → EditAccess; пароль лише в пам'яті ViewModel.
     // ---------------------------------------------------------------------------------------------
 
-    private suspend fun queryAccess(password: String?): EditAccess {
+    private suspend fun queryAccess(password: String?, assumeViewerOpened: Boolean = false): EditAccess {
         val uri = documentUri ?: return EditAccess.Unreadable
         val editability = withContext(Dispatchers.IO) {
             try {
@@ -363,7 +363,7 @@ class ReaderActivity : AppCompatActivity() {
                 null
             }
         }
-        return EditAccessModel.resolve(editability, passwordEntered = password != null, viewerOpened = viewModel.viewerOpened)
+        return EditAccessModel.resolve(editability, passwordEntered = password != null, viewerOpened = viewModel.viewerOpened || assumeViewerOpened)
     }
 
     /**
@@ -371,11 +371,11 @@ class ReaderActivity : AppCompatActivity() {
      * Unreadable показано повідомлення). Стан «потрібен пароль»: власний діалог із повтором при помилці; успішний
      * пароль живе лише у ViewModel; після нього поля форм читаються знову (з паролем).
      */
-    private suspend fun obtainAccess(): EditAccess? {
-        var access = queryAccess(viewModel.documentPassword)
+    private suspend fun obtainAccess(assumeViewerOpened: Boolean = false): EditAccess? {
+        var access = queryAccess(viewModel.documentPassword, assumeViewerOpened)
         while (EditAccessModel.needsPassword(access)) {
             val entered = askPassword(showError = access === EditAccess.WrongPassword) ?: return null
-            val next = queryAccess(entered)
+            val next = queryAccess(entered, assumeViewerOpened)
             if (next !== EditAccess.WrongPassword) {
                 viewModel.documentPassword = entered
                 if (next is EditAccess.Restricted || next is EditAccess.Open) documentUri?.let { checkForFormFields(it) }
@@ -1230,11 +1230,68 @@ class ReaderActivity : AppCompatActivity() {
     /** Дія після успішного збереження копії; тримається поки відкрито системний вибір місця (поворот його не губить, процес — так). */
     private var copyOnSuccess: (() -> Unit)? = null
 
+    /** URI копії, який повернув наш CreateDocument на час поточного збереження. Лише в пам'яті: не пароль, не стан форм. */
+    private var ownedCopyUri: Uri? = null
+
     private val createCopyLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { out ->
         val onSuccess = copyOnSuccess
         copyOnSuccess = null
-        if (out == null) return@registerForActivityResult // вибір скасовано: нічого не втрачено, незбережене на місці
-        lifecycleScope.launch { runSave(out, copy = true, onSuccess = onSuccess ?: {}) }
+        when (CopyPick.resolve(uriChosen = out != null, awaitingFlag = viewModel.awaitingCopyLocation)) {
+            CopyPickAction.CANCELLED -> viewModel.awaitingCopyLocation = false // нічого не втрачено, незбережене на місці
+            CopyPickAction.SAVE -> {
+                ownedCopyUri = out // Д1: лише цей URI (його створив наш CreateDocument) дозволено прибрати, якщо він лишиться порожнім
+                lifecycleScope.launch {
+                    try { saveIntoChosenCopy(out ?: return@launch, onSuccess ?: {}) } finally { viewModel.awaitingCopyLocation = false }
+                }
+            }
+            CopyPickAction.DISCARD_EMPTY -> {
+                viewModel.awaitingCopyLocation = false
+                ownedCopyUri = out
+                lifecycleScope.launch { discardUnfinishedCopy(out ?: return@launch) }
+            }
+        }
+    }
+
+    /**
+     * Результат вибору місця, коли стан є. Після am kill процес новий: чекаємо відновлення незбереженого, за потреби
+     * просимо пароль нашим вікном (у пам'яті його вже нема), потім зберігаємо в цей URI. Скасування пароля, права, що
+     * зникли, або порожній запит — порожній файл прибираємо за правилами Д1.
+     */
+    private suspend fun saveIntoChosenCopy(out: Uri, onSuccess: () -> Unit) {
+        if (!PendingWait.awaitLoaded(viewModel.pendingLoaded)) {
+            // стан не відновився вчасно: не зависаємо, прибираємо порожній файл і чесно повідомляємо
+            discardUnfinishedCopy(out)
+            return
+        }
+        // Після am kill переглядач ще показує свій запит пароля (viewerOpened=false): це не «не відкривається», а «потрібен пароль».
+        val access = obtainAccess(assumeViewerOpened = true)
+        val target = access?.let { EditAccessModel.saveTarget(it, viewModel.editor.value.items.isNotEmpty(), viewModel.formEdits.value.isNotEmpty()) }
+        if (access == null || (target != EditAccessModel.SaveTarget.NEW_COPY && target != EditAccessModel.SaveTarget.SAME_URI)) {
+            discardUnfinishedCopy(out)
+            return
+        }
+        val uri = documentUri
+        if (uri != null && viewModel.formFields.value.isEmpty() && viewModel.formEdits.value.isNotEmpty()) {
+            // після перезапуску поля форм ще не прочитані: без них значення форм не потраплять у копію
+            val fields = withContext(Dispatchers.IO) {
+                try { formEngine.extractFormFields(applicationContext, uri, viewModel.documentPassword) }
+                catch (e: Throwable) { if (e is CancellationException) throw e; emptyList() }
+            }
+            viewModel.setFormFields(fields)
+        }
+        val request = buildSaveRequest()
+        if (request.markups.isEmpty() && request.formUpdates.isEmpty()) {
+            discardUnfinishedCopy(out)
+            return
+        }
+        runSave(out, copy = true, onSuccess = onSuccess)
+    }
+
+    /** Збереження в обраний URI не відбулося: прибрати порожній файл (Д1) і чесно повідомити. */
+    private fun discardUnfinishedCopy(out: Uri) {
+        val deleted = removeEmptyCopy(out, copy = true)
+        ownedCopyUri = null
+        showNotices(null, SaveNotices.forUnfinished(deleted))
     }
 
     private val pickImageForReaderLauncher = registerForActivityResult(
@@ -1595,6 +1652,7 @@ class ReaderActivity : AppCompatActivity() {
             .setMessage(R.string.copy_warning_message)
             .setPositiveButton(R.string.copy_save) { _, _ ->
                 copyOnSuccess = onSuccess
+                viewModel.awaitingCopyLocation = true // переживе am kill; після будь-якого завершення скидається
                 createCopyLauncher.launch(CopyNaming.suggestedName(documentTitle))
             }
             .setNegativeButton(R.string.action_cancel, null)
@@ -1626,8 +1684,16 @@ class ReaderActivity : AppCompatActivity() {
                     if (copy) {
                         SafUtils.takePersistableUriPermissionSafe(this, output)
                         viewModel.clearAllPending() // незбережене оригіналу: його вже записано в копію
+                        val savedNotices = SaveNotices.forCopySaved(passwordUsed = password != null)
+                        if (NoticePresentation.deferViewerUntilDismissed(savedNotices)) {
+                            // Д2: переглядач попросить пароль системним вікном і закрив би підказку; спершу діалог, потім копія.
+                            showNoticeDialog(withNotices(null, savedNotices)) {
+                                if (!isDestroyed && !isFinishing) { switchToDocument(output); onSuccess() }
+                            }
+                            return
+                        }
                         switchToDocument(output) // копія — поточний документ (читач, «Останні»)
-                        showMessage(getString(R.string.place_copy_saved), long = false)
+                        showNotices(null, savedNotices)
                     } else {
                         reloadViewerDocument()
                         viewModel.clearAllPending()
@@ -1636,17 +1702,78 @@ class ReaderActivity : AppCompatActivity() {
                     }
                     onSuccess()
                 }
-                is SaveOutcome.Failed -> showError(outcome.message.ifBlank { getString(R.string.error_title) })
-                SaveOutcome.NothingToSave -> onSuccess()
+                is SaveOutcome.Failed -> {
+                    val deleted = removeEmptyCopy(output, copy)
+                    showFailure(outcome.message.ifBlank { getString(R.string.error_title) }, SaveNotices.forFailed(deleted))
+                }
+                SaveOutcome.NothingToSave -> {
+                    val deleted = removeEmptyCopy(output, copy)
+                    val notices = SaveNotices.forNothingToSave(copy, deleted)
+                    if (notices.isNotEmpty()) showNotices(null, notices)
+                    onSuccess()
+                }
             }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
-            showError(e.localizedMessage ?: getString(R.string.error_title))
+            val deleted = removeEmptyCopy(output, copy)
+            showFailure(e.localizedMessage ?: getString(R.string.error_title), SaveNotices.forFailed(deleted))
         } finally {
+            if (copy) ownedCopyUri = null
             hideLoadingOverlay()
             savingPlace = false
             binding.markupOverlay.editingEnabled = viewModel.placeModeActive
         }
+    }
+
+    private fun noticeText(notice: SaveNotice): String = getString(
+        when (notice) {
+            SaveNotice.NO_CHANGES_COPY_NOT_CREATED -> R.string.save_no_changes_copy_not_created
+            SaveNotice.NO_CHANGES -> R.string.save_no_changes
+            SaveNotice.EMPTY_FILE_LEFT -> R.string.save_empty_file_left
+            SaveNotice.SAVE_NOT_COMPLETED -> R.string.save_not_completed
+            SaveNotice.COPY_SAVED -> R.string.place_copy_saved
+            SaveNotice.COPY_SAVED_PASSWORD_HINT -> R.string.place_copy_saved_password_hint
+        }
+    )
+
+    /** Основний текст (якщо є) і повідомлення про підсумок: одним повідомленням, щоб наступне не перекрило попереднє. */
+    private fun withNotices(base: String?, notices: List<SaveNotice>): String =
+        (listOfNotNull(base) + NoticePresentation.visible(notices).map { noticeText(it) }).joinToString("\n")
+
+    /** Підсумок збереження: діалог з «ОК» для всього, окрім простого «Копію збережено» (його показує короткий Snackbar). */
+    private fun showNotices(base: String?, notices: List<SaveNotice>) {
+        val text = withNotices(base, notices)
+        when (NoticePresentation.displayFor(notices)) {
+            NoticeDisplay.DIALOG -> showNoticeDialog(text)
+            NoticeDisplay.SNACKBAR -> showMessage(text, long = false)
+        }
+    }
+
+    /** Збій збереження: текст помилки + додатки; з додатками (файл лишився) це діалог, без них — звичайний Snackbar помилки. */
+    private fun showFailure(message: String, notices: List<SaveNotice>) {
+        if (notices.isEmpty()) showError(message) else showNoticeDialog(withNotices(message, notices))
+    }
+
+    /** Діалог, який не зникає без дії користувача й не ховається під системним запитом пароля переглядача. */
+    private fun showNoticeDialog(text: String, onDismiss: (() -> Unit)? = null) {
+        if (isDestroyed || isFinishing) return
+        val builder = MaterialAlertDialogBuilder(this)
+            .setMessage(text)
+            .setPositiveButton(R.string.action_ok, null)
+        if (onDismiss != null) builder.setOnDismissListener { onDismiss() }
+        builder.show()
+    }
+
+    /**
+     * Д1: збій збереження копії не має лишати порожній файл у вибраній папці. Видаляємо лише URI, який повернув наш
+     * CreateDocument у цьому потоці ([ownedCopyUri]), і лише якщо розмір відомо й він 0.
+     */
+    private fun removeEmptyCopy(output: Uri, copy: Boolean): DeleteResult {
+        val ours = copy && output == ownedCopyUri
+        if (!EmptyCopyCleanup.shouldDelete(copy, SafUtils.queryFileSizeOrNull(this, output), createdByThisFlow = ours)) {
+            return DeleteResult.NOT_ATTEMPTED
+        }
+        return if (SafUtils.deleteDocumentQuietly(this, output)) DeleteResult.DELETED else DeleteResult.FAILED
     }
 
     /** Копія стає поточним документом: URI, назва, запис у «Останніх», переглядач (з відновленням позиції), поля форм. */

@@ -92,3 +92,84 @@ object CopyNaming {
         return (if (base.isEmpty()) "document" else base) + "_edited.pdf"
     }
 }
+
+/**
+ * Д1 (QA 3e): якщо збереження копії не вдалося, у вибраній папці лишається порожній файл «<ім'я>_edited.pdf».
+ * Рішення чисте (тестується без Android): видаляти лише URI, який повернув наш CreateDocument у цьому потоці,
+ * і лише якщо розмір відомо й він дорівнює 0. Невідомий розмір (null) — НЕ видаляти.
+ */
+object EmptyCopyCleanup {
+    fun shouldDelete(isCopy: Boolean, sizeBytes: Long?, createdByThisFlow: Boolean): Boolean =
+        isCopy && createdByThisFlow && sizeBytes == 0L
+}
+
+/** Результат спроби прибрати порожню копію. */
+enum class DeleteResult { NOT_ATTEMPTED, DELETED, FAILED }
+
+/** Повідомлення про підсумок збереження (тексти беруться з ресурсів у активності). */
+enum class SaveNotice { NO_CHANGES_COPY_NOT_CREATED, NO_CHANGES, EMPTY_FILE_LEFT, SAVE_NOT_COMPLETED, COPY_SAVED, COPY_SAVED_PASSWORD_HINT }
+
+/** Чистий вибір повідомлень: без Android, тестується в JVM. */
+object SaveNotices {
+    /**
+     * Нічого зберігати. Для копії: якщо порожній файл прибрано — «Змін немає, копію не створено» (не «успіх»);
+     * якщо файл лишився з іншої причини — просто «Змін немає». Запис у сам документ мовчки завершується, як раніше.
+     */
+    fun forNothingToSave(copy: Boolean, deleted: DeleteResult): List<SaveNotice> = when {
+        !copy -> emptyList()
+        deleted == DeleteResult.DELETED -> listOf(SaveNotice.NO_CHANGES_COPY_NOT_CREATED)
+        deleted == DeleteResult.FAILED -> listOf(SaveNotice.NO_CHANGES, SaveNotice.EMPTY_FILE_LEFT)
+        else -> listOf(SaveNotice.NO_CHANGES)
+    }
+
+    /**
+     * Успіх збереження копії (Д2). Якщо копію записано з паролем, переглядач відкриє її без пароля в пам'яті (розшифровану
+     * копію в кеш не кладемо, пароль у бібліотеку не передаємо) і попросить пароль ще раз: попереджаємо про це.
+     */
+    fun forCopySaved(passwordUsed: Boolean): List<SaveNotice> =
+        if (passwordUsed) listOf(SaveNotice.COPY_SAVED, SaveNotice.COPY_SAVED_PASSWORD_HINT) else listOf(SaveNotice.COPY_SAVED)
+
+    /** Збереження копії не завершено (скасовано пароль або втрачено стан): «Збереження не завершено» (+ файл лишився). */
+    fun forUnfinished(deleted: DeleteResult): List<SaveNotice> =
+        listOf(SaveNotice.SAVE_NOT_COMPLETED) + forFailed(deleted)
+
+    /** Додаток до повідомлення про збій: не мовчимо, якщо прибрати порожній файл не вдалося. */
+    fun forFailed(deleted: DeleteResult): List<SaveNotice> =
+        if (deleted == DeleteResult.FAILED) listOf(SaveNotice.EMPTY_FILE_LEFT) else emptyList()
+}
+
+/** Як показати повідомлення про підсумок: діалог з «ОК» (не зникає сам) чи короткий Snackbar. */
+enum class NoticeDisplay { SNACKBAR, DIALOG }
+
+/**
+ * Вибір способу показу (Д1b/Д2, QA 2026-11-14): Snackbar зникає сам і ховається під системним запитом пароля
+ * переглядача, тому будь-яке повідомлення, окрім простого «Копію збережено», показується діалогом з «ОК».
+ */
+object NoticePresentation {
+    fun displayFor(notices: List<SaveNotice>): NoticeDisplay =
+        if (notices.isEmpty() || notices == listOf(SaveNotice.COPY_SAVED)) NoticeDisplay.SNACKBAR else NoticeDisplay.DIALOG
+
+    /** Підказка про пароль уже містить «Копію збережено»: окремий рядок про збереження не дублюємо. */
+    fun visible(notices: List<SaveNotice>): List<SaveNotice> =
+        if (SaveNotice.COPY_SAVED_PASSWORD_HINT in notices) notices.filter { it != SaveNotice.COPY_SAVED } else notices
+
+    /** Чи треба відкладати відкриття копії в переглядачі, доки користувач не закриє діалог (підказка Д2). */
+    fun deferViewerUntilDismissed(notices: List<SaveNotice>): Boolean =
+        SaveNotice.COPY_SAVED_PASSWORD_HINT in notices
+}
+
+/** Що робити з результатом системного вибору місця для копії. */
+enum class CopyPickAction { CANCELLED, SAVE, DISCARD_EMPTY }
+
+object CopyPick {
+    /**
+     * @param uriChosen користувач обрав місце (CreateDocument повернув URI)
+     * @param awaitingFlag ознака «чекаю місце для копії», збережена в SavedStateHandle перед запуском вибору
+     * Ознаки нема (процес був вбитий і стан не відновлено, або це не наш запит) — нічого не зберігаємо, порожній файл прибираємо.
+     */
+    fun resolve(uriChosen: Boolean, awaitingFlag: Boolean): CopyPickAction = when {
+        !uriChosen -> CopyPickAction.CANCELLED
+        awaitingFlag -> CopyPickAction.SAVE
+        else -> CopyPickAction.DISCARD_EMPTY
+    }
+}

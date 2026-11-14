@@ -235,6 +235,10 @@ class ReaderViewModel(
         documentKey = key
         _pendingLoaded.value = false
         viewModelScope.launch {
+          PendingLoadGuard.run(
+            onFailure = { android.util.Log.w(TAG, "Pending restore failed: ${it.javaClass.simpleName}") },
+            markLoaded = { _pendingLoaded.value = true }
+          ) {
             var restoredForms: List<FormFieldUpdate> = emptyList()
             val items = withContext(Dispatchers.IO) {
                 val state = try {
@@ -266,7 +270,7 @@ class ReaderViewModel(
                 _formEdits.value = FormEditing.toMap(restoredForms)
                 if (_formFields.value.isNotEmpty()) _formEdits.value = FormEditing.prune(_formFields.value, _formEdits.value)
             }
-            _pendingLoaded.value = true
+          }
         }
     }
 
@@ -328,6 +332,14 @@ class ReaderViewModel(
         get() = savedStateHandle.get<Boolean>(KEY_PLACE_MODE) ?: false
         set(value) { savedStateHandle[KEY_PLACE_MODE] = value }
 
+    /**
+     * Ознака «чекаю місце для копії» (Д1, шлях am kill): лише булеве значення. Без пароля, значень форм і назв документів.
+     * Скидається після будь-якого завершення вибору/збереження.
+     */
+    var awaitingCopyLocation: Boolean
+        get() = savedStateHandle.get<Boolean>(KEY_AWAITING_COPY) ?: false
+        set(value) { savedStateHandle[KEY_AWAITING_COPY] = value }
+
     var placeTool: PlaceTool
         get() = savedStateHandle.get<String>(KEY_TOOL)
             ?.let { name -> PlaceTool.values().firstOrNull { it.name == name } } ?: PlaceTool.CHECK
@@ -365,6 +377,7 @@ class ReaderViewModel(
         private const val TAG = "ReaderViewModel"
         private const val KEY_URI = "saved_document_uri"
         private const val KEY_PLACE_MODE = "place_mode"
+        private const val KEY_AWAITING_COPY = "awaiting_copy_location"
         private const val KEY_TOOL = "place_tool"
         private const val KEY_COLOR = "place_color"
         private const val KEY_TEXT_SIZE = "place_text_size"
