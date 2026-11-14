@@ -158,6 +158,17 @@ class PlaceBarLogicTest {
         assertArrayEquals(floatArrayOf(10f, 10f, 110f, 110f), InkStraighten.straighten(xy), 0f)
     }
 
+    @Test
+    fun `straightened stroke is still accepted as a normal ink object`() {
+        val xy = floatArrayOf(50f, 50f, 100f, 51f, 150f, 49f, 200f, 50f)
+        val stroke = PlaceMarkupLogic.inkFromStroke(
+            "s", 0, InkStraighten.straighten(xy), 2f, 0xFF000000.toInt(), PageSizePt(600f, 800f)
+        )
+        org.junit.Assert.assertNotNull(stroke)
+        assertEquals(PlaceTool.INK, stroke!!.tool)
+        assertEquals(4, stroke.ink!!.xy.size)
+    }
+
     // --- повтор (redo) ----------------------------------------------------------------------------
 
     private fun check(id: String) = PendingMarkup(id, PlaceTool.CHECK, 0, 10f, 10f, "", 16f, 0xFFD32F2F.toInt())

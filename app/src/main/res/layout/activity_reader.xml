@@ -291,7 +291,7 @@
                     android:contentDescription="@string/place_options_close"
                     android:scaleType="center"
                     android:src="@drawable/ic_close"
-                    android:tint="@color/place_card_on" />
+                    app:tint="@color/place_card_on" />
             </LinearLayout>
 
             <!-- Вибір дії: ✓, ✗, підпис, зображення -->
@@ -309,7 +309,7 @@
                     android:contentDescription="@string/place_tool_check"
                     android:scaleType="center"
                     android:src="@drawable/ic_check"
-                    android:tint="@color/place_card_icon_tint" />
+                    app:tint="@color/place_card_icon_tint" />
                 <ImageButton
                     android:id="@+id/btnToolCross"
                     android:layout_width="@dimen/place_slot_min_size"
@@ -318,7 +318,7 @@
                     android:contentDescription="@string/place_tool_cross"
                     android:scaleType="center"
                     android:src="@drawable/ic_close"
-                    android:tint="@color/place_card_icon_tint" />
+                    app:tint="@color/place_card_icon_tint" />
                 <ImageButton
                     android:id="@+id/btnToolSignature"
                     android:layout_width="@dimen/place_slot_min_size"
@@ -327,7 +327,7 @@
                     android:contentDescription="@string/place_tool_signature"
                     android:scaleType="center"
                     android:src="@drawable/ic_signature"
-                    android:tint="@color/place_card_icon_tint" />
+                    app:tint="@color/place_card_icon_tint" />
                 <ImageButton
                     android:id="@+id/btnToolImage"
                     android:layout_width="@dimen/place_slot_min_size"
@@ -336,7 +336,7 @@
                     android:contentDescription="@string/place_tool_image"
                     android:scaleType="center"
                     android:src="@drawable/ic_image"
-                    android:tint="@color/place_card_icon_tint" />
+                    app:tint="@color/place_card_icon_tint" />
             </LinearLayout>
 
             <!-- Товщина / розмір: слайдер зі значенням у кружечку на повзунку -->
@@ -452,7 +452,7 @@
                     android:contentDescription="@string/action_rotate_counterclockwise"
                     android:scaleType="center"
                     android:src="@drawable/ic_rotate_left"
-                    android:tint="@color/place_card_on" />
+                    app:tint="@color/place_card_on" />
 
                 <TextView
                     android:id="@+id/tvImageRotationAngle"
@@ -471,7 +471,7 @@
                     android:contentDescription="@string/action_rotate_clockwise"
                     android:scaleType="center"
                     android:src="@drawable/ic_rotate_right"
-                    android:tint="@color/place_card_on" />
+                    app:tint="@color/place_card_on" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnOptFitPage"
@@ -601,7 +601,7 @@
                 android:contentDescription="@string/place_tool_text"
                 android:scaleType="center"
                 android:src="@drawable/ic_text_fields"
-                android:tint="@color/place_slot_tint" />
+                app:tint="@color/place_slot_tint" />
 
             <ImageButton
                 android:id="@+id/btnSlotPen"
@@ -613,7 +613,7 @@
                 android:contentDescription="@string/place_tool_ink"
                 android:scaleType="center"
                 android:src="@drawable/ic_draw"
-                android:tint="@color/place_slot_tint" />
+                app:tint="@color/place_slot_tint" />
 
             <!-- A2: тут буде «Маркер/підкреслення» (потрібне ядро); поки місце зарезервоване без кнопки -->
             <Space
@@ -632,7 +632,7 @@
                 android:contentDescription="@string/place_delete"
                 android:scaleType="center"
                 android:src="@drawable/ic_delete"
-                android:tint="@color/place_slot_tint" />
+                app:tint="@color/place_slot_tint" />
 
             <ImageButton
                 android:id="@+id/btnSlotSelect"
@@ -644,7 +644,7 @@
                 android:contentDescription="@string/place_slot_select"
                 android:scaleType="center"
                 android:src="@drawable/ic_select"
-                android:tint="@color/place_slot_tint" />
+                app:tint="@color/place_slot_tint" />
 
             <ImageButton
                 android:id="@+id/btnSlotAction"
@@ -656,7 +656,7 @@
                 android:contentDescription="@string/place_slot_action"
                 android:scaleType="center"
                 android:src="@drawable/ic_check"
-                android:tint="@color/place_slot_tint" />
+                app:tint="@color/place_slot_tint" />
 
             <ImageButton
                 android:id="@+id/btnPlaceUndo"
@@ -668,7 +668,7 @@
                 android:contentDescription="@string/action_undo"
                 android:scaleType="center"
                 android:src="@drawable/ic_undo"
-                android:tint="@color/place_slot_tint"
+                app:tint="@color/place_slot_tint"
                 android:enabled="false" />
 
             <ImageButton
@@ -681,7 +681,7 @@
                 android:contentDescription="@string/action_redo"
                 android:scaleType="center"
                 android:src="@drawable/ic_redo"
-                android:tint="@color/place_slot_tint"
+                app:tint="@color/place_slot_tint"
                 android:enabled="false" />
 
             <ImageButton
@@ -694,7 +694,7 @@
                 android:contentDescription="@string/place_options"
                 android:scaleType="center"
                 android:src="@drawable/ic_tune"
-                android:tint="@color/place_slot_tint" />
+                app:tint="@color/place_slot_tint" />
 
         </LinearLayout>
     </HorizontalScrollView>
