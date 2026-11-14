@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import java.io.File
 import java.text.DateFormat
@@ -104,6 +105,16 @@ object SafUtils {
         }
 
         return 0L
+    }
+
+    /** Видаляє документ SAF; true, якщо видалено. Помилки не кидає (best effort). */
+    fun deleteDocumentQuietly(context: Context, uri: Uri): Boolean = try {
+        when (uri.scheme) {
+            "file" -> uri.path?.let { File(it).delete() } ?: false
+            else -> DocumentsContract.deleteDocument(context.contentResolver, uri)
+        }
+    } catch (_: Throwable) {
+        false
     }
 
     /**

@@ -92,3 +92,11 @@ object CopyNaming {
         return (if (base.isEmpty()) "document" else base) + "_edited.pdf"
     }
 }
+
+/**
+ * Д1 (QA 3e): якщо збереження копії не вдалося, у вибраній папці лишається порожній файл «<ім'я>_edited.pdf».
+ * Рішення чисте (тестується без Android): видаляти лише власну нову копію, і лише якщо в ній 0 байт.
+ */
+object EmptyCopyCleanup {
+    fun shouldDelete(isCopy: Boolean, sizeBytes: Long): Boolean = isCopy && sizeBytes == 0L
+}

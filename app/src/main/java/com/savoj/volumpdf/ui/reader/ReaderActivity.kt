@@ -1636,16 +1636,30 @@ class ReaderActivity : AppCompatActivity() {
                     }
                     onSuccess()
                 }
-                is SaveOutcome.Failed -> showError(outcome.message.ifBlank { getString(R.string.error_title) })
-                SaveOutcome.NothingToSave -> onSuccess()
+                is SaveOutcome.Failed -> {
+                    removeEmptyCopy(output, copy)
+                    showError(outcome.message.ifBlank { getString(R.string.error_title) })
+                }
+                SaveOutcome.NothingToSave -> {
+                    removeEmptyCopy(output, copy)
+                    onSuccess()
+                }
             }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
+            removeEmptyCopy(output, copy)
             showError(e.localizedMessage ?: getString(R.string.error_title))
         } finally {
             hideLoadingOverlay()
             savingPlace = false
             binding.markupOverlay.editingEnabled = viewModel.placeModeActive
+        }
+    }
+
+    /** Д1: збій збереження копії не має лишати порожній файл у вибраній папці. */
+    private fun removeEmptyCopy(output: Uri, copy: Boolean) {
+        if (EmptyCopyCleanup.shouldDelete(copy, SafUtils.queryFileSize(this, output))) {
+            SafUtils.deleteDocumentQuietly(this, output)
         }
     }
 

@@ -32,3 +32,9 @@ Google Play Console ($25), реальні одиниці AdMob, приватиз
 - **Дія для Власника (п. 3.2 Конституції, не делегується):**
   - Зареєструвати або увійти в Google Play Console ($25 одноразово).
   - Створити новий застосунок `Volum PDF: Reader & Tools` (або `Anti PDF`).
+
+## 8. `applicationId` для Google Play і підпис релізу (знайдено QA 2026-11-14)
+- У коді `applicationId = com.savoj.volumpdf.anti` (ярлик `Anti PDF`, рішення Власника 2026-11-12), `PROJECT_PROFILE.md` розд. 1 досі каже `com.savoj.volumpdf`. Для Play пакет незмінний після першої публікації: треба вирішити, під яким `applicationId` публікуватись (лишити `.anti` або повернути `com.savoj.volumpdf`). Рекомендація: визначити до створення застосунку в Play Console.
+- `app-release.aab` (17,9 МБ) непідписаний: у Gradle нема `signingConfig`. Ключ підпису / Play App Signing лише Власник (п. 3.2).
+- `allowBackup="true"` у маніфесті: вирішити, чи лишати (резервна копія внутрішніх даних, зокрема списку «Нещодавні»); звірити з `docs/store/PRIVACY_POLICY.md`.
+- Статус: ВІДКРИТО (не блокує іншу роботу).
