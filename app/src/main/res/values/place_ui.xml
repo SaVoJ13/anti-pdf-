@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Токени режиму «Редагувати» (етап A1): темна плаваюча картка параметрів, нижній рядок інструментів, палітра. -->
+<resources>
+    <dimen name="place_card_radius">24dp</dimen>
+    <dimen name="place_card_elevation">8dp</dimen>
+    <dimen name="place_card_margin">8dp</dimen>
+    <dimen name="place_card_max_width">420dp</dimen>
+    <dimen name="place_slot_min_size">48dp</dimen>
+    <dimen name="place_swatch_size">48dp</dimen>
+    <dimen name="place_card_padding">16dp</dimen>
+
+    <!-- Тривалість появи/зникнення карток: 150–200 мс -->
+    <integer name="place_anim_ms">180</integer>
+
+    <!-- Картка завжди темна (і в світлій, і в темній темі): контраст не залежить від сторінки під нею -->
+    <color name="place_card_bg">#262A3D</color>
+    <color name="place_card_on">#EEF0FA</color>
+    <color name="place_card_muted">#A9AEC8</color>
+    <color name="place_card_accent">#BAC3FF</color>
+    <color name="place_card_ring">#EEF0FA</color>
+
+    <!-- Палітра кольорів (9 + власний): збігається з PlaceBarLogic.PALETTE -->
+    <color name="place_color_black">#000000</color>
+    <color name="place_color_red">#D32F2F</color>
+    <color name="place_color_orange">#F57C00</color>
+    <color name="place_color_yellow">#FBC02D</color>
+    <color name="place_color_green">#388E3C</color>
+    <color name="place_color_blue">#1976D2</color>
+    <color name="place_color_indigo">#3949AB</color>
+    <color name="place_color_purple">#7B1FA2</color>
+    <color name="place_color_gray">#757575</color>
+</resources>

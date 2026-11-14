@@ -67,9 +67,12 @@ data class PlaceEditorState(
     /** Знімки списку до кожної дії; найстаріший першим. */
     val history: List<List<PendingMarkup>> = emptyList(),
     /** Ключ останньої змінювальної дії; однакові поспіль (розмір/колір того ж об'єкта) — один крок скасування. */
-    val lastEditKey: String? = null
+    val lastEditKey: String? = null,
+    /** Знімки списку, скасовані undo; найближчий до повтору — останній. Будь-яка нова дія його очищує. */
+    val redoStack: List<List<PendingMarkup>> = emptyList()
 ) {
     val canUndo: Boolean get() = history.isNotEmpty()
+    val canRedo: Boolean get() = redoStack.isNotEmpty()
     val selected: PendingMarkup? get() = selectedId?.let { id -> items.firstOrNull { it.id == id } }
 }
 
@@ -225,7 +228,20 @@ object PlaceEditor {
     fun undo(s: PlaceEditorState): PlaceEditorState {
         val prev = s.history.lastOrNull() ?: return s
         val selected = s.selectedId?.takeIf { id -> prev.any { it.id == id } }
-        return PlaceEditorState(items = prev, selectedId = selected, history = s.history.dropLast(1), lastEditKey = null)
+        return PlaceEditorState(
+            items = prev, selectedId = selected, history = s.history.dropLast(1), lastEditKey = null,
+            redoStack = s.redoStack + listOf(s.items)
+        )
+    }
+
+    /** Повертає щойно скасований стан; зникле виділення знімається. */
+    fun redo(s: PlaceEditorState): PlaceEditorState {
+        val next = s.redoStack.lastOrNull() ?: return s
+        val selected = s.selectedId?.takeIf { id -> next.any { it.id == id } }
+        return PlaceEditorState(
+            items = next, selectedId = selected, history = (s.history + listOf(s.items)).takeLast(MAX_HISTORY),
+            lastEditKey = null, redoStack = s.redoStack.dropLast(1)
+        )
     }
 
     private fun update(
