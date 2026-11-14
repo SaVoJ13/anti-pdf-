@@ -251,6 +251,7 @@
     <string name="place_copy_saved">Kopie gespeichert</string>
     <string name="save_no_changes_copy_not_created">Keine Änderungen, die Kopie wurde nicht erstellt</string>
     <string name="save_no_changes">Keine Änderungen</string>
+    <string name="save_empty_file_left">Eine leere Datei ist im gewählten Ordner geblieben</string>
     <string name="action_licenses">Open-Source-Lizenzen</string>
     <string name="dialog_licenses_title">Open-Source-Lizenzen</string>
     <string name="action_create_pdf">PDF erstellen</string>

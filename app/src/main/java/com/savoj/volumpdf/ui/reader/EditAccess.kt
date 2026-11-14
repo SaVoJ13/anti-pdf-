@@ -107,7 +107,7 @@ object EmptyCopyCleanup {
 enum class DeleteResult { NOT_ATTEMPTED, DELETED, FAILED }
 
 /** Повідомлення про підсумок збереження (тексти беруться з ресурсів у активності). */
-enum class SaveNotice { NO_CHANGES_COPY_NOT_CREATED, NO_CHANGES }
+enum class SaveNotice { NO_CHANGES_COPY_NOT_CREATED, NO_CHANGES, EMPTY_FILE_LEFT }
 
 /** Чистий вибір повідомлень: без Android, тестується в JVM. */
 object SaveNotices {
@@ -118,6 +118,11 @@ object SaveNotices {
     fun forNothingToSave(copy: Boolean, deleted: DeleteResult): List<SaveNotice> = when {
         !copy -> emptyList()
         deleted == DeleteResult.DELETED -> listOf(SaveNotice.NO_CHANGES_COPY_NOT_CREATED)
+        deleted == DeleteResult.FAILED -> listOf(SaveNotice.NO_CHANGES, SaveNotice.EMPTY_FILE_LEFT)
         else -> listOf(SaveNotice.NO_CHANGES)
     }
+
+    /** Додаток до повідомлення про збій: не мовчимо, якщо прибрати порожній файл не вдалося. */
+    fun forFailed(deleted: DeleteResult): List<SaveNotice> =
+        if (deleted == DeleteResult.FAILED) listOf(SaveNotice.EMPTY_FILE_LEFT) else emptyList()
 }

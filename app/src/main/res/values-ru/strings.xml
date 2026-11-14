@@ -251,6 +251,7 @@
     <string name="place_copy_saved">Копия сохранена</string>
     <string name="save_no_changes_copy_not_created">Изменений нет, копия не создана</string>
     <string name="save_no_changes">Изменений нет</string>
+    <string name="save_empty_file_left">Пустой файл остался в выбранной папке</string>
     <string name="action_licenses">Лицензии открытого ПО</string>
     <string name="dialog_licenses_title">Лицензии открытого ПО</string>
     <string name="action_create_pdf">Создать PDF</string>

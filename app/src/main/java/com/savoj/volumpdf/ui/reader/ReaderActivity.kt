@@ -1641,19 +1641,20 @@ class ReaderActivity : AppCompatActivity() {
                     onSuccess()
                 }
                 is SaveOutcome.Failed -> {
-                    removeEmptyCopy(output, copy)
-                    showError(outcome.message.ifBlank { getString(R.string.error_title) })
+                    val deleted = removeEmptyCopy(output, copy)
+                    showError(withNotices(outcome.message.ifBlank { getString(R.string.error_title) }, SaveNotices.forFailed(deleted)))
                 }
                 SaveOutcome.NothingToSave -> {
                     val deleted = removeEmptyCopy(output, copy)
-                    SaveNotices.forNothingToSave(copy, deleted).forEach { showMessage(noticeText(it), long = true) }
+                    val notices = SaveNotices.forNothingToSave(copy, deleted)
+                    if (notices.isNotEmpty()) showMessage(withNotices(null, notices), long = true)
                     onSuccess()
                 }
             }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
-            removeEmptyCopy(output, copy)
-            showError(e.localizedMessage ?: getString(R.string.error_title))
+            val deleted = removeEmptyCopy(output, copy)
+            showError(withNotices(e.localizedMessage ?: getString(R.string.error_title), SaveNotices.forFailed(deleted)))
         } finally {
             if (copy) ownedCopyUri = null
             hideLoadingOverlay()
@@ -1666,8 +1667,13 @@ class ReaderActivity : AppCompatActivity() {
         when (notice) {
             SaveNotice.NO_CHANGES_COPY_NOT_CREATED -> R.string.save_no_changes_copy_not_created
             SaveNotice.NO_CHANGES -> R.string.save_no_changes
+            SaveNotice.EMPTY_FILE_LEFT -> R.string.save_empty_file_left
         }
     )
+
+    /** Основний текст (якщо є) і повідомлення про підсумок: одним повідомленням, щоб наступне не перекрило попереднє. */
+    private fun withNotices(base: String?, notices: List<SaveNotice>): String =
+        (listOfNotNull(base) + notices.map { noticeText(it) }).joinToString("\n")
 
     /**
      * Д1: збій збереження копії не має лишати порожній файл у вибраній папці. Видаляємо лише URI, який повернув наш
