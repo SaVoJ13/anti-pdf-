@@ -242,4 +242,77 @@ class PlaceBarLogicTest {
         assertArrayEquals(floatArrayOf(24f, 18f, 14f, 11f), PlaceBarLogic.TEXT_STYLE_SIZES_PT, 0f)
         assertTrue(PlaceBarLogic.TEXT_SIZE_CHOICES.toList().containsAll(listOf(8f, 14f, 15f, 19f, 21f, 26f, 32f, 48f, 64f, 72f)))
     }
+
+    @Test
+    fun `computeEditorBoxBounds keeps editor box strictly above toolbar card and keyboard`() {
+        // Content area above keyboard is 1080x1100 px; toolbar card takes 240 px at the bottom
+        val b = PlaceBarLogic.computeEditorBoxBounds(
+            availWidthPx = 1080,
+            availHeightPx = 1100,
+            minTopPx = 16,
+            toolbarReservePx = 240,
+            sideMarginPx = 36,
+            minBoxWidthPx = 420,
+            minBoxHeightPx = 160,
+            desiredLeftPx = 560,
+            desiredTopPx = 960, // would overlap the toolbar card without clamping
+            boxWidthPx = 660,
+            boxHeightPx = 320,
+            cardTopInContentPx = 860,
+            cardGapPx = 12
+        )
+        // Must stay strictly above cardTopInContentPx - cardGapPx (848)
+        assertEquals(848, b.maxBottomPx)
+        assertTrue("topPx (${b.topPx}) + boxHeight (320) must not exceed maxBottomPx (${b.maxBottomPx})", b.topPx + 320 <= b.maxBottomPx)
+        assertEquals(528, b.topPx)
+        // Left + width (560 + 660 = 1220) clamped inside 1080 - 36 = 1044 -> leftPx = 384
+        assertEquals(660, b.widthPx)
+        assertEquals(384, b.leftPx)
+    }
+
+    @Test
+    fun `computeEditorBoxBounds allows moving box anywhere by tap inside visible page area`() {
+        val b = PlaceBarLogic.computeEditorBoxBounds(
+            availWidthPx = 1080,
+            availHeightPx = 1200,
+            minTopPx = 16,
+            toolbarReservePx = 240,
+            sideMarginPx = 36,
+            minBoxWidthPx = 420,
+            minBoxHeightPx = 160,
+            desiredLeftPx = 150,
+            desiredTopPx = 220,
+            boxWidthPx = 500,
+            boxHeightPx = 200,
+            cardTopInContentPx = 960,
+            cardGapPx = 12
+        )
+        assertEquals(150, b.leftPx)
+        assertEquals(220, b.topPx)
+        assertEquals(500, b.widthPx)
+    }
+
+    @Test
+    fun `scaleTextSizeByBoxRatio adapts font size proportionally to box size within 8 to 72 pt`() {
+        // Doubling the box span doubles the font size (14 pt -> 28 pt)
+        assertEquals(28f, PlaceBarLogic.scaleTextSizeByBoxRatio(14f, startSpanPx = 300f, currentSpanPx = 600f), 0f)
+        // Shrinking the box to half halves the font size (24 pt -> 12 pt)
+        assertEquals(12f, PlaceBarLogic.scaleTextSizeByBoxRatio(24f, startSpanPx = 400f, currentSpanPx = 200f), 0f)
+        // Clamped to 8..72 pt
+        assertEquals(8f, PlaceBarLogic.scaleTextSizeByBoxRatio(14f, startSpanPx = 500f, currentSpanPx = 50f), 0f)
+        assertEquals(72f, PlaceBarLogic.scaleTextSizeByBoxRatio(36f, startSpanPx = 200f, currentSpanPx = 800f), 0f)
+        // Non-positive start span returns current size clamped
+        assertEquals(18f, PlaceBarLogic.scaleTextSizeByBoxRatio(18f, startSpanPx = 0f, currentSpanPx = 400f), 0f)
+    }
+
+    @Test
+    fun `editorBoxWidthForSizePt scales box width with font size and clamps to bounds`() {
+        val base = PlaceBarLogic.editorBoxWidthForSizePt(14f, density = 3f, minWidthPx = 420, maxWidthPx = 1000)
+        val larger = PlaceBarLogic.editorBoxWidthForSizePt(28f, density = 3f, minWidthPx = 420, maxWidthPx = 1000)
+        val smaller = PlaceBarLogic.editorBoxWidthForSizePt(8f, density = 3f, minWidthPx = 420, maxWidthPx = 1000)
+        assertTrue(larger > base)
+        assertTrue(smaller < base)
+        assertTrue(smaller >= 420)
+        assertTrue(larger <= 1000)
+    }
 }

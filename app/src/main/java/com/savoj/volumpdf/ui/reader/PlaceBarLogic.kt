@@ -134,6 +134,103 @@ object PlaceBarLogic {
         }
         return next.coerceIn(min, max)
     }
+
+    /** Розраховані межі поля вводу тексту у вмістових координатах [placeTextRoot] (після paddingTop/paddingBottom). */
+    data class EditorBoxBounds(
+        val leftPx: Int,
+        val topPx: Int,
+        val widthPx: Int,
+        val maxInputHeightPx: Int,
+        val maxBottomPx: Int
+    )
+
+    /**
+     * Обчислює безпечне положення й розміри живого поля вводу тексту (`placeTextEditorBox`), щоб воно:
+     * 1) ніколи не перекривалося панеллю редагування (`placeTextCard`) або клавіатурою знизу ([topPx] + висота ≤ [maxBottomPx]);
+     * 2) не заходило під верхній тулбар ([topPx] ≥ [minTopPx]);
+     * 3) залишалося в межах екрана по горизонталі з полями [sideMarginPx].
+     */
+    fun computeEditorBoxBounds(
+        availWidthPx: Int,
+        availHeightPx: Int,
+        minTopPx: Int,
+        toolbarReservePx: Int,
+        sideMarginPx: Int,
+        minBoxWidthPx: Int,
+        minBoxHeightPx: Int,
+        desiredLeftPx: Int,
+        desiredTopPx: Int,
+        boxWidthPx: Int,
+        boxHeightPx: Int,
+        cardTopInContentPx: Int = -1,
+        cardGapPx: Int = 0
+    ): EditorBoxBounds {
+        val safeSide = sideMarginPx.coerceAtLeast(0)
+        val safeMinW = minBoxWidthPx.coerceAtLeast(60)
+        val safeMinH = minBoxHeightPx.coerceAtLeast(36)
+        val maxAllowedWidth = (availWidthPx - 2 * safeSide).coerceAtLeast(safeMinW)
+        val clampedWidth = boxWidthPx.coerceIn(minOf(safeMinW, maxAllowedWidth), maxAllowedWidth)
+
+        var maxBottom = availHeightPx - toolbarReservePx
+        if (cardTopInContentPx > 0) {
+            maxBottom = minOf(maxBottom, cardTopInContentPx - cardGapPx)
+        }
+        val safeMinTop = minTopPx.coerceAtLeast(0)
+        maxBottom = maxBottom.coerceAtLeast(safeMinTop + safeMinH)
+
+        val maxBoxTotalHeight = (maxBottom - safeMinTop).coerceAtLeast(safeMinH)
+        val maxInputHeightPx = (maxBoxTotalHeight - safeMinH / 3).coerceAtLeast(safeMinH)
+        val effectiveBoxHeight = boxHeightPx.coerceIn(safeMinH, maxBoxTotalHeight)
+
+        val maxLeft = (availWidthPx - safeSide - clampedWidth).coerceAtLeast(safeSide)
+        val clampedLeft = desiredLeftPx.coerceIn(safeSide, maxLeft)
+
+        val maxTop = (maxBottom - effectiveBoxHeight).coerceAtLeast(safeMinTop)
+        val clampedTop = desiredTopPx.coerceIn(safeMinTop, maxTop)
+
+        return EditorBoxBounds(
+            leftPx = clampedLeft,
+            topPx = clampedTop,
+            widthPx = clampedWidth,
+            maxInputHeightPx = maxInputHeightPx,
+            maxBottomPx = maxBottom
+        )
+    }
+
+    /**
+     * Пропорційно змінює розмір шрифту (pt) відповідно до збільшення або зменшення поля для тексту:
+     * від [startSpanPx] до [currentSpanPx]. Результат округлюється до цілих pt у межах [minSizePt]..[maxSizePt].
+     */
+    fun scaleTextSizeByBoxRatio(
+        startSizePt: Float,
+        startSpanPx: Float,
+        currentSpanPx: Float,
+        minSizePt: Float = 8f,
+        maxSizePt: Float = 72f
+    ): Float {
+        if (startSizePt.isNaN() || startSizePt.isInfinite()) return 14f.coerceIn(minSizePt, maxSizePt)
+        if (startSpanPx <= 0f || currentSpanPx.isNaN() || currentSpanPx.isInfinite()) {
+            return startSizePt.coerceIn(minSizePt, maxSizePt)
+        }
+        val ratio = (currentSpanPx / startSpanPx).coerceIn(0.1f, 10f)
+        val raw = kotlin.math.round(startSizePt * ratio)
+        return raw.coerceIn(minSizePt, maxSizePt)
+    }
+
+    /** Ширина поля вводу тексту (px), підлаштована під обраний розмір шрифту [sizePt]. */
+    fun editorBoxWidthForSizePt(
+        sizePt: Float,
+        density: Float,
+        minWidthPx: Int,
+        maxWidthPx: Int
+    ): Int {
+        val safeDensity = if (density > 0f && !density.isNaN()) density else 1f
+        val clampedPt = sizePt.coerceIn(8f, 72f)
+        val targetDp = 148f + (clampedPt - 8f) * 5.5f
+        val targetPx = (targetDp * safeDensity).toInt()
+        val upper = maxWidthPx.coerceAtLeast(minWidthPx)
+        return targetPx.coerceIn(minWidthPx, upper)
+    }
 }
 
 /** Випрямлення ліній при малюванні: майже пряма лінія стає відрізком із двох точок. Формат штриха не змінюється. */

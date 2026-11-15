@@ -700,16 +700,22 @@ class ReaderActivity : AppCompatActivity() {
                     confirmRes = R.string.place_text_apply,
                     allowStyle = true,
                     anchorPoint = PageViewPoint(sel.pageIndex, sel.x, sel.y)
-                ) { raw ->
+                ) { raw, resolvedAnchor, userMovedBox ->
                     val newSize = viewModel.placeSize(PlaceTool.TEXT)
                     val newColor = viewModel.placeColor
-                    val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
+                    val targetPageIdx = if (userMovedBox && resolvedAnchor != null) resolvedAnchor.pageIndex else sel.pageIndex
+                    val targetX = if (userMovedBox && resolvedAnchor != null) resolvedAnchor.x else sel.x
+                    val targetY = if (userMovedBox && resolvedAnchor != null) resolvedAnchor.y else sel.y
+                    val page = viewerFragment?.bridge?.pageSizePt(targetPageIdx)
                     val wrapped = PlaceMarkupLogic.wrapText(
-                        raw, sel.x, newSize, page,
+                        raw, targetX, newSize, page,
                         measureWidthPt = { line -> measureTextPt(line, newSize) }
                     )
                     viewModel.edit { s ->
-                        val s1 = PlaceEditor.setSize(s, sel.id, newSize)
+                        val s0 = if (userMovedBox && resolvedAnchor != null) {
+                            PlaceEditor.move(s, sel.id, targetPageIdx, targetX, targetY, page)
+                        } else s
+                        val s1 = PlaceEditor.setSize(s0, sel.id, newSize)
                         val s2 = PlaceEditor.setColor(s1, sel.id, newColor)
                         PlaceEditor.setText(s2, sel.id, wrapped, raw)
                     }
@@ -908,18 +914,19 @@ class ReaderActivity : AppCompatActivity() {
             confirmRes = R.string.place_text_add,
             allowStyle = true,
             anchorPoint = point
-        ) { raw ->
+        ) { raw, resolvedAnchor, _ ->
             val unsupported = safeUnsupported(raw)
             if (!unsupported.isNullOrEmpty()) {
                 showError(getString(R.string.place_text_unsupported, unsupported))
                 return@showTextDialog
             }
-            val page = viewerFragment?.bridge?.pageSizePt(point.pageIndex)
+            val activePoint = resolvedAnchor ?: point
+            val page = viewerFragment?.bridge?.pageSizePt(activePoint.pageIndex)
             val fontSize = viewModel.placeSize(PlaceTool.TEXT)
             val chunks = PlaceMarkupLogic.paginateText(
-                initialPageIndex = point.pageIndex,
-                startX = point.x,
-                startY = point.y,
+                initialPageIndex = activePoint.pageIndex,
+                startX = activePoint.x,
+                startY = activePoint.y,
                 rawText = raw,
                 fontSizePt = fontSize,
                 page = page,
@@ -1043,21 +1050,21 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * Введення тексту (додавання й повторне введення): темна картка, прикріплена знизу над клавіатурою
-     * (відступ за WindowInsets ime), з рядком керування «розмір ▾, колір, скасувати, додати». Рішення A1: поле лишається
-     * у вікні, а не прямо на сторінці, бо PlaceEditor і міст розміщують текст лише готовим об'єктом після підтвердження
-     * (введення на сторінці потребує нового стану «текст у редагуванні» в мості й ядрі). Перевірка символів: при кожній
-     * зміні тексту (TextWatcher, debounce [TEXT_VALIDATE_DEBOUNCE_MS]); «Додати» вимкнена, поки текст порожній або
-     * містить непідтримувані символи. Шрифт розбирається один раз і прогрівається при вході в режим. Усі кнопки ≥ 48 dp.
-     * [allowStyle] = false (повторне введення виділеного тексту): розмір і колір змінюються у картці параметрів.
+     * Введення тексту (додавання й повторне введення):
+     * 1) Поле вводу (`placeTextEditorBox`) завжди автоматично розташовується вище панелі редагування (`placeTextCard`)
+     *    та клавіатури (з урахуванням реальної висоти поля, кеглю і кількості рядків).
+     * 2) Поле можна вільно переміщувати тапом по будь-якій точці сторінки або перетягуванням.
+     * 3) Розмір тексту динамічно підлаштовується під розмір поля при його збільшенні чи зменшенні (кутовим маркером
+     *    `btnTextBoxResize` або щипком двома пальцями).
      */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
     private fun showTextDialog(
         initial: String,
         titleRes: Int,
         confirmRes: Int,
         allowStyle: Boolean = true,
         anchorPoint: PageViewPoint? = null,
-        onAccept: (String) -> Unit
+        onAccept: (raw: String, resolvedAnchor: PageViewPoint?, userMovedBox: Boolean) -> Unit
     ) {
         val dialogBinding = DialogPlaceTextBinding.inflate(layoutInflater)
         dialogBinding.placeTextTitle.setText(titleRes)
@@ -1075,42 +1082,187 @@ class ReaderActivity : AppCompatActivity() {
         }
 
         val density = resources.displayMetrics.density
-        val initialViewPt = anchorPoint?.let { viewerFragment?.bridge?.pageToView(it) }
-        val wrapperTop = binding.viewerWrapper.top.coerceAtLeast((56f * density).toInt())
+        val touchSlop = android.view.ViewConfiguration.get(this).scaledTouchSlop
+        val sideMarginPx = (12f * density).toInt()
+        val minBoxWidthPx = (132f * density).toInt()
+        val minBoxHeightPx = (48f * density).toInt()
+        val cardGapPx = (12f * density).toInt()
+        val toolbarReservePx = (70f * density).toInt()
 
-        fun updateEditorBoxPosition(imeBottom: Int, topInset: Int) {
-            val screenH = resources.displayMetrics.heightPixels
-            val screenW = resources.displayMetrics.widthPixels
-            val toolbarReserve = (68f * density).toInt()
-            val maxBottom = (screenH - imeBottom - toolbarReserve).coerceAtLeast(topInset + (96f * density).toInt())
-            val minTop = (topInset + (56f * density).toInt()).coerceAtLeast(wrapperTop)
-            val desiredTop = if (initialViewPt != null) {
-                (wrapperTop + initialViewPt.y.toInt()).coerceIn(minTop, (maxBottom - (84f * density).toInt()).coerceAtLeast(minTop))
-            } else {
-                minTop + (24f * density).toInt()
-            }
-            val desiredStart = if (initialViewPt != null) {
-                initialViewPt.x.toInt().coerceIn((12f * density).toInt(), (screenW / 2).coerceAtLeast((16f * density).toInt()))
-            } else {
-                (16f * density).toInt()
-            }
-            dialogBinding.placeTextEditorBox.layoutParams =
-                (dialogBinding.placeTextEditorBox.layoutParams as FrameLayout.LayoutParams).apply {
-                    topMargin = desiredTop
-                    marginStart = desiredStart
-                    marginEnd = (16f * density).toInt()
+        val initialViewPt = anchorPoint?.let { viewerFragment?.bridge?.pageToView(it) }
+        val hostInsets = ViewCompat.getRootWindowInsets(binding.root)
+        val initBars = hostInsets?.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+        var currentTopInset = initBars?.top ?: (24f * density).toInt()
+        var currentLeftInset = initBars?.left ?: 0
+        var currentRightInset = initBars?.right ?: 0
+        var currentBottomPad = hostInsets?.getInsets(WindowInsetsCompat.Type.ime())?.bottom ?: 0
+        var realImeBottom = currentBottomPad
+
+        val screenWInit = resources.displayMetrics.widthPixels
+        val initMaxW = (screenWInit - 2 * sideMarginPx).coerceAtLeast(minBoxWidthPx)
+        var currentBoxWidthPx = PlaceBarLogic.editorBoxWidthForSizePt(
+            viewModel.placeSize(PlaceTool.TEXT),
+            density,
+            minBoxWidthPx,
+            initMaxW
+        )
+
+        var userDesiredLeft = if (initialViewPt != null) {
+            (binding.viewerWrapper.left + initialViewPt.x.toInt() - currentLeftInset)
+        } else {
+            sideMarginPx
+        }
+        var userDesiredTop = if (initialViewPt != null) {
+            (binding.viewerWrapper.top + initialViewPt.y.toInt() - currentTopInset)
+        } else {
+            Int.MAX_VALUE / 2
+        }
+        var stickAboveToolbar = initialViewPt == null
+        var userMovedBox = false
+        var wasClampedUpward = false
+        var inLayoutUpdate = false
+
+        fun applyEditorBoxLayout() {
+            if (inLayoutUpdate) return
+            inLayoutUpdate = true
+            try {
+                val rootW = dialogBinding.placeTextRoot.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+                val rootH = dialogBinding.placeTextRoot.height.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels
+                val padLeft = dialogBinding.placeTextRoot.paddingLeft.takeIf { it > 0 } ?: currentLeftInset
+                val padRight = dialogBinding.placeTextRoot.paddingRight.takeIf { it > 0 } ?: currentRightInset
+                val padTop = dialogBinding.placeTextRoot.paddingTop.takeIf { it > 0 } ?: currentTopInset
+
+                // До моменту, поки клавіатура не завершила анімацію відкриття, резервуємо безпечну висоту під неї,
+                // щоб поле вводу одразу ставало НАД панеллю редагування і ніколи не перекривалося клавіатурою.
+                val fallbackKeyboardReserve = (rootH * 0.42f).toInt()
+                val effectiveBottomPad = if (realImeBottom > 0) {
+                    maxOf(dialogBinding.placeTextRoot.paddingBottom, realImeBottom)
+                } else {
+                    maxOf(dialogBinding.placeTextRoot.paddingBottom, currentBottomPad, fallbackKeyboardReserve)
                 }
+
+                val availW = (rootW - padLeft - padRight).coerceAtLeast(minBoxWidthPx)
+                val availH = (rootH - padTop - effectiveBottomPad).coerceAtLeast(minBoxHeightPx + toolbarReservePx)
+                val minTopPx = (binding.viewerWrapper.top - padTop).coerceAtLeast((8f * density).toInt())
+
+                val maxAllowedW = (availW - 2 * sideMarginPx).coerceAtLeast(minBoxWidthPx)
+                val targetW = currentBoxWidthPx.coerceIn(minOf(minBoxWidthPx, maxAllowedW), maxAllowedW)
+
+                // Вимірюємо реальну висоту поля з поточним текстом та кеглем при ширині targetW
+                dialogBinding.placeTextEditorBox.measure(
+                    View.MeasureSpec.makeMeasureSpec(targetW, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                )
+                val measuredBoxH = maxOf(dialogBinding.placeTextEditorBox.measuredHeight, dialogBinding.placeTextEditorBox.height, minBoxHeightPx)
+
+                val cardTopInContent = if (realImeBottom > 0 && dialogBinding.placeTextCard.height > 0 && dialogBinding.placeTextCard.top > 0) {
+                    dialogBinding.placeTextCard.top - padTop
+                } else {
+                    -1
+                }
+
+                val desiredTopForCalc = if (stickAboveToolbar) Int.MAX_VALUE / 2 else userDesiredTop
+                val bounds = PlaceBarLogic.computeEditorBoxBounds(
+                    availWidthPx = availW,
+                    availHeightPx = availH,
+                    minTopPx = minTopPx,
+                    toolbarReservePx = toolbarReservePx,
+                    sideMarginPx = sideMarginPx,
+                    minBoxWidthPx = minBoxWidthPx,
+                    minBoxHeightPx = minBoxHeightPx,
+                    desiredLeftPx = userDesiredLeft,
+                    desiredTopPx = desiredTopForCalc,
+                    boxWidthPx = targetW,
+                    boxHeightPx = measuredBoxH,
+                    cardTopInContentPx = cardTopInContent,
+                    cardGapPx = cardGapPx
+                )
+
+                if (!stickAboveToolbar && userDesiredTop > bounds.topPx + 2) {
+                    wasClampedUpward = true
+                    stickAboveToolbar = true
+                }
+
+                currentBoxWidthPx = bounds.widthPx
+                dialogBinding.placeTextInput.maxHeight = bounds.maxInputHeightPx
+
+                val lp = dialogBinding.placeTextEditorBox.layoutParams as FrameLayout.LayoutParams
+                if (lp.width != bounds.widthPx || lp.topMargin != bounds.topPx || lp.marginStart != bounds.leftPx) {
+                    lp.width = bounds.widthPx
+                    lp.topMargin = bounds.topPx
+                    lp.marginStart = bounds.leftPx
+                    lp.marginEnd = sideMarginPx
+                    dialogBinding.placeTextEditorBox.layoutParams = lp
+                }
+            } finally {
+                inLayoutUpdate = false
+            }
+        }
+
+        fun resolveEditorBoxPagePoint(): PageViewPoint? {
+            if (!userMovedBox && !wasClampedUpward && anchorPoint != null) {
+                return anchorPoint
+            }
+            val b = viewerFragment?.bridge ?: return anchorPoint
+            val inputLoc = IntArray(2)
+            val wrapperLoc = IntArray(2)
+            dialogBinding.placeTextInput.getLocationOnScreen(inputLoc)
+            binding.viewerWrapper.getLocationOnScreen(wrapperLoc)
+            if (inputLoc[0] == 0 && inputLoc[1] == 0) return anchorPoint
+            val viewX = (inputLoc[0] - wrapperLoc[0] + dialogBinding.placeTextInput.paddingLeft).toFloat()
+            val viewY = (inputLoc[1] - wrapperLoc[1] + dialogBinding.placeTextInput.paddingTop).toFloat()
+            val direct = try {
+                b.viewToPage(viewX, viewY)
+            } catch (_: Throwable) {
+                null
+            }
+            if (direct != null) {
+                val page = b.pageSizePt(direct.pageIndex)
+                val (cx, cy) = PlaceMarkupLogic.clampToPage(direct.x, direct.y, page)
+                return PageViewPoint(direct.pageIndex, cx, cy)
+            }
+            val fallbackPageIdx = anchorPoint?.pageIndex ?: 0
+            val projected = try {
+                b.viewToPageSpace(fallbackPageIdx, viewX, viewY)
+            } catch (_: Throwable) {
+                null
+            }
+            if (projected != null) {
+                val page = b.pageSizePt(fallbackPageIdx)
+                val (cx, cy) = PlaceMarkupLogic.clampToPage(projected.x, projected.y, page)
+                return PageViewPoint(fallbackPageIdx, cx, cy)
+            }
+            return anchorPoint
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(dialogBinding.placeTextRoot) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            currentTopInset = bars.top
+            currentLeftInset = bars.left
+            currentRightInset = bars.right
+            if (ime.bottom > 0) realImeBottom = ime.bottom
             val bottomPad = maxOf(bars.bottom, ime.bottom)
+            currentBottomPad = bottomPad
             v.setPadding(bars.left, bars.top, bars.right, bottomPad)
-            updateEditorBoxPosition(bottomPad, bars.top)
+            applyEditorBoxLayout()
             insets
         }
-        updateEditorBoxPosition((260f * density).toInt(), (24f * density).toInt())
+
+        dialogBinding.placeTextEditorBox.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
+            if ((bottom - top) != (oldBottom - oldTop) || top != oldTop) {
+                val cardTop = dialogBinding.placeTextCard.top
+                if (cardTop > 0 && bottom > cardTop - cardGapPx) {
+                    dialogBinding.placeTextEditorBox.post { applyEditorBoxLayout() }
+                }
+            }
+        }
+        dialogBinding.placeTextCard.addOnLayoutChangeListener { _, _, top, _, _, _, oldTop, _, _ ->
+            if (top != oldTop) {
+                dialogBinding.placeTextEditorBox.post { applyEditorBoxLayout() }
+            }
+        }
+        applyEditorBoxLayout()
 
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         lateinit var validate: Runnable
@@ -1165,14 +1317,22 @@ class ReaderActivity : AppCompatActivity() {
         lateinit var rebuildSizeList: () -> Unit
         lateinit var rebuildStyleList: () -> Unit
 
-        // Живий попередній перегляд: число розміру (напр. «15▾», «21▾», «64▾»), іконка «T» з кольоровою смужкою, реальний кегль 8..64sp на сторінці.
-        fun refreshStyle() {
+        // Живий попередній перегляд: число розміру (напр. «15▾», «21▾», «64▾»), іконка «T» з кольоровою смужкою, реальний кегль 8..72sp на сторінці.
+        fun refreshStyle(updateWidthFromSize: Boolean = false) {
             val size = viewModel.placeSize(PlaceTool.TEXT)
             dialogBinding.btnTextSize.text = PlaceMarkupLogic.formatSize(size)
             dialogBinding.btnTextColor.textIconMode = true
             dialogBinding.btnTextColor.swatchColor = viewModel.placeColor or PlaceMarkupLogic.ALPHA_MASK
             dialogBinding.placeTextInput.setTextColor(viewModel.placeColor or PlaceMarkupLogic.ALPHA_MASK)
-            dialogBinding.placeTextInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, size.coerceIn(8f, 64f))
+            val clampedSp = size.coerceIn(8f, 72f)
+            dialogBinding.placeTextInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, clampedSp)
+            dialogBinding.placeTextInput.minHeight = (clampedSp * 1.8f * density).toInt().coerceAtLeast((36f * density).toInt())
+            if (updateWidthFromSize) {
+                val rootW = dialogBinding.placeTextRoot.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+                val maxBoxW = (rootW - 2 * sideMarginPx).coerceAtLeast(minBoxWidthPx)
+                currentBoxWidthPx = PlaceBarLogic.editorBoxWidthForSizePt(clampedSp, density, minBoxWidthPx, maxBoxW)
+            }
+            applyEditorBoxLayout()
         }
 
         rebuildSizeList = {
@@ -1196,7 +1356,7 @@ class ReaderActivity : AppCompatActivity() {
                     isFocusable = true
                     setOnClickListener {
                         viewModel.setPlaceSize(PlaceTool.TEXT, choice)
-                        refreshStyle()
+                        refreshStyle(updateWidthFromSize = true)
                         dialogBinding.placeTextSizePopup.visibility = View.GONE
                     }
                 }
@@ -1244,7 +1404,7 @@ class ReaderActivity : AppCompatActivity() {
                     isFocusable = true
                     setOnClickListener {
                         viewModel.setPlaceSize(PlaceTool.TEXT, presetSize)
-                        refreshStyle()
+                        refreshStyle(updateWidthFromSize = true)
                         dialogBinding.placeTextStylePopup.visibility = View.GONE
                     }
                 }
@@ -1271,20 +1431,20 @@ class ReaderActivity : AppCompatActivity() {
         dialogBinding.btnKbToolPen.setOnClickListener {
             handler.removeCallbacks(validate)
             val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
-            if (raw.isNotBlank() && render(raw)) onAccept(raw)
+            if (raw.isNotBlank() && render(raw)) onAccept(raw, resolveEditorBoxPagePoint(), userMovedBox)
             dialog.dismiss()
             placeBarHost.chooseTool(PlaceTool.INK)
         }
         dialogBinding.btnKbToolCheck.setOnClickListener {
             handler.removeCallbacks(validate)
             val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
-            if (raw.isNotBlank() && render(raw)) onAccept(raw)
+            if (raw.isNotBlank() && render(raw)) onAccept(raw, resolveEditorBoxPagePoint(), userMovedBox)
             dialog.dismiss()
             placeBarHost.chooseTool(PlaceTool.CHECK)
         }
 
         if (allowStyle) {
-            refreshStyle()
+            refreshStyle(updateWidthFromSize = false)
             dialogBinding.btnTextStyle.setOnClickListener {
                 val show = !dialogBinding.placeTextStylePopup.isVisible
                 closeAllPopups()
@@ -1311,7 +1471,7 @@ class ReaderActivity : AppCompatActivity() {
                     sw.picked = (sw.swatchColor and 0xFFFFFF) == (pickedColor and 0xFFFFFF)
                 }
                 dialogBinding.btnTextCustomColor.picked = PlaceBarLogic.isCustomColor(pickedColor)
-                refreshStyle()
+                refreshStyle(updateWidthFromSize = false)
             }
             PlaceBarLogic.PALETTE.forEach { color ->
                 row.addView(SwatchView(this).apply {
@@ -1413,6 +1573,7 @@ class ReaderActivity : AppCompatActivity() {
                     redoStack.clear()
                     updateUndoRedoUi()
                 }
+                applyEditorBoxLayout()
                 handler.removeCallbacks(validate)
                 if (cur.isBlank()) {
                     validate.run()
@@ -1421,30 +1582,202 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
         })
-        dialogBinding.btnTextCancel.setOnClickListener { dialog.dismiss() }
-        dialogBinding.placeTextRoot.setOnClickListener {
-            if (closeAllPopups()) return@setOnClickListener
-            handler.removeCallbacks(validate)
-            val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
-            if (raw.isNotBlank() && render(raw)) {
-                onAccept(raw)
+
+        // Вимога 3: збільшення або зменшення поля для тексту автоматично змінює розмір тексту під поле.
+        var resizeStartRawX = 0f
+        var resizeStartRawY = 0f
+        var resizeStartWidthPx = currentBoxWidthPx
+        var resizeStartSizePt = viewModel.placeSize(PlaceTool.TEXT)
+
+        dialogBinding.btnTextBoxResize.setOnTouchListener { v, event ->
+            when (event.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    closeAllPopups()
+                    resizeStartRawX = event.rawX
+                    resizeStartRawY = event.rawY
+                    resizeStartWidthPx = dialogBinding.placeTextEditorBox.width.takeIf { it > 0 } ?: currentBoxWidthPx
+                    resizeStartSizePt = viewModel.placeSize(PlaceTool.TEXT)
+                    v.parent?.requestDisallowInterceptTouchEvent(true)
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val dx = event.rawX - resizeStartRawX
+                    val dy = event.rawY - resizeStartRawY
+                    val targetSpanPx = (resizeStartWidthPx + dx + dy * 0.85f).coerceAtLeast(minBoxWidthPx * 0.5f)
+                    val newSizePt = PlaceBarLogic.scaleTextSizeByBoxRatio(
+                        startSizePt = resizeStartSizePt,
+                        startSpanPx = resizeStartWidthPx.toFloat(),
+                        currentSpanPx = targetSpanPx,
+                        minSizePt = 8f,
+                        maxSizePt = 72f
+                    )
+                    val rootW = dialogBinding.placeTextRoot.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+                    val maxBoxW = (rootW - 2 * sideMarginPx).coerceAtLeast(minBoxWidthPx)
+                    currentBoxWidthPx = targetSpanPx.toInt().coerceIn(minBoxWidthPx, maxBoxW)
+                    viewModel.setPlaceSize(PlaceTool.TEXT, newSizePt)
+                    refreshStyle(updateWidthFromSize = false)
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    v.performClick()
+                    true
+                }
+                else -> false
             }
-            dialog.dismiss()
         }
+
+        // Масштабування поля та кеглю щипком двома пальцями, а також перетягування поля за рамку.
+        var boxDragStartRawX = 0f
+        var boxDragStartRawY = 0f
+        var boxDragStartLeft = 0
+        var boxDragStartTop = 0
+        var isBoxDragging = false
+        var isBoxPinching = false
+        var boxPinchStartDist = 0f
+        var boxPinchStartWidthPx = currentBoxWidthPx
+        var boxPinchStartSizePt = viewModel.placeSize(PlaceTool.TEXT)
+
+        val pinchAndDragListener = View.OnTouchListener { v, event ->
+            if (event.pointerCount >= 2) {
+                val dx = event.getX(1) - event.getX(0)
+                val dy = event.getY(1) - event.getY(0)
+                val dist = kotlin.math.hypot(dx.toDouble(), dy.toDouble()).toFloat().coerceAtLeast(10f)
+                if (!isBoxPinching) {
+                    isBoxPinching = true
+                    isBoxDragging = false
+                    boxPinchStartDist = dist
+                    boxPinchStartWidthPx = dialogBinding.placeTextEditorBox.width.takeIf { it > 0 } ?: currentBoxWidthPx
+                    boxPinchStartSizePt = viewModel.placeSize(PlaceTool.TEXT)
+                    v.parent?.requestDisallowInterceptTouchEvent(true)
+                } else if (event.actionMasked == android.view.MotionEvent.ACTION_MOVE) {
+                    val scale = dist / boxPinchStartDist
+                    val targetSpanPx = boxPinchStartWidthPx * scale
+                    val newSizePt = PlaceBarLogic.scaleTextSizeByBoxRatio(
+                        startSizePt = boxPinchStartSizePt,
+                        startSpanPx = boxPinchStartWidthPx.toFloat(),
+                        currentSpanPx = targetSpanPx,
+                        minSizePt = 8f,
+                        maxSizePt = 72f
+                    )
+                    val rootW = dialogBinding.placeTextRoot.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+                    val maxBoxW = (rootW - 2 * sideMarginPx).coerceAtLeast(minBoxWidthPx)
+                    currentBoxWidthPx = targetSpanPx.toInt().coerceIn(minBoxWidthPx, maxBoxW)
+                    viewModel.setPlaceSize(PlaceTool.TEXT, newSizePt)
+                    refreshStyle(updateWidthFromSize = false)
+                }
+                return@OnTouchListener true
+            }
+            if (isBoxPinching) {
+                if (event.actionMasked == android.view.MotionEvent.ACTION_UP ||
+                    event.actionMasked == android.view.MotionEvent.ACTION_CANCEL
+                ) {
+                    isBoxPinching = false
+                }
+                return@OnTouchListener true
+            }
+            if (v === dialogBinding.placeTextEditorBox) {
+                when (event.actionMasked) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        closeAllPopups()
+                        val lp = dialogBinding.placeTextEditorBox.layoutParams as FrameLayout.LayoutParams
+                        boxDragStartRawX = event.rawX
+                        boxDragStartRawY = event.rawY
+                        boxDragStartLeft = lp.marginStart
+                        boxDragStartTop = lp.topMargin
+                        isBoxDragging = false
+                        true
+                    }
+                    android.view.MotionEvent.ACTION_MOVE -> {
+                        val dx = event.rawX - boxDragStartRawX
+                        val dy = event.rawY - boxDragStartRawY
+                        if (!isBoxDragging && kotlin.math.hypot(dx.toDouble(), dy.toDouble()) > touchSlop) {
+                            isBoxDragging = true
+                        }
+                        if (isBoxDragging) {
+                            userDesiredLeft = boxDragStartLeft + dx.toInt()
+                            userDesiredTop = boxDragStartTop + dy.toInt()
+                            stickAboveToolbar = false
+                            userMovedBox = true
+                            applyEditorBoxLayout()
+                        }
+                        true
+                    }
+                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                        isBoxDragging = false
+                        true
+                    }
+                    else -> false
+                }
+            } else {
+                false
+            }
+        }
+        dialogBinding.placeTextEditorBox.setOnTouchListener(pinchAndDragListener)
+        dialogBinding.placeTextInput.setOnTouchListener(pinchAndDragListener)
+
+        // Вимога 2: поле можна переміщувати тапом по сторінці (або перетягуванням по сторінці).
+        dialogBinding.placeTextRoot.setOnTouchListener { v, event ->
+            val cardTop = dialogBinding.placeTextCard.top
+            if (cardTop > 0 && event.y >= cardTop) return@setOnTouchListener false
+            when (event.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> true
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    if (!dialogBinding.placeTextColorPopup.isVisible &&
+                        !dialogBinding.placeTextSizePopup.isVisible &&
+                        !dialogBinding.placeTextStylePopup.isVisible
+                    ) {
+                        val relX = (event.x - dialogBinding.placeTextRoot.paddingLeft).toInt()
+                        val relY = (event.y - dialogBinding.placeTextRoot.paddingTop).toInt()
+                        val boxH = dialogBinding.placeTextEditorBox.height.takeIf { it > 0 } ?: minBoxHeightPx
+                        userDesiredLeft = relX - (18f * density).toInt()
+                        userDesiredTop = relY - (boxH / 2).coerceAtLeast((20f * density).toInt())
+                        stickAboveToolbar = false
+                        userMovedBox = true
+                        applyEditorBoxLayout()
+                    }
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP -> {
+                    if (closeAllPopups()) {
+                        v.performClick()
+                        return@setOnTouchListener true
+                    }
+                    val relX = (event.x - dialogBinding.placeTextRoot.paddingLeft).toInt()
+                    val relY = (event.y - dialogBinding.placeTextRoot.paddingTop).toInt()
+                    val boxH = dialogBinding.placeTextEditorBox.height.takeIf { it > 0 } ?: minBoxHeightPx
+                    userDesiredLeft = relX - (18f * density).toInt()
+                    userDesiredTop = relY - (boxH / 2).coerceAtLeast((20f * density).toInt())
+                    stickAboveToolbar = false
+                    userMovedBox = true
+                    applyEditorBoxLayout()
+                    dialogBinding.placeTextInput.requestFocus()
+                    dialog.window?.let { w ->
+                        WindowCompat.getInsetsController(w, dialogBinding.placeTextInput).show(WindowInsetsCompat.Type.ime())
+                    }
+                    v.performClick()
+                    true
+                }
+                else -> false
+            }
+        }
+
+        dialogBinding.btnTextCancel.setOnClickListener { dialog.dismiss() }
         confirm.setOnClickListener {
             handler.removeCallbacks(validate)
             val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
             if (render(raw)) {
-                onAccept(raw)
+                onAccept(raw, resolveEditorBoxPagePoint(), userMovedBox)
                 dialog.dismiss()
             }
         }
         dialog.setOnShowListener {
             render(dialogBinding.placeTextInput.text?.toString().orEmpty())
+            applyEditorBoxLayout()
             val input = dialogBinding.placeTextInput
             input.requestFocus()
             input.post {
                 dialog.window?.let { w -> WindowCompat.getInsetsController(w, input).show(WindowInsetsCompat.Type.ime()) }
+                applyEditorBoxLayout()
             }
         }
         dialog.setOnDismissListener { handler.removeCallbacks(validate) }

@@ -1,5 +1,34 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-15 — Незалежна QA-верифікація позиціонування поля вводу тексту, переміщення тапом і масштабування тексту розміром поля (Агент 3, гілка `feature/place-ui-redesign`, коміт `6c62d4d`) — `QA Verified`
+**Простими словами:**
+- Окремий незалежний QA-субагент (Агент 3, `588eb821-a55d-4c10-8cc6-8ee452e7c2d4`) провів огляд коміту `6c62d4d` (`feature/place-ui-redesign`) і надав вердикт **`QA Verified`** (п. 2.1 Конституції v2.0, Червона лінія №9).
+- Підтверджено виконання всіх 3 вимог Власника:
+  1. **Поле вводу завжди автоматично над панеллю редагування та клавіатурою:** перевірено `PlaceBarLogic.computeEditorBoxBounds(...)` у `PlaceBarLogic.kt` та `applyEditorBoxLayout()` у `ReaderActivity.kt` (усунено подвійне врахування `bars.top`, синхронне вимірювання висоти `placeTextEditorBox.measure(...)`, автоматичний перерахунок при відкритті, зміні інсетів клавіатури `WindowInsetsCompat.Type.ime()`, зміні розмірів `placeTextEditorBox`/`placeTextCard`, зміні кегля й наборі тексту).
+  2. **Переміщення поля тапом або перетягуванням:** перевірено переміщення `placeTextEditorBox` тапом по `placeTextRoot` вище панелі редагування та перетягуванням самої рамки з оновленням координати тексту на сторінці PDF через `resolveEditorBoxPagePoint()` (`getLocationOnScreen` + `bridge.viewToPage` / `viewToPageSpace`).
+  3. **Масштабування розміру тексту розміром поля:** перевірено кутовий маркер `btnTextBoxResize` (`@drawable/ic_resize_corner`) і 2-пальцевий жест на `placeTextEditorBox`/`placeTextInput`, а також кутові маркери (`BR`, `BL`, `TR`) і 2-пальцевий жест для виділеного `PlaceTool.TEXT` у `MarkupOverlayView.kt` / `PlaceEditor.setSizeAndPosition` (`PlaceBarLogic.scaleTextSizeByBoxRatio` у межах `8..72 pt` зі збереженням правого маркера для переносу рядків).
+- Підтверджено недоторканість `:core-pdf`, `:core-ads`, `CONTRACTS.md`, `THIRD_PARTY.md`, закінчення рядків `LF`, зелені звіти JUnit (`:app` 284/284, `:core-pdf` 107/107, `:core-ads` 4/4) і `lintDebug` (0 помилок, 123 попередження).
+
+## 2026-11-15 — Виправлення перекриття поля вводу клавіатурою, переміщення тапом і масштабування тексту розміром поля (гілка `feature/place-ui-redesign`) — `QA Verified` (Агент 3 на `6c62d4d`)
+**Простими словами:**
+- За скріншотом та трьома вимогами Власника виправлено позиціонування та інтерактивність живого поля вводу тексту (`placeTextEditorBox` у `dialog_place_text.xml` / `ReaderActivity.showTextDialog()`) та виділеного текстового блоку на сторінці (`MarkupOverlayView`):
+  1. **Поле вводу завжди автоматично над панеллю редагування та клавіатурою:** усунено подвійне врахування верхнього відступу системного статус-бару (`bars.top`) та фіксовану оцінку висоти `84dp`. Додано чисту функцію `PlaceBarLogic.computeEditorBoxBounds(...)`, яка синхронно вимірює реальну висоту `placeTextEditorBox` і гарантує, що нижній край поля (`topPx + boxHeight`) завжди суворо вищий за верхній край панелі-пігулки (`placeTextCard`) і клавіатури — при відкритті діалогу, появі/зміні клавіатури (`WindowInsetsCompat.Type.ime()`), зміні розміру шрифту (`8..72 pt`), наборі декількох рядків або зміні розміру поля.
+  2. **Переміщення поля тапом або перетягуванням:** тап у будь-якому місці видимої області сторінки (`placeTextRoot` вище панелі редагування) або перетягування самої рамки `placeTextEditorBox` переміщує поле вводу до обраної точки й оновлює цільову координату тексту на сторінці PDF (`resolveEditorBoxPagePoint` через `getLocationOnScreen` + `bridge.viewToPage`).
+  3. **Зміна розміру тексту збільшенням або зменшенням поля для тексту:** у правому нижньому куті поля вводу додано маркер зміни розміру `btnTextBoxResize` (`@drawable/ic_resize_corner`), а також підтримано жест двома пальцями (pinch-to-zoom) на полі вводу й кутові маркери (`BR`, `BL`, `TR`) та жест двома пальцями для виділеного тексту на сторінці в `MarkupOverlayView`. Розширення або звуження поля пропорційно змінює кегль шрифту (`8..72 pt` за `PlaceBarLogic.scaleTextSizeByBoxRatio`) та оновлює індикатор розміру на панелі.
+
+**Що змінено:**
+- Код `:app`: `PlaceBarLogic.kt` (`EditorBoxBounds`, `computeEditorBoxBounds`, `scaleTextSizeByBoxRatio`, `editorBoxWidthForSizePt`), `PlaceEditor.kt` (`setSizeAndPosition` для `PlaceTool.TEXT`), `MarkupOverlayView.kt` (кутові маркери `BR/BL/TR` та 2-finger pinch для `PlaceTool.TEXT`), `ReaderActivity.kt` (`showTextDialog`, `showTextInputDialog`, `editSelected`).
+- Ресурси `:app`: `ic_resize_corner.xml` (новий), `dialog_place_text.xml`.
+- Тести й документи: `PlaceBarLogicTest.kt` (+4 тести), `PlaceEditorTest.kt` (+1 тест), `docs/design/UI_COMPONENTS.md`, `docs/project_log.md`.
+
+**Збірка, тести та lint (JDK 21):**
+- `:app:assembleDebug` — BUILD SUCCESSFUL (`app-debug.apk` встановлено на `RZCX326349A` о `12:43:36`).
+- `:app:testDebugUnitTest` — **284/284** passed (`0` failures, `0` errors).
+- `:core-pdf:testDebugUnitTest` — **107/107** passed (`0` failures, `0` errors).
+- `:core-ads:testDebugUnitTest` — **4/4** passed (`0` failures, `0` errors).
+- `:app:lintDebug` — **0 помилок**, **123 попередження**.
+- **Пристрій:** APK успішно встановлено на підключений Samsung Galaxy S24 Ultra (`RZCX326349A`); після встановлення телефон було від'єднано від USB (`device 'RZCX326349A' not found`), тому інтерактивну перевірку тапів/жестів на фізичному екрані залишено Власнику (п. 6 Конституції).
+
 ## 2026-11-15 — Незалежна QA-верифікація панелі редагування тексту над клавіатурою (Агент 3, гілка `feature/place-ui-redesign`, коміт `d104e7c`) — `QA Verified`
 **Простими словами:**
 - Окремий незалежний QA-субагент (Агент 3, `9fd32a26-853e-4e86-aadc-d293b9ada01a`) перевірив коміт `d104e7c` і надав вердикт **`QA Verified`** (п. 2.1 Конституції v2.0, Червона лінія №9).
