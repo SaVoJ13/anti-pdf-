@@ -211,8 +211,6 @@
     <string name="place_tool_check">Галочка</string>
     <string name="place_tool_cross">Хрестик</string>
     <string name="place_tool_text">Текст</string>
-    <string name="place_size_decrease">Менше</string>
-    <string name="place_size_increase">Більше</string>
     <string name="place_size_format">%1$s pt</string>
     <string name="place_done">Готово</string>
     <string name="place_text_title">Додати текст</string>
@@ -234,7 +232,6 @@
     <string name="place_tool_ink">Малювати</string>
     <string name="place_tool_hand">Рука (гортання й масштаб)</string>
     <string name="place_tool_signature">Підпис</string>
-    <string name="place_signature_width">Ширина підпису</string>
     <string name="place_signature_tap_hint">Торкніться сторінки, щоб поставити підпис</string>
     <string name="form_choice_none">Не вибрано</string>
     <string name="forms_apply">Застосувати</string>
@@ -261,6 +258,7 @@
     <string name="tool_create_blank_desc">Створити новий порожній документ для нотаток і тексту</string>
     <string name="tool_add_page">+ Стор.</string>
     <string name="tool_add_page_desc">Додати порожню сторінку до документа</string>
+    <string name="place_add_page_short">Порожня сторінка</string>
     <string name="tool_insert_file">Додати файл</string>
     <string name="tool_insert_file_desc">Додати сторінки з PDF або зображень</string>
     <string name="action_tools">Інструменти</string>
@@ -298,4 +296,30 @@
     <string name="action_fit_page">На всю сторінку</string>
     <string name="place_drag_outside_snapped_back">Зображення повернуто в межі сторінки</string>
     <string name="image_rotation_angle">%1$d°</string>
+    <string name="action_redo">Повторити</string>
+    <string name="action_add">Додати</string>
+    <string name="place_slot_action">Галочка, хрестик, підпис, зображення</string>
+    <string name="place_slot_select">Виділення й переміщення</string>
+    <string name="place_options">Параметри інструмента</string>
+    <string name="place_options_close">Закрити параметри</string>
+    <string name="place_options_page">Сторінка налаштувань %1$d з %2$d</string>
+    <string name="place_width_label">Товщина</string>
+    <string name="place_size_label">Розмір</string>
+    <string name="place_straighten">Випрямлення ліній</string>
+    <string name="color_orange">Помаранчевий</string>
+    <string name="color_indigo">Індиго</string>
+    <string name="color_purple">Фіолетовий</string>
+    <string name="color_gray">Сірий</string>
+    <string name="color_custom">Власний колір</string>
+    <string name="place_custom_color_title">Власний колір</string>
+    <string name="place_text_size_menu">Розмір тексту</string>
+    <string name="place_text_color_toggle">Колір тексту</string>
+    <string name="place_menu_reading_mode">Режим читання</string>
+    <string name="place_size_decrease">Зменшити розмір</string>
+    <string name="place_size_increase">Збільшити розмір</string>
+    <string name="place_text_style_menu">Стиль тексту</string>
+    <string name="place_text_style_h1">Заголовок 1 (24 pt)</string>
+    <string name="place_text_style_h2">Заголовок 2 (18 pt)</string>
+    <string name="place_text_style_body1">Текст 1 (14 pt)</string>
+    <string name="place_text_style_body2">Текст 2 (11 pt)</string>
 </resources>

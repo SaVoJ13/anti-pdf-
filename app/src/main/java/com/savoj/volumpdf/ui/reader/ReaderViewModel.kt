@@ -370,6 +370,11 @@ class ReaderViewModel(
             ?.let { name -> InkPreset.values().firstOrNull { it.name == name } } ?: InkPreset.PEN
         set(value) { savedStateHandle[KEY_INK_PRESET] = value.name }
 
+    /** «Випрямлення ліній» пера: майже прямий штрих стає відрізком ([InkStraighten]); лише вигляд, формат не змінюється. */
+    var straightenInk: Boolean
+        get() = savedStateHandle.get<Boolean>(KEY_STRAIGHTEN) ?: false
+        set(value) { savedStateHandle[KEY_STRAIGHTEN] = value }
+
     /** Колір нових штрихів: RGB з палітри й альфа пресета. */
     fun newInkColor(): Int = ((inkPreset.alpha and 0xFF) shl 24) or (placeColor and 0x00FFFFFF)
 
@@ -385,6 +390,7 @@ class ReaderViewModel(
         private const val KEY_INK_WIDTH = "place_ink_width"
         private const val KEY_SIGNATURE_WIDTH = "place_signature_width"
         private const val KEY_INK_PRESET = "place_ink_preset"
+        private const val KEY_STRAIGHTEN = "place_straighten_ink"
         const val DEFAULT_PLACE_COLOR = 0xFFD32F2F.toInt()
     }
 }

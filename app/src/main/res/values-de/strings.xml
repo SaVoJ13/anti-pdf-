@@ -211,8 +211,6 @@
     <string name="place_tool_check">Häkchen</string>
     <string name="place_tool_cross">Kreuz</string>
     <string name="place_tool_text">Text</string>
-    <string name="place_size_decrease">Kleiner</string>
-    <string name="place_size_increase">Größer</string>
     <string name="place_size_format">%1$s pt</string>
     <string name="place_done">Fertig</string>
     <string name="place_text_title">Text hinzufügen</string>
@@ -234,7 +232,6 @@
     <string name="place_tool_ink">Zeichnen</string>
     <string name="place_tool_hand">Hand (Scrollen und Zoomen)</string>
     <string name="place_tool_signature">Unterschrift</string>
-    <string name="place_signature_width">Breite der Unterschrift</string>
     <string name="place_signature_tap_hint">Tippen Sie auf die Seite, um die Unterschrift zu setzen</string>
     <string name="form_choice_none">Nicht ausgewählt</string>
     <string name="forms_apply">Übernehmen</string>
@@ -261,6 +258,7 @@
     <string name="tool_create_blank_desc">Neues leeres Dokument für Notizen und Text erstellen</string>
     <string name="tool_add_page">+ Seite</string>
     <string name="tool_add_page_desc">Leere Seite zum Dokument hinzufügen</string>
+    <string name="place_add_page_short">Leere Seite</string>
     <string name="tool_insert_file">Datei hinzufügen</string>
     <string name="tool_insert_file_desc">Seiten aus PDF oder Bildern anfügen</string>
     <string name="action_tools">Werkzeuge</string>
@@ -298,4 +296,30 @@
     <string name="action_fit_page">An Seite anpassen</string>
     <string name="place_drag_outside_snapped_back">Bild in den Seitenbereich zurückgesetzt</string>
     <string name="image_rotation_angle">%1$d°</string>
+    <string name="action_redo">Wiederholen</string>
+    <string name="action_add">Hinzufügen</string>
+    <string name="place_slot_action">Haken, Kreuz, Unterschrift, Bild</string>
+    <string name="place_slot_select">Auswählen und verschieben</string>
+    <string name="place_options">Werkzeugoptionen</string>
+    <string name="place_options_close">Optionen schließen</string>
+    <string name="place_options_page">Einstellungsseite %1$d von %2$d</string>
+    <string name="place_width_label">Stärke</string>
+    <string name="place_size_label">Größe</string>
+    <string name="place_straighten">Linien begradigen</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_indigo">Indigo</string>
+    <string name="color_purple">Violett</string>
+    <string name="color_gray">Grau</string>
+    <string name="color_custom">Eigene Farbe</string>
+    <string name="place_custom_color_title">Eigene Farbe</string>
+    <string name="place_text_size_menu">Textgröße</string>
+    <string name="place_text_color_toggle">Textfarbe</string>
+    <string name="place_menu_reading_mode">Lesemodus</string>
+    <string name="place_size_decrease">Größe verringern</string>
+    <string name="place_size_increase">Größe erhöhen</string>
+    <string name="place_text_style_menu">Textstil</string>
+    <string name="place_text_style_h1">Überschrift 1 (24 pt)</string>
+    <string name="place_text_style_h2">Überschrift 2 (18 pt)</string>
+    <string name="place_text_style_body1">Text 1 (14 pt)</string>
+    <string name="place_text_style_body2">Text 2 (11 pt)</string>
 </resources>

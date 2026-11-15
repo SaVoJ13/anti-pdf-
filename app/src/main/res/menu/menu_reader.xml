@@ -1,30 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Верхня панель читача мінімальна: режим читання, «+», (у режимі «Редагувати»: «Зберегти», «Готово») і меню ⋮.
+     Усе інше (пошук, обране, поділитися, інструменти, сторінки, форми, відомості) — у меню ⋮. -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_toggle_favorite"
-        android:icon="@drawable/ic_star_outline"
-        android:title="@string/action_favorite"
-        app:showAsAction="ifRoom" />
+        android:id="@+id/action_place_save"
+        android:title="@string/action_save"
+        android:visible="false"
+        app:showAsAction="always|withText" />
+
+    <item
+        android:id="@+id/action_place_done"
+        android:icon="@drawable/ic_check"
+        android:title="@string/place_done"
+        android:visible="false"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_reading_theme"
+        android:icon="@drawable/ic_night_mode"
+        android:title="@string/place_menu_reading_mode"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_add"
+        android:icon="@drawable/ic_add"
+        android:title="@string/action_add"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_reading_theme_overflow"
+        android:title="@string/place_menu_reading_mode"
+        android:visible="false"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/action_search"
         android:icon="@drawable/ic_search"
         android:title="@string/action_search"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_reading_theme"
-        android:icon="@drawable/ic_night_mode"
-        android:title="@string/action_reading_theme"
-        app:showAsAction="ifRoom" />
+        android:id="@+id/action_toggle_favorite"
+        android:icon="@drawable/ic_star_outline"
+        android:title="@string/action_favorite"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_forms"
+        android:icon="@drawable/ic_forms"
+        android:title="@string/action_forms"
+        android:visible="false"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/action_share"
         android:icon="@drawable/ic_share"
         android:title="@string/action_share"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/action_place"

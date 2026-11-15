@@ -211,8 +211,6 @@
     <string name="place_tool_check">Галочка</string>
     <string name="place_tool_cross">Крестик</string>
     <string name="place_tool_text">Текст</string>
-    <string name="place_size_decrease">Меньше</string>
-    <string name="place_size_increase">Больше</string>
     <string name="place_size_format">%1$s pt</string>
     <string name="place_done">Готово</string>
     <string name="place_text_title">Добавить текст</string>
@@ -234,7 +232,6 @@
     <string name="place_tool_ink">Рисовать</string>
     <string name="place_tool_hand">Рука (прокрутка и масштаб)</string>
     <string name="place_tool_signature">Подпись</string>
-    <string name="place_signature_width">Ширина подписи</string>
     <string name="place_signature_tap_hint">Коснитесь страницы, чтобы поставить подпись</string>
     <string name="form_choice_none">Не выбрано</string>
     <string name="forms_apply">Применить</string>
@@ -261,6 +258,7 @@
     <string name="tool_create_blank_desc">Создать новый пустой документ для заметок и текста</string>
     <string name="tool_add_page">+ Стр.</string>
     <string name="tool_add_page_desc">Добавить пустую страницу к документу</string>
+    <string name="place_add_page_short">Пустая страница</string>
     <string name="tool_insert_file">Добавить файл</string>
     <string name="tool_insert_file_desc">Добавить страницы из PDF или изображений</string>
     <string name="action_tools">Инструменты</string>
@@ -298,4 +296,30 @@
     <string name="action_fit_page">Во всю страницу</string>
     <string name="place_drag_outside_snapped_back">Изображение возвращено в границы страницы</string>
     <string name="image_rotation_angle">%1$d°</string>
+    <string name="action_redo">Повторить</string>
+    <string name="action_add">Добавить</string>
+    <string name="place_slot_action">Галочка, крестик, подпись, изображение</string>
+    <string name="place_slot_select">Выделение и перемещение</string>
+    <string name="place_options">Параметры инструмента</string>
+    <string name="place_options_close">Закрыть параметры</string>
+    <string name="place_options_page">Страница настроек %1$d из %2$d</string>
+    <string name="place_width_label">Толщина</string>
+    <string name="place_size_label">Размер</string>
+    <string name="place_straighten">Выпрямление линий</string>
+    <string name="color_orange">Оранжевый</string>
+    <string name="color_indigo">Индиго</string>
+    <string name="color_purple">Фиолетовый</string>
+    <string name="color_gray">Серый</string>
+    <string name="color_custom">Свой цвет</string>
+    <string name="place_custom_color_title">Свой цвет</string>
+    <string name="place_text_size_menu">Размер текста</string>
+    <string name="place_text_color_toggle">Цвет текста</string>
+    <string name="place_menu_reading_mode">Режим чтения</string>
+    <string name="place_size_decrease">Уменьшить размер</string>
+    <string name="place_size_increase">Увеличить размер</string>
+    <string name="place_text_style_menu">Стиль текста</string>
+    <string name="place_text_style_h1">Заголовок 1 (24 pt)</string>
+    <string name="place_text_style_h2">Заголовок 2 (18 pt)</string>
+    <string name="place_text_style_body1">Текст 1 (14 pt)</string>
+    <string name="place_text_style_body2">Текст 2 (11 pt)</string>
 </resources>

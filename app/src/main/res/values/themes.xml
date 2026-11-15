@@ -35,4 +35,31 @@
         <item name="android:navigationBarColor">?attr/colorSurface</item>
         <item name="android:windowLightNavigationBar">true</item>
     </style>
+
+    <!-- Чіп на темній картці параметрів: світлий текст, ≥ 48 dp -->
+    <style name="Widget.VolumPdf.CardChip" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/place_card_on</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:minWidth">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="backgroundTint">@color/place_chip_bg</item>
+        <item name="strokeColor">@color/place_card_muted</item>
+        <item name="iconTint">@color/place_card_on</item>
+    </style>
+
+    <!-- Вікно введення тексту: прозорий фон, картку малює сама розмітка -->
+    <style name="Theme.VolumPdf.TextCard" parent="Theme.Material3.DayNight.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- AppCompatDialog вимагає windowNoTitle/windowActionBar БЕЗ префікса android: (інакше IllegalArgumentException) -->
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 </resources>
