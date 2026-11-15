@@ -12,11 +12,13 @@
     <!-- Тривалість появи/зникнення карток: 150–200 мс -->
     <integer name="place_anim_ms">180</integer>
 
-    <!-- Картка завжди темна (і в світлій, і в темній темі): контраст не залежить від сторінки під нею -->
-    <color name="place_card_bg">#262A3D</color>
-    <color name="place_card_on">#EEF0FA</color>
-    <color name="place_card_muted">#A9AEC8</color>
+    <!-- Панель і картка завжди темні графітові (і в світлій, і в темній темі): контраст не залежить від сторінки під ними -->
+    <color name="place_bar_bg">#1E1F22</color>
+    <color name="place_card_bg">#2B2D31</color>
+    <color name="place_slot_selected_bg">#3D4048</color>
+    <color name="place_card_on">#F3F4F6</color>
+    <color name="place_card_muted">#9CA3AF</color>
     <color name="place_card_accent">#BAC3FF</color>
-    <color name="place_card_ring">#EEF0FA</color>
+    <color name="place_card_ring">#F3F4F6</color>
 
 </resources>

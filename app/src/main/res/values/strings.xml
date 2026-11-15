@@ -315,4 +315,11 @@
     <string name="place_text_size_menu">Text size</string>
     <string name="place_text_color_toggle">Text color</string>
     <string name="place_menu_reading_mode">Reading mode</string>
+    <string name="place_size_decrease">Decrease size</string>
+    <string name="place_size_increase">Increase size</string>
+    <string name="place_text_style_menu">Text style</string>
+    <string name="place_text_style_h1">Heading 1 (24 pt)</string>
+    <string name="place_text_style_h2">Heading 2 (18 pt)</string>
+    <string name="place_text_style_body1">Text 1 (14 pt)</string>
+    <string name="place_text_style_body2">Text 2 (11 pt)</string>
 </resources>

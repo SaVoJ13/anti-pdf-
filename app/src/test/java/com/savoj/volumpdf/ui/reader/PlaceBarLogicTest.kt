@@ -213,4 +213,32 @@ class PlaceBarLogicTest {
         s = PlaceEditor.undo(s) // «a» зникає
         assertEquals(null, s.selectedId)
     }
+
+    // --- крок зміни розміру кнопками −/+ та колонки сітки -----------------------------------------
+
+    @Test
+    fun `stepSize increments and decrements within tool bounds`() {
+        assertEquals(3f, PlaceBarLogic.stepSize(PlaceTool.INK, 2f, 1), 0f)
+        assertEquals(1f, PlaceBarLogic.stepSize(PlaceTool.INK, 2f, -1), 0f)
+        assertEquals(0.5f, PlaceBarLogic.stepSize(PlaceTool.INK, 1f, -1), 0f)
+        assertEquals(0.5f, PlaceBarLogic.stepSize(PlaceTool.INK, 0.5f, -1), 0f)
+        assertEquals(1f, PlaceBarLogic.stepSize(PlaceTool.INK, 0.5f, 1), 0f)
+        assertEquals(40f, PlaceBarLogic.stepSize(PlaceTool.INK, 40f, 1), 0f)
+
+        assertEquals(16f, PlaceBarLogic.stepSize(PlaceTool.TEXT, 14f, 1), 0f)
+        assertEquals(12f, PlaceBarLogic.stepSize(PlaceTool.TEXT, 14f, -1), 0f)
+        assertEquals(4f, PlaceBarLogic.stepSize(PlaceTool.TEXT, 4f, -1), 0f)
+        assertEquals(144f, PlaceBarLogic.stepSize(PlaceTool.TEXT, 144f, 1), 0f)
+
+        assertEquals(130f, PlaceBarLogic.stepSize(PlaceTool.IMAGE, 120f, 1), 0f)
+        assertEquals(110f, PlaceBarLogic.stepSize(PlaceTool.IMAGE, 120f, -1), 0f)
+        assertEquals(10f, PlaceBarLogic.stepSize(PlaceTool.HAND, 10f, 1), 0f)
+    }
+
+    @Test
+    fun `gridColumns and text style presets match specification`() {
+        assertEquals(5, PlaceBarLogic.gridColumns(landscape = false))
+        assertEquals(10, PlaceBarLogic.gridColumns(landscape = true))
+        assertArrayEquals(floatArrayOf(24f, 18f, 14f, 11f), PlaceBarLogic.TEXT_STYLE_SIZES_PT, 0f)
+    }
 }

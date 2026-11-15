@@ -5,6 +5,7 @@
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/placeTextRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -79,17 +80,31 @@
         </HorizontalScrollView>
 
         <LinearLayout
-            android:id="@+id/placeTextControls"
+            android:id="@+id/placeTextFormatRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTextStyle"
+                style="@style/Widget.VolumPdf.CardChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:contentDescription="@string/place_text_style_menu"
+                android:text="Aa"
+                app:icon="@drawable/ic_arrow_drop_down"
+                app:iconGravity="end"
+                tools:ignore="HardcodedText" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTextSize"
                 style="@style/Widget.VolumPdf.CardChip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
                 android:contentDescription="@string/place_text_size_menu"
                 app:icon="@drawable/ic_arrow_drop_down"
                 app:iconGravity="end" />
@@ -99,11 +114,14 @@
                 android:layout_width="@dimen/place_swatch_size"
                 android:layout_height="@dimen/place_swatch_size"
                 android:contentDescription="@string/place_text_color_toggle" />
+        </LinearLayout>
 
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
+        <LinearLayout
+            android:id="@+id/placeTextControls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTextCancel"

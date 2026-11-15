@@ -219,10 +219,7 @@ class ReaderActivity : AppCompatActivity() {
                     false
                 }
                 R.id.action_search -> {
-                    val bridge = viewerFragment?.bridge
-                    if (bridge != null) {
-                        bridge.isTextSearchActive = !bridge.isTextSearchActive
-                    }
+                    toggleSearch()
                     false
                 }
                 R.id.action_reading_theme -> {
@@ -251,10 +248,16 @@ class ReaderActivity : AppCompatActivity() {
             updateReaderHud(curPage, nextZoom)
         }
         binding.btnHudSearch.setOnClickListener {
-            val bridge = viewerFragment?.bridge
-            if (bridge != null) {
-                bridge.isTextSearchActive = !bridge.isTextSearchActive
-            }
+            toggleSearch()
+        }
+    }
+
+    private fun toggleSearch() {
+        val bridge = viewerFragment?.bridge ?: return
+        val next = !bridge.isTextSearchActive
+        bridge.isTextSearchActive = next
+        if (!viewModel.placeModeActive) {
+            binding.cardReaderHud.visibility = if (next) View.GONE else View.VISIBLE
         }
     }
 
@@ -445,6 +448,7 @@ class ReaderActivity : AppCompatActivity() {
                 val bridge = viewerFragment?.bridge
                 if (bridge != null && bridge.isTextSearchActive) {
                     bridge.isTextSearchActive = false
+                    if (!viewModel.placeModeActive) binding.cardReaderHud.visibility = View.VISIBLE
                     return
                 }
                 if (viewModel.placeModeActive) {
@@ -1090,6 +1094,25 @@ class ReaderActivity : AppCompatActivity() {
         }
         if (allowStyle) {
             refreshStyle()
+            val styleLabels = intArrayOf(
+                R.string.place_text_style_h1,
+                R.string.place_text_style_h2,
+                R.string.place_text_style_body1,
+                R.string.place_text_style_body2
+            )
+            dialogBinding.btnTextStyle.setOnClickListener { anchor ->
+                val menu = android.widget.PopupMenu(this, anchor)
+                styleLabels.forEachIndexed { i, labelRes ->
+                    menu.menu.add(0, i, i, getString(labelRes))
+                }
+                menu.setOnMenuItemClickListener { item ->
+                    val presetSize = PlaceBarLogic.TEXT_STYLE_SIZES_PT.getOrElse(item.itemId) { 14f }
+                    viewModel.setPlaceSize(PlaceTool.TEXT, presetSize)
+                    refreshStyle()
+                    true
+                }
+                menu.show()
+            }
             dialogBinding.btnTextSize.setOnClickListener { anchor ->
                 val menu = android.widget.PopupMenu(this, anchor)
                 TEXT_SIZE_CHOICES.forEachIndexed { i, size ->
@@ -1103,6 +1126,12 @@ class ReaderActivity : AppCompatActivity() {
                 menu.show()
             }
             val row = dialogBinding.placeTextColorRow
+            fun updateTextColorRow(pickedView: SwatchView) {
+                for (i in 0 until row.childCount) {
+                    (row.getChildAt(i) as SwatchView).picked = row.getChildAt(i) === pickedView
+                }
+                refreshStyle()
+            }
             PlaceBarLogic.PALETTE.forEach { color ->
                 row.addView(SwatchView(this).apply {
                     swatchColor = color
@@ -1110,18 +1139,27 @@ class ReaderActivity : AppCompatActivity() {
                     contentDescription = getString(R.string.place_text_color_toggle)
                     setOnClickListener {
                         viewModel.placeColor = color
-                        for (i in 0 until row.childCount) {
-                            (row.getChildAt(i) as SwatchView).picked = row.getChildAt(i) === this
-                        }
-                        refreshStyle()
+                        updateTextColorRow(this)
                     }
                 })
             }
+            row.addView(SwatchView(this).apply {
+                rainbow = true
+                picked = PlaceBarLogic.isCustomColor(viewModel.placeColor)
+                contentDescription = getString(R.string.color_custom)
+                setOnClickListener {
+                    showCustomColorDialog(viewModel.placeColor) { rgb ->
+                        viewModel.placeColor = 0xFF000000.toInt() or rgb
+                        updateTextColorRow(this)
+                    }
+                }
+            })
             dialogBinding.btnTextColor.setOnClickListener {
                 dialogBinding.placeTextColorScroll.visibility =
                     if (dialogBinding.placeTextColorScroll.isVisible) View.GONE else View.VISIBLE
             }
         } else {
+            dialogBinding.btnTextStyle.visibility = View.GONE
             dialogBinding.btnTextSize.visibility = View.GONE
             dialogBinding.btnTextColor.visibility = View.GONE
         }
@@ -2027,10 +2065,7 @@ class ReaderActivity : AppCompatActivity() {
                 true
             }
             R.id.action_search -> {
-                val bridge = viewerFragment?.bridge
-                if (bridge != null) {
-                    bridge.isTextSearchActive = !bridge.isTextSearchActive
-                }
+                toggleSearch()
                 true
             }
             R.id.action_toggle_favorite -> {

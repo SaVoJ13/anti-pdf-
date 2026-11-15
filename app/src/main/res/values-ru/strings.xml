@@ -315,4 +315,11 @@
     <string name="place_text_size_menu">Размер текста</string>
     <string name="place_text_color_toggle">Цвет текста</string>
     <string name="place_menu_reading_mode">Режим чтения</string>
+    <string name="place_size_decrease">Уменьшить размер</string>
+    <string name="place_size_increase">Увеличить размер</string>
+    <string name="place_text_style_menu">Стиль текста</string>
+    <string name="place_text_style_h1">Заголовок 1 (24 pt)</string>
+    <string name="place_text_style_h2">Заголовок 2 (18 pt)</string>
+    <string name="place_text_style_body1">Текст 1 (14 pt)</string>
+    <string name="place_text_style_body2">Текст 2 (11 pt)</string>
 </resources>

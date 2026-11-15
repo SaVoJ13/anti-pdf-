@@ -1,5 +1,41 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-15 — Завершення редизайну UI/UX панелі редагування за відеореференсом та виправлення К2/Н2 (гілка `feature/place-ui-redesign`) — потребує незалежної перевірки QA
+**Простими словами:**
+- Завершено повне візуальне та інтерактивне узгодження режиму редагування Volum PDF із відеореференсом (`Screen_Recording_20261114_184603_Samsung_Notes.mp4`, `00:00`–`00:58`) зі збереженням усієї бізнес-логіки та виправлень перетягування зображень/тексту (`337e39c`, `459d83a`, `1283dbf`).
+- **Виправлено критичний дефект К2:** поворот екрана з ландшафту в портрет при відкритій картці параметрів (`placeOptionsCard`) більше не спричиняє падіння `IllegalArgumentException: columnCount must be >= 6`. У `PlaceBarController.applyGridColumns()` перед зміною `columnCount` виконується `removeAllViews()` і перепризначення свіжих `ViewGroup.LayoutParams` для кружечків палітри.
+- **Виправлено дефект Н2:** при ввімкненні пошуку по тексту (`toggleSearch`) плаваюча пігулка сторінок `cardReaderHud` (`Стор. N з M`) ховається і не перекриває нижню панель пошуку `PdfViewerFragment`, а після закриття пошуку повертається.
+- **Візуальна мова панелі та карток за відео:**
+  - Нижня компактна панель інструментів `placeToolBar` переведена на темний графіт `#1E1F22` (`@color/place_bar_bg`) у єдиній візуальній мові з карткою параметрів `#2B2D31` (`@color/place_card_bg`).
+  - Активний слот на нижній панелі підсвічується круглим графітовим індикатором `#3D4048` (`@color/place_slot_selected_bg`, `44×44 dp`, радіус `22 dp`) зі світлою акцентною іконкою `#BAC3FF`.
+  - У кружечках палітри `SwatchView` вибраний колір (`picked == true`) відображається з чіткою контрастною галочкою `✓` всередині та зовнішнім кільцем (темна галочка `#1E1F22` на жовтому `#FBC02D`, світла `#F3F4F6` на решті кольорів).
+  - Обабіч повзунка розміру/товщини (`placeSizeSlider`) додано кнопки точного кроку `−` (`btnSizeMinus`) і `+` (`btnSizePlus`, `48×48 dp`), підтримані чистою функцією `PlaceBarLogic.stepSize()`.
+  - У картці введення тексту над клавіатурою (`dialog_place_text.xml`) додано кнопку пресетів стилів `Aa▾` (`btnTextStyle`: `Заголовок 1 (24 pt)`, `Заголовок 2 (18 pt)`, `Текст 1 (14 pt)`, `Текст 2 (11 pt)`), райдужний кружечок власного кольору у стрічці кольорів тексту, а панель керування розділено на два компактні рядки (`placeTextFormatRow` + `placeTextControls`), щоб кнопки «Скасувати» та «Додати» ніколи не обрізалися навіть при `font_scale = 1.3`.
+- Створено специфікацію редизайну `docs/design/UI_REDESIGN_SPEC.md` і реєстр компонентів `docs/design/UI_COMPONENTS.md`.
+
+**Що змінено:**
+- Документація: `docs/design/UI_REDESIGN_SPEC.md`, `docs/design/UI_COMPONENTS.md`, `docs/project_log.md`.
+- Код та ресурси `:app`: `PlaceBarLogic.kt`, `PlaceBarController.kt`, `SwatchView.kt`, `ReaderActivity.kt`, `activity_reader.xml`, `dialog_place_text.xml`, `place_ui.xml`, `bg_place_slot.xml`, `place_slot_tint.xml`, `place_card_icon_tint.xml`, `strings.xml` (у 4 локалях: `values`, `values-uk`, `values-de`, `values-ru`).
+- Тести `:app`: `PlaceBarLogicTest.kt`, `StringsParityTest.kt`.
+- Не змінювалися: `:core-pdf`, `:core-ads`, `CONTRACTS.md`, `THIRD_PARTY.md`, координатна математика `MarkupEngine`/`MarkupLayout`.
+
+**Збірка, тести та lint (JDK 21):**
+- `:app:assembleDebug` — SUCCESS.
+- `:app:testDebugUnitTest` — **279/279** passed (`0` failures, `0` skipped).
+- `:core-pdf:testDebugUnitTest` — **107/107** passed (`0` failures, `1` skipped).
+- `:core-ads:testDebugUnitTest` — **4/4** passed (`0` failures, `0` skipped).
+- `:app:lintDebug` — **0 помилок**, **120 попереджень** (0 нових порівняно з базовим станом).
+- Лінійні закінчення LF перевірено через `git ls-files --eol`.
+
+**Перевірка на фізичному пристрої (`RZCX326349A`):**
+- Перед кожним кроком виконувалась перевірка фокуса вікна (`mCurrentFocus` / `mFocusedApp` у пакеті `com.savoj.volumpdf.anti`).
+- Перевірено **К2** (двічі): відкриття `placeOptionsCard` у ландшафті (`user_rotation 1`) та поворот у портрет (`user_rotation 0`) — `0` падінь, `AndroidRuntime:E` порожній, сітка кольорів перебудовується з 10 у 5 колонок.
+- Перевірено **Н2**: у режимі читання натискання пошуку в `cardReaderHud` ховає плаваючу пігулку (`cardReaderHud count during search: 0`).
+- Перевірено кнопки кроку розміру `btnSizeMinus` (`[84,1972][252,2140]`) та `btnSizePlus` (`[1188,1972][1356,2140]`) на картці пера.
+- Перевірено дворядкову картку тексту (`dialog_place_text.xml`): `btnTextStyle` (`[84,1313][388,1481]`), `btnTextSize` (`[409,1313][768,1481]`), `btnTextColor` (`[789,1313][957,1481]`), `btnTextCancel` (`[687,1481][1015,1649]`), `btnTextConfirm` (`[1015,1481][1356,1649]`). Меню `btnTextStyle` (`Aa▾`) відкриває 4 пресети (`Заголовок 1 (24 pt)`, `Заголовок 2 (18 pt)`, `Текст 1 (14 pt)`, `Текст 2 (11 pt)`), вибір `Заголовок 1 (24 pt)` оновлює `btnTextSize` на `24 pt`.
+- Перевірено масштаб шрифту `font_scale = 1.3` — обрізань чи накладань немає, `0` помилок у `logcat`.
+- Після завершення відновлено `font_scale = 1.0`, `user_rotation = 0`, `accelerometer_rotation = 1`, очищено історію на головному екрані та видалено всі тимчасові дампи `/data/local/tmp/ui*.xml`.
+
 ## 2026-11-14 — Android і UI (виправлення дефектів QA PR #2, гілка `feature/place-ui-redesign`) — потребує повторної незалежної перевірки QA
 **Простими словами:**
 - Критичний К1 виправлено: тап по сторінці з інструментом «Текст» більше не вбиває застосунок. Причина була в темі вікна тексту: бракувало `windowNoTitle`/`windowActionBar` без префікса `android:`. Інших діалогів з новими темами A1 немає (єдина нова тема вікна `Theme.VolumPdf.TextCard`).

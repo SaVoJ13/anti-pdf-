@@ -86,6 +86,8 @@ class PlaceBarController(
 
         b.placeSizeSlider.setLabelFormatter { v -> res.getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(v)) }
         b.placeSizeSlider.addOnChangeListener { _, value, fromUser -> if (fromUser && !syncing) host.applySize(value) }
+        b.btnSizeMinus.setOnClickListener { stepCurrentSize(-1) }
+        b.btnSizePlus.setOnClickListener { stepCurrentSize(1) }
 
         b.placeInkPresetGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked || syncing) return@addOnButtonCheckedListener
@@ -258,9 +260,16 @@ class PlaceBarController(
 
     // --- кольори ----------------------------------------------------------------------------------
 
+    private fun stepCurrentSize(deltaSign: Int) {
+        val sel = vm.editor.value.selected
+        val target = PlaceBarLogic.target(vm.placeTool, sel?.tool)
+        val current = sel?.sizePt ?: vm.placeSize(target)
+        val next = PlaceBarLogic.stepSize(target, current, deltaSign)
+        if (next != current) host.applySize(next)
+    }
+
     private fun buildSwatches() {
         val grid = b.placeColorGrid
-        grid.removeAllViews()
         val list = ArrayList<SwatchView>()
         PlaceBarLogic.PALETTE.forEachIndexed { i, color ->
             val v = SwatchView(grid.context).apply {
@@ -268,7 +277,6 @@ class PlaceBarController(
                 contentDescription = res.getString(paletteNames[i])
                 setOnClickListener { host.applyColor(color); host.refresh() }
             }
-            grid.addView(v, ViewGroup.LayoutParams(res.getDimensionPixelSize(R.dimen.place_swatch_size), res.getDimensionPixelSize(R.dimen.place_swatch_size)))
             list += v
         }
         val custom = SwatchView(grid.context).apply {
@@ -282,16 +290,27 @@ class PlaceBarController(
                 }
             }
         }
-        grid.addView(custom, ViewGroup.LayoutParams(res.getDimensionPixelSize(R.dimen.place_swatch_size), res.getDimensionPixelSize(R.dimen.place_swatch_size)))
         swatches = list
         customSwatch = custom
         applyGridColumns()
     }
 
-    /** Портрет: 5 колонок (два рядки), ландшафт: 10 (один рядок). */
+    /**
+     * Портрет: 5 колонок (два рядки), ландшафт: 10 (один рядок).
+     * Виправлення К2: GridLayout кешує обчислені індекси колонок у LayoutParams дочірніх елементів, тому зменшення
+     * columnCount з 10 до 5 на непорожній сітці викликає IllegalArgumentException. Перед зміною columnCount
+     * очищуємо сітку й додаємо кружечки з новими LayoutParams.
+     */
     fun applyGridColumns() {
         val landscape = res.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        b.placeColorGrid.columnCount = if (landscape) 10 else 5
+        val cols = PlaceBarLogic.gridColumns(landscape)
+        val grid = b.placeColorGrid
+        if (grid.columnCount == cols && grid.childCount == swatches.size + (if (customSwatch != null) 1 else 0)) return
+        val size = res.getDimensionPixelSize(R.dimen.place_swatch_size)
+        grid.removeAllViews()
+        grid.columnCount = cols
+        swatches.forEach { grid.addView(it, ViewGroup.LayoutParams(size, size)) }
+        customSwatch?.let { grid.addView(it, ViewGroup.LayoutParams(size, size)) }
     }
 
     private fun bindColors(argb: Int) {

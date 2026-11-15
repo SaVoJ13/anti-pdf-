@@ -63,7 +63,9 @@ class StringsParityTest {
             "action_redo", "action_add", "place_slot_action", "place_slot_select", "place_options", "place_options_close",
             "place_options_page", "place_width_label", "place_size_label", "place_straighten", "color_orange", "color_indigo",
             "color_purple", "color_gray", "color_custom", "place_custom_color_title", "place_text_size_menu",
-            "place_text_color_toggle", "place_menu_reading_mode"
+            "place_text_color_toggle", "place_menu_reading_mode", "place_size_decrease", "place_size_increase",
+            "place_text_style_menu", "place_text_style_h1", "place_text_style_h2", "place_text_style_body1",
+            "place_text_style_body2"
         )
         (locales + ("en" to base)).forEach { (lang, map) ->
             keys.forEach { assertTrue("$it відсутній у $lang", map.containsKey(it)) }

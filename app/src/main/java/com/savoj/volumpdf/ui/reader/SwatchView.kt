@@ -28,6 +28,13 @@ class SwatchView @JvmOverloads constructor(
         strokeWidth = 2.5f * density
         color = context.getColor(R.color.place_card_ring)
     }
+    private val checkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2.2f * density
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val checkPath = android.graphics.Path()
     private var sweep: SweepGradient? = null
 
     var swatchColor: Int = 0xFF000000.toInt()
@@ -71,6 +78,15 @@ class SwatchView @JvmOverloads constructor(
         }
         canvas.drawCircle(cx, cy, r, fill)
         canvas.drawCircle(cx, cy, r, edge)
-        if (picked) canvas.drawCircle(cx, cy, r + 4f * density, ring)
+        if (picked) {
+            canvas.drawCircle(cx, cy, r + 4f * density, ring)
+            val isLight = !rainbow && (swatchColor and 0xFFFFFF) == 0xFBC02D
+            checkPaint.color = if (isLight) 0xFF1E1F22.toInt() else 0xFFF3F4F6.toInt()
+            checkPath.reset()
+            checkPath.moveTo(cx - 5.5f * density, cy + 0.5f * density)
+            checkPath.lineTo(cx - 1.5f * density, cy + 4.5f * density)
+            checkPath.lineTo(cx + 6.0f * density, cy - 3.5f * density)
+            canvas.drawPath(checkPath, checkPaint)
+        }
     }
 }

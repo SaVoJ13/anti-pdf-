@@ -100,6 +100,34 @@ object PlaceBarLogic {
 
     /** true, якщо колір поза палітрою (показується позначка «власний»). */
     fun isCustomColor(rgb: Int): Boolean = PALETTE.none { (it and 0xFFFFFF) == (rgb and 0xFFFFFF) }
+
+    /** Кількість колонок палітри: у портреті 5 (два рядки), у ландшафті 10 (один рядок). */
+    fun gridColumns(landscape: Boolean): Int = if (landscape) 10 else 5
+
+    /** Розміри шрифту для пресетів стилю «Aa▾» (Заголовок 1, Заголовок 2, Текст 1, Текст 2). */
+    val TEXT_STYLE_SIZES_PT: FloatArray = floatArrayOf(24f, 18f, 14f, 11f)
+
+    /**
+     * Крок зміни розміру/товщини кнопками «−» ([deltaSign] < 0) та «+» ([deltaSign] > 0) обабіч слайдера.
+     * Значення обмежується допустимим діапазоном [PlaceMarkupLogic.sizeMin]..[PlaceMarkupLogic.sizeMax].
+     */
+    fun stepSize(target: PlaceTool, current: Float, deltaSign: Int): Float {
+        if (deltaSign == 0 || target == PlaceTool.HAND) return current
+        val min = PlaceMarkupLogic.sizeMin(target)
+        val max = PlaceMarkupLogic.sizeMax(target)
+        val dir = if (deltaSign > 0) 1 else -1
+        val next = when (target) {
+            PlaceTool.INK -> when {
+                dir < 0 && current <= 1.5f -> 0.5f
+                dir > 0 && current < 1f -> 1f
+                else -> kotlin.math.round(current) + dir * 1f
+            }
+            PlaceTool.TEXT, PlaceTool.CHECK, PlaceTool.CROSS -> kotlin.math.round(current) + dir * 2f
+            PlaceTool.SIGNATURE, PlaceTool.IMAGE -> kotlin.math.round(current) + dir * 10f
+            PlaceTool.HAND -> current
+        }
+        return next.coerceIn(min, max)
+    }
 }
 
 /** Випрямлення ліній при малюванні: майже пряма лінія стає відрізком із двох точок. Формат штриха не змінюється. */
