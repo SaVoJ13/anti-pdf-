@@ -107,6 +107,12 @@ object PlaceBarLogic {
     /** Розміри шрифту для пресетів стилю «Aa▾» (Заголовок 1, Заголовок 2, Текст 1, Текст 2). */
     val TEXT_STYLE_SIZES_PT: FloatArray = floatArrayOf(24f, 18f, 14f, 11f)
 
+    /** Повний список розмірів шрифту (pt) для спливаючої вертикальної панелі вибору кеглю над клавіатурою. */
+    val TEXT_SIZE_CHOICES: FloatArray = floatArrayOf(
+        8f, 9f, 10f, 11f, 12f, 13f, 14f, 15f, 16f, 17f, 18f, 19f, 20f, 21f, 22f,
+        24f, 26f, 28f, 32f, 36f, 40f, 44f, 48f, 64f, 72f
+    )
+
     /**
      * Крок зміни розміру/товщини кнопками «−» ([deltaSign] < 0) та «+» ([deltaSign] > 0) обабіч слайдера.
      * Значення обмежується допустимим діапазоном [PlaceMarkupLogic.sizeMin]..[PlaceMarkupLogic.sizeMax].

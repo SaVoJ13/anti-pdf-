@@ -51,6 +51,16 @@ class SwatchView @JvmOverloads constructor(
             invalidate()
         }
 
+    /**
+     * Режим іконки кольору тексту для панелі над клавіатурою (як у Samsung Notes):
+     * малює літеру «T» зверху та кольорову смужку [swatchColor] під нею.
+     */
+    var textIconMode: Boolean = false
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     init {
         isClickable = true
         isFocusable = true
@@ -64,6 +74,40 @@ class SwatchView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         val cx = width / 2f
         val cy = height / 2f
+        if (textIconMode) {
+            fill.shader = null
+            fill.color = 0xFFF3F4F6.toInt()
+            val topY = cy - 8.5f * density
+            val stemBottomY = cy + 3.5f * density
+            // Верхня перекладина літери T
+            canvas.drawRoundRect(
+                cx - 6.5f * density, topY,
+                cx + 6.5f * density, topY + 2.3f * density,
+                1f * density, 1f * density, fill
+            )
+            // Вертикальна ніжка літери T
+            canvas.drawRoundRect(
+                cx - 1.2f * density, topY,
+                cx + 1.2f * density, stemBottomY,
+                1f * density, 1f * density, fill
+            )
+            // Кольорова смужка поточного кольору шрифту знизу
+            fill.color = swatchColor
+            val barTop = cy + 5.5f * density
+            val barBottom = cy + 9.3f * density
+            val barRadius = 2f * density
+            canvas.drawRoundRect(
+                cx - 8.5f * density, barTop,
+                cx + 8.5f * density, barBottom,
+                barRadius, barRadius, fill
+            )
+            canvas.drawRoundRect(
+                cx - 8.5f * density, barTop,
+                cx + 8.5f * density, barBottom,
+                barRadius, barRadius, edge
+            )
+            return
+        }
         val r = 16f * density
         if (rainbow) {
             val g = sweep ?: SweepGradient(
