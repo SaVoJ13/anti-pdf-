@@ -529,6 +529,23 @@ class PlaceEditorTest {
     }
 
     @Test
+    fun `setBgColor updates text background color and round trips through PendingCodec`() {
+        val mint = 0xFF00E676.toInt()
+        var s = PlaceEditor.add(PlaceEditor.initial(emptyList()), text("t1", "Фон шрифту", 40f, 50f))
+        s = PlaceEditor.setBgColor(s, "t1", mint)
+        assertEquals(mint, s.items.single().bgColor)
+
+        val encoded = PendingCodec.encode("docKey", s.items)
+        val decoded = PendingCodec.decode(encoded)!!.items.single()
+        assertEquals(mint, decoded.bgColor)
+        assertEquals(0, decoded.rotationDeg)
+
+        // Resetting to 0 removes background
+        s = PlaceEditor.setBgColor(s, "t1", 0)
+        assertEquals(0, s.items.single().bgColor)
+    }
+
+    @Test
     fun `ImageRotationHelper normalize handles positive negative and overflow angles`() {
         assertEquals(0, com.savoj.volumpdf.util.ImageRotationHelper.normalize(0))
         assertEquals(90, com.savoj.volumpdf.util.ImageRotationHelper.normalize(90))

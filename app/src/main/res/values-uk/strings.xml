@@ -314,6 +314,8 @@
     <string name="place_custom_color_title">Власний колір</string>
     <string name="place_text_size_menu">Розмір тексту</string>
     <string name="place_text_color_toggle">Колір тексту</string>
+    <string name="place_text_bg_color_toggle">Фон шрифту</string>
+    <string name="color_none">Без фону</string>
     <string name="place_menu_reading_mode">Режим читання</string>
     <string name="place_size_decrease">Зменшити розмір</string>
     <string name="place_size_increase">Збільшити розмір</string>

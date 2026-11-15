@@ -198,6 +198,12 @@ object PlaceEditor {
     fun setColor(s: PlaceEditorState, id: String, color: Int): PlaceEditorState =
         update(s, id, key = "color:$id") { it.copy(color = PlaceMarkupLogic.recolor(it, color)) }
 
+    /** Колір фону для текстового об'єкта (`0` = без фону / прозорий). */
+    fun setBgColor(s: PlaceEditorState, id: String, bgColor: Int): PlaceEditorState =
+        update(s, id, key = "bgColor:$id") {
+            if (it.tool == PlaceTool.TEXT) it.copy(bgColor = bgColor) else it
+        }
+
     /** Пресет штриха: товщина й альфа (хайлайтер); колір (RGB) лишається. Окремий крок скасування. */
     fun setInkStyle(s: PlaceEditorState, id: String, widthPt: Float, alpha: Int): PlaceEditorState =
         update(s, id, key = null) {

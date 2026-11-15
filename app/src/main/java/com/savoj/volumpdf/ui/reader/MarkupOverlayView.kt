@@ -1096,11 +1096,34 @@ class MarkupOverlayView @JvmOverloads constructor(
     }
 
     private fun drawText(canvas: Canvas, item: PendingMarkup, x: Float, y: Float, zoom: Float) {
+        val fs = MarkupOverlayMath.ptToPx(item.sizePt, zoom)
         textPaint.color = item.color
-        textPaint.textSize = MarkupOverlayMath.ptToPx(item.sizePt, zoom)
-        for (line in MarkupOverlayMath.textLinesPx(item.text, x, y, item.sizePt, zoom)) {
-            if (line.text.isNotEmpty()) canvas.drawText(line.text, line.x, line.baselineY, textPaint)
+        textPaint.textSize = fs
+        val hasBg = (item.bgColor ushr 24) != 0
+        if (hasBg) {
+            textBgFillPaint.color = item.bgColor
         }
+        val ascentPx = MarkupLayout.TEXT_ASCENT_RATIO * fs
+        val descentPx = PlaceBounds.TEXT_DESCENT_RATIO * fs
+        for (line in MarkupOverlayMath.textLinesPx(item.text, x, y, item.sizePt, zoom)) {
+            if (line.text.isNotEmpty()) {
+                if (hasBg) {
+                    val w = textPaint.measureText(line.text)
+                    canvas.drawRect(
+                        line.x,
+                        line.baselineY - ascentPx,
+                        line.x + w,
+                        line.baselineY + descentPx,
+                        textBgFillPaint
+                    )
+                }
+                canvas.drawText(line.text, line.x, line.baselineY, textPaint)
+            }
+        }
+    }
+
+    private val textBgFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
     }
 
     private fun drawInk(canvas: Canvas, item: PendingMarkup, ox: Float, oy: Float, zoom: Float) {

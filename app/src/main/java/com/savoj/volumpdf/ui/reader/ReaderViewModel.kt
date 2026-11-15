@@ -349,6 +349,11 @@ class ReaderViewModel(
         get() = savedStateHandle.get<Int>(KEY_COLOR) ?: DEFAULT_PLACE_COLOR
         set(value) { savedStateHandle[KEY_COLOR] = value }
 
+    /** Колір фону шрифту для текстових об'єктів (`0` = без фону / прозорий). */
+    var placeTextBgColor: Int
+        get() = savedStateHandle.get<Int>(KEY_TEXT_BG_COLOR) ?: 0
+        set(value) { savedStateHandle[KEY_TEXT_BG_COLOR] = value }
+
     /** Розмір окремо для ✓/✗, тексту й штриха (товщина, pt). */
     private fun sizeKey(tool: PlaceTool) = when (tool) {
         PlaceTool.TEXT -> KEY_TEXT_SIZE
@@ -385,6 +390,7 @@ class ReaderViewModel(
         private const val KEY_AWAITING_COPY = "awaiting_copy_location"
         private const val KEY_TOOL = "place_tool"
         private const val KEY_COLOR = "place_color"
+        private const val KEY_TEXT_BG_COLOR = "place_text_bg_color"
         private const val KEY_TEXT_SIZE = "place_text_size"
         private const val KEY_MARK_SIZE = "place_mark_size"
         private const val KEY_INK_WIDTH = "place_ink_width"
