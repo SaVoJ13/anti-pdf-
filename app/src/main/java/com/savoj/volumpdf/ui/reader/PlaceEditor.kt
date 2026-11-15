@@ -122,6 +122,11 @@ object PlaceEditor {
     fun setSizeAndPosition(s: PlaceEditorState, id: String, sizePt: Float, x: Float, y: Float, page: PageSizePt? = null): PlaceEditorState =
         update(s, id, key = "sizePos:$id") { item ->
             val clampedSize = PlaceMarkupLogic.clampSize(item.tool, sizePt, 0f, 0f, item.aspect, page)
+            if (item.tool == PlaceTool.TEXT) {
+                val resized = item.copy(sizePt = clampedSize)
+                val (cx, cy) = PlaceMarkupLogic.clampedAnchor(resized, x, y, page)
+                return@update resized.copy(x = cx, y = cy)
+            }
             val clampedHeight = clampedSize * item.aspect
             val newX = if (page != null) {
                 x.coerceIn(0f, (page.widthPt - clampedSize).coerceAtLeast(0f))

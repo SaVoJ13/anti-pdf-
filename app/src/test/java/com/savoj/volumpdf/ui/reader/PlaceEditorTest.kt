@@ -513,6 +513,22 @@ class PlaceEditorTest {
     }
 
     @Test
+    fun `setSizeAndPosition for TEXT scales font size and clamps position in one undo step`() {
+        var s = PlaceEditor.add(PlaceEditor.initial(emptyList()), text("t1", "Привіт", 100f, 120f))
+        s = PlaceEditor.setSizeAndPosition(s, "t1", 24f, 80f, 90f, page)
+        s = PlaceEditor.setSizeAndPosition(s, "t1", 32f, 70f, 85f, page)
+        val cur = s.items.single()
+        assertEquals(32f, cur.sizePt, 0.001f)
+        assertEquals(70f, cur.x, 0.001f)
+        assertEquals(85f, cur.y, 0.001f)
+        // Coalesced into a single undo step after add
+        assertEquals(2, s.history.size)
+        s = PlaceEditor.undo(s)
+        assertEquals(14f, s.items.single().sizePt, 0.001f)
+        assertEquals(100f, s.items.single().x, 0.001f)
+    }
+
+    @Test
     fun `ImageRotationHelper normalize handles positive negative and overflow angles`() {
         assertEquals(0, com.savoj.volumpdf.util.ImageRotationHelper.normalize(0))
         assertEquals(90, com.savoj.volumpdf.util.ImageRotationHelper.normalize(90))

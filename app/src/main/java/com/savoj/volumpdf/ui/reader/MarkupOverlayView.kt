@@ -194,6 +194,11 @@ class MarkupOverlayView @JvmOverloads constructor(
 
     /** Стан ресайзу вікна тексту або зображення/підпису за маркери. */
     private var isResizing = false
+    private var isScalingTextSize = false
+    private var resizeCornerDirX = 1f
+    private var resizeCornerDirY = 1f
+    private var resizeStartSizePt = 14f
+    private var resizeStartSpanPx = 100f
     private var resizeId: String? = null
     private var startWidthPt = 0f
     private var originalText = ""
@@ -295,7 +300,7 @@ class MarkupOverlayView @JvmOverloads constructor(
         if (drawingEnabled) return onDrawTouch(event)
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                // Перевірка натискання на маркери зміни ширини для виділеного тексту
+                // Перевірка натискання на маркери зміни ширини або масштабування кеглю для виділеного тексту
                 val sel = selectedId?.let { id -> items.firstOrNull { it.id == id } }
                 if (sel != null && sel.tool == PlaceTool.TEXT) {
                     val b = bridge
@@ -308,12 +313,19 @@ class MarkupOverlayView @JvmOverloads constructor(
                             val pad = 4f * density
                             val hx = r.right + pad
                             val hy = (r.top + r.bottom) / 2f
-                            val cx = r.right + pad
-                            val cy = r.bottom + pad
+                            val brX = r.right + pad; val brY = r.bottom + pad
+                            val blX = r.left - pad; val blY = r.bottom + pad
+                            val trX = r.right + pad; val trY = r.top - pad
                             val slop = 28f * density
-                            val hitRight = Math.hypot((event.x - hx).toDouble(), (event.y - hy).toDouble()) <= slop
-                            val hitCorner = Math.hypot((event.x - cx).toDouble(), (event.y - cy).toDouble()) <= slop
-                            if (hitRight || hitCorner) {
+                            val distRight = Math.hypot((event.x - hx).toDouble(), (event.y - hy).toDouble()).toFloat()
+                            val distBR = Math.hypot((event.x - brX).toDouble(), (event.y - brY).toDouble()).toFloat()
+                            val distBL = Math.hypot((event.x - blX).toDouble(), (event.y - blY).toDouble()).toFloat()
+                            val distTR = Math.hypot((event.x - trX).toDouble(), (event.y - trY).toDouble()).toFloat()
+                            val hitRight = distRight <= slop
+                            val hitBR = distBR <= slop
+                            val hitBL = distBL <= slop
+                            val hitTR = distTR <= slop
+                            if (hitRight || hitBR || hitBL || hitTR) {
                                 gestureActive = true
                                 isResizing = true
                                 resizeId = sel.id
@@ -321,9 +333,17 @@ class MarkupOverlayView @JvmOverloads constructor(
                                 downX = event.x
                                 downY = event.y
                                 startZoom = zoom
-                                startWidthPt = (r.right - r.left) / zoom
+                                startWidthPt = (r.right - r.left).coerceAtLeast(16f * density) / zoom
                                 originalText = sel.rawText ?: PlaceMarkupLogic.unwrapText(sel.text)
+                                val minCornerDist = minOf(distBR, distBL, distTR)
+                                val hasMultipleWords = originalText.trim().contains(' ')
+                                isScalingTextSize = (hitBR || hitBL || hitTR) && (minCornerDist <= distRight + 6f * density || !hasMultipleWords) || !hasMultipleWords
+                                resizeCornerDirX = if (hitBL && distBL < distBR && distBL < distTR) -1f else 1f
+                                resizeCornerDirY = if (hitTR && distTR < distBR && distTR < distBL) -1f else 1f
+                                resizeStartSizePt = sel.sizePt
+                                resizeStartSpanPx = (r.right - r.left).coerceAtLeast(48f * density)
                                 dragText = sel.text
+                                dragSizePt = sel.sizePt
                                 parent?.requestDisallowInterceptTouchEvent(true)
                                 return true
                             }
@@ -406,21 +426,33 @@ class MarkupOverlayView @JvmOverloads constructor(
                             val page = bridge?.pageSizePt(dragPageIndex ?: sel.pageIndex)
                             val minS = PlaceMarkupLogic.sizeMin(sel.tool)
                             val maxS = PlaceMarkupLogic.sizeMax(sel.tool)
-                            val maxW = if (page != null) page.widthPt else maxS
-                            val maxH = if (page != null && sel.aspect > 0f) page.heightPt / sel.aspect else maxS
-                            val clampedSize = targetSizePt.coerceIn(minS, minOf(maxS, maxW, maxH))
+                            if (sel.tool == PlaceTool.TEXT) {
+                                val clampedSize = PlaceBarLogic.scaleTextSizeByBoxRatio(
+                                    pinchStartSizePt, 100f, 100f * scale, minS, maxS
+                                )
+                                val resized = sel.copy(sizePt = clampedSize)
+                                val (newX, newY) = PlaceMarkupLogic.clampedAnchor(resized, pinchStartX, pinchStartY, page)
+                                dragSizePt = clampedSize
+                                dragX = newX
+                                dragY = newY
+                                invalidate()
+                            } else {
+                                val maxW = if (page != null) page.widthPt else maxS
+                                val maxH = if (page != null && sel.aspect > 0f) page.heightPt / sel.aspect else maxS
+                                val clampedSize = targetSizePt.coerceIn(minS, minOf(maxS, maxW, maxH))
 
-                            val cx = pinchStartX + pinchStartSizePt / 2f
-                            val cy = pinchStartY + (pinchStartSizePt * sel.aspect) / 2f
-                            val maxX = if (page != null) (page.widthPt - clampedSize).coerceAtLeast(0f) else 1000f
-                            val maxY = if (page != null) (page.heightPt - clampedSize * sel.aspect).coerceAtLeast(0f) else 1000f
-                            val newX = (cx - clampedSize / 2f).coerceIn(0f, maxX)
-                            val newY = (cy - (clampedSize * sel.aspect) / 2f).coerceIn(0f, maxY)
+                                val cx = pinchStartX + pinchStartSizePt / 2f
+                                val cy = pinchStartY + (pinchStartSizePt * sel.aspect) / 2f
+                                val maxX = if (page != null) (page.widthPt - clampedSize).coerceAtLeast(0f) else 1000f
+                                val maxY = if (page != null) (page.heightPt - clampedSize * sel.aspect).coerceAtLeast(0f) else 1000f
+                                val newX = (cx - clampedSize / 2f).coerceIn(0f, maxX)
+                                val newY = (cy - (clampedSize * sel.aspect) / 2f).coerceIn(0f, maxY)
 
-                            dragSizePt = clampedSize
-                            dragX = newX
-                            dragY = newY
-                            invalidate()
+                                dragSizePt = clampedSize
+                                dragX = newX
+                                dragY = newY
+                                invalidate()
+                            }
                         }
                     }
                     return true
@@ -440,6 +472,30 @@ class MarkupOverlayView @JvmOverloads constructor(
                             val maxAllowedWidthPt = minOf(maxWidthFromX, maxWidthFromY, PlaceMarkupLogic.sizeMax(sel.tool))
                             val targetWidthPt = (startWidthPt + dxPt).coerceIn(minWidthPt, maxAllowedWidthPt)
                             dragSizePt = targetWidthPt
+                            invalidate()
+                            return true
+                        }
+                        if (isScalingTextSize) {
+                            val dxPx = (event.getX(idx) - downX) * resizeCornerDirX
+                            val dyPx = (event.getY(idx) - downY) * resizeCornerDirY
+                            val currentSpanPx = (resizeStartSpanPx + dxPx + dyPx * 0.75f).coerceAtLeast(16f)
+                            val newSizePt = PlaceBarLogic.scaleTextSizeByBoxRatio(
+                                resizeStartSizePt,
+                                resizeStartSpanPx,
+                                currentSpanPx,
+                                PlaceMarkupLogic.sizeMin(PlaceTool.TEXT),
+                                PlaceMarkupLogic.sizeMax(PlaceTool.TEXT)
+                            )
+                            val page = bridge?.pageSizePt(sel.pageIndex)
+                            val maxWidthPt = if (page != null) {
+                                (page.widthPt - PlaceMarkupLogic.PAGE_EDGE_MARGIN_PT - sel.x).coerceAtLeast(PlaceMarkupLogic.MIN_TEXT_LINE_WIDTH_PT)
+                            } else 2000f
+                            val measure: (String) -> Float = { str ->
+                                textPaint.textSize = MarkupOverlayMath.ptToPx(newSizePt, startZoom)
+                                textPaint.measureText(str) / startZoom
+                            }
+                            dragSizePt = newSizePt
+                            dragText = PlaceMarkupLogic.wrapTextToWidth(originalText, maxWidthPt, newSizePt, measure)
                             invalidate()
                             return true
                         }
@@ -600,15 +656,16 @@ class MarkupOverlayView @JvmOverloads constructor(
                 if (gestureActive && event.pointerCount >= 2) {
                     val targetId = dragId ?: selectedId
                     val sel = targetId?.let { id -> items.firstOrNull { it.id == id } }
-                    if (sel != null && (sel.tool == PlaceTool.IMAGE || sel.tool == PlaceTool.SIGNATURE)) {
+                    if (sel != null && (sel.tool == PlaceTool.IMAGE || sel.tool == PlaceTool.SIGNATURE || sel.tool == PlaceTool.TEXT)) {
                         isPinching = true
                         isResizing = false
+                        isScalingTextSize = false
                         val p0X = event.getX(0); val p0Y = event.getY(0)
                         val p1X = event.getX(1); val p1Y = event.getY(1)
                         pinchStartDist = Math.hypot((p1X - p0X).toDouble(), (p1Y - p0Y).toDouble()).toFloat().coerceAtLeast(10f)
                         pinchStartSizePt = dragSizePt ?: sel.sizePt
-                        pinchStartX = dragX
-                        pinchStartY = dragY
+                        pinchStartX = if (dragId != null) dragX else sel.x
+                        pinchStartY = if (dragId != null) dragY else sel.y
                         pinchAspect = sel.aspect
                         parent?.requestDisallowInterceptTouchEvent(true)
                         return true
@@ -694,6 +751,7 @@ class MarkupOverlayView @JvmOverloads constructor(
         if (sel != null && (sel.tool == PlaceTool.IMAGE || sel.tool == PlaceTool.SIGNATURE)) {
             val sizeToCommit = dragSizePt
             isResizing = false
+            isScalingTextSize = false
             resizeId = null
             dragSizePt = null
             invalidate()
@@ -703,14 +761,21 @@ class MarkupOverlayView @JvmOverloads constructor(
             return
         }
         val textToCommit = dragText
+        val sizeToCommit = if (isScalingTextSize) dragSizePt else null
         val raw = originalText
         isResizing = false
+        isScalingTextSize = false
         resizeId = null
         dragText = null
         dragSizePt = null
         invalidate()
-        if (commit && textToCommit != null) {
-            editListener?.onItemTextChanged(id, textToCommit, raw)
+        if (commit) {
+            if (sizeToCommit != null) {
+                editListener?.onItemSizeChanged(id, sizeToCommit)
+            }
+            if (textToCommit != null) {
+                editListener?.onItemTextChanged(id, textToCommit, raw)
+            }
         }
     }
 
@@ -756,6 +821,7 @@ class MarkupOverlayView @JvmOverloads constructor(
     private fun endGesture() {
         gestureActive = false
         isResizing = false
+        isScalingTextSize = false
         isPinching = false
         resizeId = null
         dragText = null
@@ -771,6 +837,7 @@ class MarkupOverlayView @JvmOverloads constructor(
 
     private fun cancelGesture() {
         isResizing = false
+        isScalingTextSize = false
         isPinching = false
         resizeId = null
         dragText = null
@@ -894,9 +961,10 @@ class MarkupOverlayView @JvmOverloads constructor(
         for (item in list) {
             val o = originPx(item, offset) ?: continue
             val activeItem = if ((isResizing && item.id == resizeId) || (isPinching && item.id == (dragId ?: selectedId))) {
-                if (dragText != null) item.copy(text = dragText!!)
-                else if (dragSizePt != null) item.copy(sizePt = dragSizePt!!)
-                else item
+                var cur = item
+                if (dragText != null) cur = cur.copy(text = dragText!!)
+                if (dragSizePt != null) cur = cur.copy(sizePt = dragSizePt!!)
+                cur
             } else {
                 item
             }
@@ -933,9 +1001,10 @@ class MarkupOverlayView @JvmOverloads constructor(
         val sel = selectedId?.let { id -> list.firstOrNull { it.id == id } }
         if (sel != null) {
             val activeSel = if ((isResizing && sel.id == resizeId) || (isPinching && sel.id == (dragId ?: selectedId))) {
-                if (dragText != null) sel.copy(text = dragText!!)
-                else if (dragSizePt != null) sel.copy(sizePt = dragSizePt!!)
-                else sel
+                var cur = sel
+                if (dragText != null) cur = cur.copy(text = dragText!!)
+                if (dragSizePt != null) cur = cur.copy(sizePt = dragSizePt!!)
+                cur
             } else {
                 sel
             }
@@ -947,12 +1016,10 @@ class MarkupOverlayView @JvmOverloads constructor(
                 canvas.drawRoundRect(rectF, 4f * density, 4f * density, frameHaloPaint)
                 canvas.drawRoundRect(rectF, 4f * density, 4f * density, framePaint)
 
-                // Маркери зміни ширини для текстового об'єкта
+                // Маркери зміни ширини та масштабування кеглю для текстового об'єкта
                 if (activeSel.tool == PlaceTool.TEXT) {
                     val hx = rectF.right
                     val hy = (rectF.top + rectF.bottom) / 2f
-                    val cx = rectF.right
-                    val cy = rectF.bottom
 
                     // Правий маркер ширини (вертикальна пігулка з насічками)
                     val pillW = 6f * density
@@ -964,11 +1031,18 @@ class MarkupOverlayView @JvmOverloads constructor(
                     canvas.drawLine(hx - 1.2f * density, hy - 4.5f * density, hx - 1.2f * density, hy + 4.5f * density, handleGripPaint)
                     canvas.drawLine(hx + 1.2f * density, hy - 4.5f * density, hx + 1.2f * density, hy + 4.5f * density, handleGripPaint)
 
-                    // Нижній правий кутовий маркер (кружечок)
-                    val cornerR = 5f * density
-                    canvas.drawCircle(cx, cy, cornerR + 2f * density, handleHaloPaint)
-                    canvas.drawCircle(cx, cy, cornerR, handlePaint)
-                    canvas.drawCircle(cx, cy, cornerR, handleStrokePaint)
+                    // Кутові маркери масштабування розміру тексту (кружечки)
+                    val cornerR = 5.5f * density
+                    val textCorners = arrayOf(
+                        Pair(rectF.right, rectF.bottom),
+                        Pair(rectF.left, rectF.bottom),
+                        Pair(rectF.right, rectF.top)
+                    )
+                    for (c in textCorners) {
+                        canvas.drawCircle(c.first, c.second, cornerR + 2f * density, handleHaloPaint)
+                        canvas.drawCircle(c.first, c.second, cornerR, handlePaint)
+                        canvas.drawCircle(c.first, c.second, cornerR, handleStrokePaint)
+                    }
                 }
 
                 // Кутові маркери масштабування для зображення або підпису
