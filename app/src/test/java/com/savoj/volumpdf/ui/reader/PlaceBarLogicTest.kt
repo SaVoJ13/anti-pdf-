@@ -315,4 +315,53 @@ class PlaceBarLogicTest {
         assertTrue(smaller >= 420)
         assertTrue(larger <= 1000)
     }
+
+    @Test
+    fun `text background palette has 7 opaque colors plus transparent option and detects custom bg color`() {
+        assertEquals(8, PlaceBarLogic.TEXT_BG_PALETTE.size)
+        assertEquals(0, PlaceBarLogic.TEXT_BG_PALETTE.last())
+        assertEquals(7, PlaceBarLogic.TEXT_BG_PALETTE.count { (it ushr 24) == 0xFF })
+        assertFalse(PlaceBarLogic.isCustomBgColor(0))
+        assertFalse(PlaceBarLogic.isCustomBgColor(0xFF00E676.toInt()))
+        assertTrue(PlaceBarLogic.isCustomBgColor(0xFF123456.toInt()))
+    }
+
+    @Test
+    fun `computePopupBottomMarginPx raises color popup above text box so it never covers text`() {
+        // Text box sits right above toolbar: top=700, bottom=840 in 1000px content height.
+        // Default popup margin is 336px (popup would be at [424..664] or if lower [600..840]).
+        // Suppose editorBox is at [550..720] which overlaps default popup [514..754] (margin=246, height=240).
+        val margin = PlaceBarLogic.computePopupBottomMarginPx(
+            availHeightPx = 1000,
+            minTopPx = 24,
+            toolbarReservePx = 180,
+            defaultBottomMarginPx = 246,
+            popupHeightPx = 240,
+            editorBoxTopPx = 550,
+            editorBoxBottomPx = 720,
+            gapPx = 24
+        )
+        val popupBottom = 1000 - margin
+        // Popup bottom must be <= editorBoxTopPx - gapPx (526)
+        assertTrue("Popup bottom ($popupBottom) must be above editorBoxTop (550)", popupBottom <= 526)
+    }
+
+    @Test
+    fun `computePopupBottomMarginPx places popup below text box when text box is near top`() {
+        // Editor box is near top: [80..240], so popup (height 240) cannot fit above it (80 - 24 - 240 < 24).
+        // If defaultBottomMarginPx = 600 puts popup at [160..400] overlapping the box, it moves below box:
+        val margin = PlaceBarLogic.computePopupBottomMarginPx(
+            availHeightPx = 1000,
+            minTopPx = 24,
+            toolbarReservePx = 180,
+            defaultBottomMarginPx = 600,
+            popupHeightPx = 240,
+            editorBoxTopPx = 80,
+            editorBoxBottomPx = 240,
+            gapPx = 24
+        )
+        val popupBottom = 1000 - margin
+        val popupTop = popupBottom - 240
+        assertTrue("Popup top ($popupTop) must be below editorBoxBottom (240)", popupTop >= 264)
+    }
 }

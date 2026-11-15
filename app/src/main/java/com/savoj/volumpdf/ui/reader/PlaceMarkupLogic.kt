@@ -42,7 +42,8 @@ data class PendingMarkup(
     val ink: InkPoints? = null,
     val aspect: Float = 0f,
     val rawText: String? = null,
-    val rotationDeg: Int = 0
+    val rotationDeg: Int = 0,
+    val bgColor: Int = 0
 )
 
 /** Підсумок перевірки введеного тексту (без створення об'єкта). */
@@ -360,7 +361,8 @@ object PlaceMarkupLogic {
         id: String, pageIndex: Int, x: Float, y: Float,
         rawText: String, sizePt: Float, color: Int, unsupported: String,
         page: PageSizePt? = null,
-        measureWidthPt: ((String) -> Float)? = null
+        measureWidthPt: ((String) -> Float)? = null,
+        bgColor: Int = 0
     ): TextCheck {
         when (val v = checkText(rawText, unsupported)) {
             TextVerdict.Empty -> return TextCheck.Empty
@@ -379,7 +381,8 @@ object PlaceMarkupLogic {
                 text = finalText,
                 sizePt = clampedSize,
                 color = color,
-                rawText = rawText
+                rawText = rawText,
+                bgColor = bgColor
             )
         )
     }
@@ -501,6 +504,46 @@ object PlaceMarkupLogic {
             PageMarkup.Signature(p.id, p.pageIndex, bitmap, p.x, p.y, p.sizePt, p.sizePt * p.aspect)
         }
         PlaceTool.HAND -> throw IllegalArgumentException("«Рука» не створює об'єктів")
+    }
+
+    /**
+     * Перетворює [PendingMarkup] на один або кілька [PageMarkup] для збереження у PDF:
+     * якщо текстовий об'єкт має непрозорий фон ([PendingMarkup.bgColor]), перед самим [PageMarkup.Text]
+     * додаються прямокутники заливки фону для кожного непорожнього рядка тексту.
+     */
+    fun toPageMarkups(
+        p: PendingMarkup,
+        signatureBitmap: ((String) -> android.graphics.Bitmap?)? = null,
+        measureTextWidthPt: ((String, Float) -> Float)? = null,
+        bgBitmapFactory: ((Int) -> android.graphics.Bitmap)? = null
+    ): List<PageMarkup> {
+        val primary = toPageMarkup(p, signatureBitmap)
+        if (p.tool != PlaceTool.TEXT || (p.bgColor ushr 24) == 0 || bgBitmapFactory == null) {
+            return listOf(primary)
+        }
+        val lines = p.text.replace("\r", "").split('\n')
+        val out = ArrayList<PageMarkup>(lines.size + 1)
+        val bgBmp = bgBitmapFactory(p.bgColor or ALPHA_MASK)
+        val lineHeightPt = (MarkupLayout.TEXT_ASCENT_RATIO + PlaceBounds.TEXT_DESCENT_RATIO) * p.sizePt
+        val stepY = MarkupLayout.TEXT_LINE_HEIGHT_RATIO * p.sizePt
+        val measure = measureTextWidthPt ?: { str, fs -> estimateTextWidthPt(str, fs) }
+        lines.forEachIndexed { idx, line ->
+            if (line.isNotEmpty()) {
+                val w = measure(line, p.sizePt).coerceAtLeast(2f)
+                val topY = p.y + idx * stepY
+                out += PageMarkup.Signature(
+                    id = "${p.id}_bg_$idx",
+                    pageIndex = p.pageIndex,
+                    bitmap = bgBmp,
+                    left = p.x,
+                    top = topY,
+                    width = w,
+                    height = lineHeightPt.coerceAtLeast(2f)
+                )
+            }
+        }
+        out += primary
+        return out
     }
 
     // --- штрих, підпис: створення, межі, рух ----------------------------------------------------

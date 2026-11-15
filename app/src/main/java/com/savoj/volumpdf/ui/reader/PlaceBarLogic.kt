@@ -101,6 +101,27 @@ object PlaceBarLogic {
     /** true, якщо колір поза палітрою (показується позначка «власний»). */
     fun isCustomColor(rgb: Int): Boolean = PALETTE.none { (it and 0xFFFFFF) == (rgb and 0xFFFFFF) }
 
+    /**
+     * Палітра «Фон шрифту» за зразком Samsung Notes (8 кружечків у ряд + 9-й райдужний кружечок власного кольору):
+     * білий, червоний, помаранчевий, жовтий, зелений (м'ятний), синій, фіолетовий та прозорий («Без фону» = 0).
+     */
+    val TEXT_BG_PALETTE: IntArray = intArrayOf(
+        0xFFFFFFFF.toInt(),
+        0xFFFF3B30.toInt(),
+        0xFFFFA726.toInt(),
+        0xFFFFEE58.toInt(),
+        0xFF00E676.toInt(),
+        0xFF2962FF.toInt(),
+        0xFFAA00FF.toInt(),
+        0x00000000
+    )
+
+    /** true, якщо вибрано непрозорий власний колір фону шрифту поза [TEXT_BG_PALETTE]. */
+    fun isCustomBgColor(argb: Int): Boolean {
+        if ((argb ushr 24) == 0) return false
+        return TEXT_BG_PALETTE.none { (it ushr 24) != 0 && (it and 0xFFFFFF) == (argb and 0xFFFFFF) }
+    }
+
     /** Кількість колонок палітри: у портреті 5 (два рядки), у ландшафті 10 (один рядок). */
     fun gridColumns(landscape: Boolean): Int = if (landscape) 10 else 5
 
@@ -230,6 +251,53 @@ object PlaceBarLogic {
         val targetPx = (targetDp * safeDensity).toInt()
         val upper = maxWidthPx.coerceAtLeast(minWidthPx)
         return targetPx.coerceIn(minWidthPx, upper)
+    }
+
+    /**
+     * Обчислює відступ знизу (`bottomMarginPx`) для компактної плаваючої картки кольорів/стилів (`placeTextColorPopup`),
+     * щоб вона:
+     * 1) за замовчуванням була піднята вище над панеллю інструментів (як у Samsung Notes — [defaultBottomMarginPx]);
+     * 2) НІКОЛИ не перекривала живе поле вводу тексту (`[editorBoxTopPx, editorBoxBottomPx]`):
+     *    - якщо поле тексту внизу біля панелі, картка кольорів піднімається строго НАД полем тексту;
+     *    - якщо поле тексту вгорі й перетинається з карткою, картка опускається ПІД поле тексту (але вище панелі).
+     */
+    fun computePopupBottomMarginPx(
+        availHeightPx: Int,
+        minTopPx: Int,
+        toolbarReservePx: Int,
+        defaultBottomMarginPx: Int,
+        popupHeightPx: Int,
+        editorBoxTopPx: Int,
+        editorBoxBottomPx: Int,
+        gapPx: Int
+    ): Int {
+        val safePopupH = popupHeightPx.coerceAtLeast(48)
+        val safeGap = gapPx.coerceAtLeast(4)
+        val minMargin = toolbarReservePx.coerceAtLeast(48)
+        val maxMargin = (availHeightPx - minTopPx - safePopupH).coerceAtLeast(minMargin)
+        val baseMargin = defaultBottomMarginPx.coerceIn(minMargin, maxMargin)
+
+        val basePopupBottom = availHeightPx - baseMargin
+        val basePopupTop = basePopupBottom - safePopupH
+
+        val overlaps = editorBoxBottomPx + safeGap > basePopupTop && editorBoxTopPx - safeGap < basePopupBottom
+        if (!overlaps) {
+            return baseMargin
+        }
+
+        // Варіант А (як у Samsung Notes): підняти картку кольорів НАД полем тексту
+        val marginAboveBox = availHeightPx - (editorBoxTopPx - safeGap)
+        if (marginAboveBox <= maxMargin) {
+            return marginAboveBox.coerceIn(minMargin, maxMargin)
+        }
+
+        // Варіант Б (якщо поле тексту високо вгорі): розмістити картку кольорів ПІД полем тексту, але над панеллю
+        val marginBelowBox = availHeightPx - (editorBoxBottomPx + safeGap + safePopupH)
+        if (marginBelowBox >= minMargin) {
+            return marginBelowBox.coerceIn(minMargin, maxMargin)
+        }
+
+        return maxMargin
     }
 }
 

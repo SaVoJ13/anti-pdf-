@@ -694,6 +694,7 @@ class ReaderActivity : AppCompatActivity() {
             PlaceTool.TEXT -> {
                 viewModel.setPlaceSize(PlaceTool.TEXT, sel.sizePt)
                 viewModel.placeColor = sel.color
+                viewModel.placeTextBgColor = sel.bgColor
                 showTextDialog(
                     initial = sel.rawText ?: sel.text,
                     titleRes = R.string.place_edit_text,
@@ -703,6 +704,7 @@ class ReaderActivity : AppCompatActivity() {
                 ) { raw, resolvedAnchor, userMovedBox ->
                     val newSize = viewModel.placeSize(PlaceTool.TEXT)
                     val newColor = viewModel.placeColor
+                    val newBgColor = viewModel.placeTextBgColor
                     val targetPageIdx = if (userMovedBox && resolvedAnchor != null) resolvedAnchor.pageIndex else sel.pageIndex
                     val targetX = if (userMovedBox && resolvedAnchor != null) resolvedAnchor.x else sel.x
                     val targetY = if (userMovedBox && resolvedAnchor != null) resolvedAnchor.y else sel.y
@@ -717,7 +719,8 @@ class ReaderActivity : AppCompatActivity() {
                         } else s
                         val s1 = PlaceEditor.setSize(s0, sel.id, newSize)
                         val s2 = PlaceEditor.setColor(s1, sel.id, newColor)
-                        PlaceEditor.setText(s2, sel.id, wrapped, raw)
+                        val s3 = PlaceEditor.setBgColor(s2, sel.id, newBgColor)
+                        PlaceEditor.setText(s3, sel.id, wrapped, raw)
                     }
                 }
             }
@@ -940,7 +943,8 @@ class ReaderActivity : AppCompatActivity() {
                     UUID.randomUUID().toString(), chunks[0].pageIndex, chunks[0].x, chunks[0].y,
                     chunks[0].rawText, fontSize, viewModel.placeColor, "",
                     page = page,
-                    measureWidthPt = { line -> measureTextPt(line, fontSize) }
+                    measureWidthPt = { line -> measureTextPt(line, fontSize) },
+                    bgColor = viewModel.placeTextBgColor
                 )
                 if (check is TextCheck.Ok) {
                     viewModel.addPending(check.markup)
@@ -969,7 +973,8 @@ class ReaderActivity : AppCompatActivity() {
                         text = chunk.text,
                         sizePt = fontSize,
                         color = viewModel.placeColor,
-                        rawText = chunk.rawText
+                        rawText = chunk.rawText,
+                        bgColor = viewModel.placeTextBgColor
                     )
                     viewModel.addPending(markup)
                 }
@@ -1011,7 +1016,8 @@ class ReaderActivity : AppCompatActivity() {
                                     text = first.text,
                                     sizePt = fontSize,
                                     color = viewModel.placeColor,
-                                    rawText = first.rawText
+                                    rawText = first.rawText,
+                                    bgColor = viewModel.placeTextBgColor
                                 )
                             )
                             viewModel.placeTool = PlaceTool.HAND
@@ -1194,6 +1200,32 @@ class ReaderActivity : AppCompatActivity() {
                     lp.marginEnd = sideMarginPx
                     dialogBinding.placeTextEditorBox.layoutParams = lp
                 }
+
+                // Не перекривати поле вводу карткою кольорів / фону шрифту:
+                // картка за замовчуванням піднята вище (як у Samsung Notes — 112 dp), а при перетині з полем вводу
+                // автоматично піднімається НАД полем вводу (або опускається ПІД нього, якщо поле вгорі екрана).
+                val defaultPopupBottomMarginPx = (112f * density).toInt()
+                val popupGapPx = (10f * density).toInt()
+                dialogBinding.placeTextColorPopup.measure(
+                    View.MeasureSpec.makeMeasureSpec((304f * density).toInt().coerceAtMost(availW), View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                )
+                val colorPopupH = maxOf(dialogBinding.placeTextColorPopup.measuredHeight, dialogBinding.placeTextColorPopup.height, (82f * density).toInt())
+                val colorPopupMargin = PlaceBarLogic.computePopupBottomMarginPx(
+                    availHeightPx = availH,
+                    minTopPx = minTopPx,
+                    toolbarReservePx = toolbarReservePx,
+                    defaultBottomMarginPx = defaultPopupBottomMarginPx,
+                    popupHeightPx = colorPopupH,
+                    editorBoxTopPx = bounds.topPx,
+                    editorBoxBottomPx = bounds.topPx + measuredBoxH,
+                    gapPx = popupGapPx
+                )
+                val colorPopupLp = dialogBinding.placeTextColorPopup.layoutParams as FrameLayout.LayoutParams
+                if (colorPopupLp.bottomMargin != colorPopupMargin) {
+                    colorPopupLp.bottomMargin = colorPopupMargin
+                    dialogBinding.placeTextColorPopup.layoutParams = colorPopupLp
+                }
             } finally {
                 inLayoutUpdate = false
             }
@@ -1317,13 +1349,24 @@ class ReaderActivity : AppCompatActivity() {
         lateinit var rebuildSizeList: () -> Unit
         lateinit var rebuildStyleList: () -> Unit
 
-        // Живий попередній перегляд: число розміру (напр. «15▾», «21▾», «64▾»), іконка «T» з кольоровою смужкою, реальний кегль 8..72sp на сторінці.
+        // Живий попередній перегляд: число розміру (напр. «15▾», «21▾», «64▾»), іконка «T» (колір тексту), іконка «[T]» (фон шрифту) та реальний кегль 8..72sp на сторінці.
         fun refreshStyle(updateWidthFromSize: Boolean = false) {
             val size = viewModel.placeSize(PlaceTool.TEXT)
             dialogBinding.btnTextSize.text = PlaceMarkupLogic.formatSize(size)
             dialogBinding.btnTextColor.textIconMode = true
             dialogBinding.btnTextColor.swatchColor = viewModel.placeColor or PlaceMarkupLogic.ALPHA_MASK
+            dialogBinding.btnTextBgColor.textBgIconMode = true
+            dialogBinding.btnTextBgColor.swatchColor = viewModel.placeTextBgColor
             dialogBinding.placeTextInput.setTextColor(viewModel.placeColor or PlaceMarkupLogic.ALPHA_MASK)
+            val bg = viewModel.placeTextBgColor
+            if ((bg ushr 24) != 0) {
+                dialogBinding.placeTextInput.background = android.graphics.drawable.GradientDrawable().apply {
+                    cornerRadius = 4f * density
+                    setColor(bg or PlaceMarkupLogic.ALPHA_MASK)
+                }
+            } else {
+                dialogBinding.placeTextInput.background = null
+            }
             val clampedSp = size.coerceIn(8f, 72f)
             dialogBinding.placeTextInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, clampedSp)
             dialogBinding.placeTextInput.minHeight = (clampedSp * 1.8f * density).toInt().coerceAtLeast((36f * density).toInt())
@@ -1465,56 +1508,113 @@ class ReaderActivity : AppCompatActivity() {
             dialogBinding.btnKbSizeMinus.setOnClickListener(toggleSizePopup)
 
             val row = dialogBinding.placeTextColorRow
-            fun updateTextColorRow(pickedColor: Int) {
-                for (i in 0 until row.childCount) {
-                    val sw = row.getChildAt(i) as SwatchView
-                    sw.picked = (sw.swatchColor and 0xFFFFFF) == (pickedColor and 0xFFFFFF)
-                }
-                dialogBinding.btnTextCustomColor.picked = PlaceBarLogic.isCustomColor(pickedColor)
-                refreshStyle(updateWidthFromSize = false)
-            }
-            PlaceBarLogic.PALETTE.forEach { color ->
-                row.addView(SwatchView(this).apply {
-                    swatchColor = color
-                    picked = (viewModel.placeColor and 0xFFFFFF) == (color and 0xFFFFFF)
-                    contentDescription = getString(R.string.place_text_color_toggle)
-                    setOnClickListener {
-                        viewModel.placeColor = color
-                        updateTextColorRow(color)
+            var isBgColorPopupMode = false
+
+            fun populateColorPopup(bgMode: Boolean) {
+                isBgColorPopupMode = bgMode
+                dialogBinding.tvTextColorPopupTitle.setText(
+                    if (bgMode) R.string.place_text_bg_color_toggle else R.string.place_text_color_toggle
+                )
+                row.removeAllViews()
+                if (bgMode) {
+                    val curBg = viewModel.placeTextBgColor
+                    PlaceBarLogic.TEXT_BG_PALETTE.forEach { preset ->
+                        row.addView(SwatchView(this).apply {
+                            compactMode = true
+                            swatchColor = preset
+                            picked = if ((preset ushr 24) == 0) {
+                                (curBg ushr 24) == 0
+                            } else {
+                                (curBg ushr 24) != 0 && (curBg and 0xFFFFFF) == (preset and 0xFFFFFF)
+                            }
+                            contentDescription = if ((preset ushr 24) == 0) {
+                                getString(R.string.color_none)
+                            } else {
+                                getString(R.string.place_text_bg_color_toggle)
+                            }
+                            setOnClickListener {
+                                viewModel.placeTextBgColor = preset
+                                populateColorPopup(true)
+                                refreshStyle(updateWidthFromSize = false)
+                            }
+                        })
                     }
-                })
-            }
-            dialogBinding.btnTextCustomColor.apply {
-                rainbow = true
-                picked = PlaceBarLogic.isCustomColor(viewModel.placeColor)
-                setOnClickListener {
-                    showCustomColorDialog(viewModel.placeColor) { rgb ->
-                        val full = 0xFF000000.toInt() or rgb
-                        viewModel.placeColor = full
-                        updateTextColorRow(full)
+                    // 9-й кружечок у тому самому ряду — райдужний вибір власного кольору фону (як у Samsung Notes)
+                    row.addView(SwatchView(this).apply {
+                        compactMode = true
+                        rainbow = true
+                        picked = PlaceBarLogic.isCustomBgColor(curBg)
+                        contentDescription = getString(R.string.color_custom)
+                        setOnClickListener {
+                            val startCol = if ((curBg ushr 24) != 0) curBg else 0xFFFFEE58.toInt()
+                            showCustomColorDialog(startCol) { rgb ->
+                                val full = PlaceMarkupLogic.ALPHA_MASK or (rgb and 0xFFFFFF)
+                                viewModel.placeTextBgColor = full
+                                populateColorPopup(true)
+                                refreshStyle(updateWidthFromSize = false)
+                            }
+                        }
+                    })
+                } else {
+                    val curColor = viewModel.placeColor
+                    PlaceBarLogic.PALETTE.forEach { color ->
+                        row.addView(SwatchView(this).apply {
+                            compactMode = true
+                            swatchColor = color
+                            picked = (curColor and 0xFFFFFF) == (color and 0xFFFFFF)
+                            contentDescription = getString(R.string.place_text_color_toggle)
+                            setOnClickListener {
+                                viewModel.placeColor = color
+                                populateColorPopup(false)
+                                refreshStyle(updateWidthFromSize = false)
+                            }
+                        })
                     }
+                    // Райдужний кружечок власного кольору в кінці того самого ряду
+                    row.addView(SwatchView(this).apply {
+                        compactMode = true
+                        rainbow = true
+                        picked = PlaceBarLogic.isCustomColor(curColor)
+                        contentDescription = getString(R.string.color_custom)
+                        setOnClickListener {
+                            showCustomColorDialog(curColor) { rgb ->
+                                val full = PlaceMarkupLogic.ALPHA_MASK or (rgb and 0xFFFFFF)
+                                viewModel.placeColor = full
+                                populateColorPopup(false)
+                                refreshStyle(updateWidthFromSize = false)
+                            }
+                        }
+                    })
                 }
+                applyEditorBoxLayout()
             }
+
             dialogBinding.btnTextColorClose.setOnClickListener {
                 dialogBinding.placeTextColorPopup.visibility = View.GONE
             }
-            dialogBinding.placeTextColorScroll.setOnScrollChangeListener { _, scrollX, _, _, _ ->
-                val secondPage = scrollX > (60f * density).toInt()
-                dialogBinding.dotColorPage1.alpha = if (secondPage) 0.35f else 1f
-                dialogBinding.dotColorPage2.alpha = if (secondPage) 1f else 0.35f
-            }
             dialogBinding.btnTextColor.setOnClickListener {
-                val show = !dialogBinding.placeTextColorPopup.isVisible
+                val show = !dialogBinding.placeTextColorPopup.isVisible || isBgColorPopupMode
                 closeAllPopups()
                 if (show) {
-                    updateTextColorRow(viewModel.placeColor)
+                    populateColorPopup(bgMode = false)
                     dialogBinding.placeTextColorPopup.visibility = View.VISIBLE
+                    applyEditorBoxLayout()
+                }
+            }
+            dialogBinding.btnTextBgColor.setOnClickListener {
+                val show = !dialogBinding.placeTextColorPopup.isVisible || !isBgColorPopupMode
+                closeAllPopups()
+                if (show) {
+                    populateColorPopup(bgMode = true)
+                    dialogBinding.placeTextColorPopup.visibility = View.VISIBLE
+                    applyEditorBoxLayout()
                 }
             }
         } else {
             dialogBinding.btnTextStyle.visibility = View.GONE
             dialogBinding.btnTextSize.visibility = View.GONE
             dialogBinding.btnTextColor.visibility = View.GONE
+            dialogBinding.btnTextBgColor.visibility = View.GONE
         }
 
         // Історія Undo / Redo для введеного тексту безпосередньо з панелі над клавіатурою.
@@ -1812,8 +1912,20 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun buildSaveRequest(): SaveLogic.Request<PageMarkup> {
         val items = viewModel.editor.value.items
+        val solidBitmaps = HashMap<Int, Bitmap>()
         return SaveLogic.request(
-            items.map { PlaceMarkupLogic.toPageMarkup(it) { id -> viewModel.signatureBitmaps[id] } },
+            items.flatMap { item ->
+                PlaceMarkupLogic.toPageMarkups(
+                    p = item,
+                    signatureBitmap = { id -> viewModel.signatureBitmaps[id] },
+                    measureTextWidthPt = { line, fs -> measureTextPt(line, fs) },
+                    bgBitmapFactory = { color ->
+                        solidBitmaps.getOrPut(color) {
+                            Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888).apply { eraseColor(color) }
+                        }
+                    }
+                )
+            },
             viewModel.formFields.value, viewModel.formEdits.value
         )
     }

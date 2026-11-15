@@ -121,7 +121,9 @@ class Qa3fAppFinalTest {
             "action_clear_history",
             "dialog_clear_history_title",
             "dialog_clear_history_message",
-            "history_cleared_message"
+            "history_cleared_message",
+            "place_text_bg_color_toggle",
+            "color_none"
         )
 
         for (dir in locales) {

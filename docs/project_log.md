@@ -1,5 +1,28 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-15 — Опція «Фон шрифту», компактна піднята картка кольорів у стилі Samsung Notes та захист від перекриття тексту (гілка `feature/place-ui-redesign`)
+**Простими словами:**
+- За двома скріншотами та побажаннями Власника додано опцію **«Фон шрифту»** і перероблено плаваючу картку вибору кольору тексту / фону (`placeTextColorPopup`) за зразком Samsung Notes:
+  1. **Картка кольорів зменшена по висоті та піднята вище (як у Samsung Notes):** прибрано зайвий другий ряд і крапки пагінації `• •`, зменшено вертикальні відступи, а всі кружечки кольорів разом із райдужним кружечком власного кольору розміщено в **один компактний ряд** (`SwatchView.compactMode = true`, `30dp`). За замовчуванням картка піднята вище над панеллю інструментів (`112dp`), залишаючи видимий простір між карткою та нижньою панеллю.
+  2. **Картка кольорів ніколи не закриває текст (`PlaceBarLogic.computePopupBottomMarginPx`):** у `applyEditorBoxLayout()` (`ReaderActivity.kt`) відступ картки кольорів динамічно узгоджується з положенням живого поля вводу (`placeTextEditorBox`) — коли поле тексту розташоване внизу над панеллю (як на скріншоті Samsung Notes), картка кольорів автоматично піднімається строго НАД полем тексту, а якщо поле тексту розташоване високо вгорі — опускається ПІД нього.
+  3. **Додано опцію «Фон шрифту» (`btnTextBgColor`):**
+     - На панель редагування над клавіатурою поруч із кнопкою кольору тексту (`T`) додано кнопку **«Фон шрифту»** (`[T]` у заокругленій рамці з кольоровою смужкою знизу — `SwatchView.textBgIconMode = true`).
+     - При натисканні відкривається компактна картка **«Фон шрифту»** з 8 пресетами за зразком Samsung Notes (`PlaceBarLogic.TEXT_BG_PALETTE`: білий, червоний, помаранчевий, жовтий, зелений/м'ятний, синій, фіолетовий та кружечок «Без фону» `0x00000000`) + 9-й райдужний кружечок власного кольору фону.
+     - Обраний фон шрифту миттєво відображається у живому полі вводу (`placeTextInput`), малюється під рядками тексту на сторінці в `MarkupOverlayView.drawText`, зберігається між сесіями у `PendingCodec` (`PendingMarkup.bgColor`) та записується у PDF під час збереження через `PlaceMarkupLogic.toPageMarkups`.
+     - Рядки `place_text_bg_color_toggle` та `color_none` додано для всіх 4 мов (`en`, `uk`, `de`, `ru`).
+
+**Що змінено:**
+- Код `:app`: `SwatchView.kt` (`textBgIconMode`, `compactMode`, підтримка прозорого кружечка «Без фону»), `PlaceBarLogic.kt` (`TEXT_BG_PALETTE`, `isCustomBgColor`, `computePopupBottomMarginPx`), `PlaceMarkupLogic.kt` (`PendingMarkup.bgColor`, `textFromTap`, `toPageMarkups`), `PendingStore.kt` (`PendingCodec`), `PlaceEditor.kt` (`setBgColor`), `ReaderViewModel.kt` (`placeTextBgColor`), `MarkupOverlayView.kt` (`drawText` із заливкою фону), `ReaderActivity.kt` (`editSelected`, `showTextInputDialog`, `showTextDialog`, `buildSaveRequest`).
+- Ресурси `:app`: `dialog_place_text.xml`, `values/strings.xml`, `values-uk/strings.xml`, `values-de/strings.xml`, `values-ru/strings.xml`.
+- Тести й документи: `PlaceBarLogicTest.kt` (+3 тести), `PlaceEditorTest.kt` (+1 тест), `Qa3fAppFinalTest.kt`, `docs/design/UI_COMPONENTS.md`, `docs/project_log.md`.
+
+**Збірка, тести та lint (JDK 21):**
+- `:app:assembleDebug` — BUILD SUCCESSFUL (`app-debug.apk` встановлено на `RZCX326349A`).
+- `:app:testDebugUnitTest` — **288/288** passed (`0` failures, `0` errors).
+- `:core-pdf:testDebugUnitTest` — **107/107** passed (`0` failures, `0` errors).
+- `:core-ads:testDebugUnitTest` — **4/4** passed (`0` failures, `0` errors).
+- `:app:lintDebug` — **0 помилок**, **124 попередження**.
+
 ## 2026-11-15 — Незалежна QA-верифікація позиціонування поля вводу тексту, переміщення тапом і масштабування тексту розміром поля (Агент 3, гілка `feature/place-ui-redesign`, коміт `6c62d4d`) — `QA Verified`
 **Простими словами:**
 - Окремий незалежний QA-субагент (Агент 3, `588eb821-a55d-4c10-8cc6-8ee452e7c2d4`) провів огляд коміту `6c62d4d` (`feature/place-ui-redesign`) і надав вердикт **`QA Verified`** (п. 2.1 Конституції v2.0, Червона лінія №9).

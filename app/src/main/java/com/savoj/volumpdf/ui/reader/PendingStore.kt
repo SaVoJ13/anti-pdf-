@@ -52,7 +52,7 @@ object PendingCodec {
                     for (v in xy) out.writeFloat(v)
                 }
                 if (version >= 3) {
-                    out.writeInt(p.rotationDeg)
+                    out.writeInt(if (p.tool == PlaceTool.TEXT) p.bgColor else p.rotationDeg)
                 }
             }
             if (version >= 2) {
@@ -94,8 +94,10 @@ object PendingCodec {
                     n < 0 || n > MAX_FLOATS || n % 2 != 0 -> return null
                     else -> InkPoints(FloatArray(n) { inp.readFloat() })
                 }
-                val rotationDeg = if (version >= 3) inp.readInt() else 0
-                items += PendingMarkup(id, tool, page, x, y, text, size, color, ink, aspect, null, rotationDeg)
+                val rotOrBg = if (version >= 3) inp.readInt() else 0
+                val rotationDeg = if (tool == PlaceTool.TEXT) 0 else rotOrBg
+                val bgColor = if (tool == PlaceTool.TEXT) rotOrBg else 0
+                items += PendingMarkup(id, tool, page, x, y, text, size, color, ink, aspect, null, rotationDeg, bgColor)
             }
             val forms = ArrayList<FormFieldUpdate>()
             if (version >= 2) {
