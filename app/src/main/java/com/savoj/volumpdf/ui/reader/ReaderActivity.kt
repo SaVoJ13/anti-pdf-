@@ -691,16 +691,29 @@ class ReaderActivity : AppCompatActivity() {
     private fun editSelected() {
         val sel = viewModel.editor.value.selected ?: return
         when (sel.tool) {
-            PlaceTool.TEXT -> showTextDialog(
-                initial = sel.rawText ?: sel.text, titleRes = R.string.place_edit_text, confirmRes = R.string.place_text_apply,
-                allowStyle = false
-            ) { raw ->
-                val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
-                val wrapped = PlaceMarkupLogic.wrapText(
-                    raw, sel.x, sel.sizePt, page,
-                    measureWidthPt = { line -> measureTextPt(line, sel.sizePt) }
-                )
-                viewModel.edit { PlaceEditor.setText(it, sel.id, wrapped, raw) }
+            PlaceTool.TEXT -> {
+                viewModel.setPlaceSize(PlaceTool.TEXT, sel.sizePt)
+                viewModel.placeColor = sel.color
+                showTextDialog(
+                    initial = sel.rawText ?: sel.text,
+                    titleRes = R.string.place_edit_text,
+                    confirmRes = R.string.place_text_apply,
+                    allowStyle = true,
+                    anchorPoint = PageViewPoint(sel.pageIndex, sel.x, sel.y)
+                ) { raw ->
+                    val newSize = viewModel.placeSize(PlaceTool.TEXT)
+                    val newColor = viewModel.placeColor
+                    val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
+                    val wrapped = PlaceMarkupLogic.wrapText(
+                        raw, sel.x, newSize, page,
+                        measureWidthPt = { line -> measureTextPt(line, newSize) }
+                    )
+                    viewModel.edit { s ->
+                        val s1 = PlaceEditor.setSize(s, sel.id, newSize)
+                        val s2 = PlaceEditor.setColor(s1, sel.id, newColor)
+                        PlaceEditor.setText(s2, sel.id, wrapped, raw)
+                    }
+                }
             }
             PlaceTool.CHECK, PlaceTool.CROSS -> viewModel.edit { PlaceEditor.toggleMarkKind(it, sel.id) }
             else -> Unit
@@ -889,7 +902,13 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun showTextInputDialog(point: PageViewPoint) {
-        showTextDialog(initial = "", titleRes = R.string.place_text_title, confirmRes = R.string.place_text_add) { raw ->
+        showTextDialog(
+            initial = "",
+            titleRes = R.string.place_text_title,
+            confirmRes = R.string.place_text_add,
+            allowStyle = true,
+            anchorPoint = point
+        ) { raw ->
             val unsupported = safeUnsupported(raw)
             if (!unsupported.isNullOrEmpty()) {
                 showError(getString(R.string.place_text_unsupported, unsupported))
@@ -1033,45 +1052,93 @@ class ReaderActivity : AppCompatActivity() {
      * [allowStyle] = false (повторне введення виділеного тексту): розмір і колір змінюються у картці параметрів.
      */
     private fun showTextDialog(
-        initial: String, titleRes: Int, confirmRes: Int, allowStyle: Boolean = true, onAccept: (String) -> Unit
+        initial: String,
+        titleRes: Int,
+        confirmRes: Int,
+        allowStyle: Boolean = true,
+        anchorPoint: PageViewPoint? = null,
+        onAccept: (String) -> Unit
     ) {
         val dialogBinding = DialogPlaceTextBinding.inflate(layoutInflater)
         dialogBinding.placeTextTitle.setText(titleRes)
-        dialogBinding.btnTextConfirm.setText(confirmRes)
+        dialogBinding.btnTextConfirm.contentDescription = getString(confirmRes)
         val dialog = androidx.appcompat.app.AppCompatDialog(this, R.style.Theme_VolumPdf_TextCard)
         dialog.setContentView(dialogBinding.root)
         dialog.window?.apply {
             setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
-            setDimAmount(0.25f)
-            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-            // Картка сама піднімається над клавіатурою за ime-відступом нижче.
+            setDimAmount(0f)
+            clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            // Панель-пігулка сама піднімається над клавіатурою за ime-відступом нижче.
             WindowCompat.setDecorFitsSystemWindows(this, false)
             setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
         }
+
+        val density = resources.displayMetrics.density
+        val initialViewPt = anchorPoint?.let { viewerFragment?.bridge?.pageToView(it) }
+        val wrapperTop = binding.viewerWrapper.top.coerceAtLeast((56f * density).toInt())
+
+        fun updateEditorBoxPosition(imeBottom: Int, topInset: Int) {
+            val screenH = resources.displayMetrics.heightPixels
+            val screenW = resources.displayMetrics.widthPixels
+            val toolbarReserve = (68f * density).toInt()
+            val maxBottom = (screenH - imeBottom - toolbarReserve).coerceAtLeast(topInset + (96f * density).toInt())
+            val minTop = (topInset + (56f * density).toInt()).coerceAtLeast(wrapperTop)
+            val desiredTop = if (initialViewPt != null) {
+                (wrapperTop + initialViewPt.y.toInt()).coerceIn(minTop, (maxBottom - (84f * density).toInt()).coerceAtLeast(minTop))
+            } else {
+                minTop + (24f * density).toInt()
+            }
+            val desiredStart = if (initialViewPt != null) {
+                initialViewPt.x.toInt().coerceIn((12f * density).toInt(), (screenW / 2).coerceAtLeast((16f * density).toInt()))
+            } else {
+                (16f * density).toInt()
+            }
+            dialogBinding.placeTextEditorBox.layoutParams =
+                (dialogBinding.placeTextEditorBox.layoutParams as FrameLayout.LayoutParams).apply {
+                    topMargin = desiredTop
+                    marginStart = desiredStart
+                    marginEnd = (16f * density).toInt()
+                }
+        }
+
         ViewCompat.setOnApplyWindowInsetsListener(dialogBinding.placeTextRoot) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
+            val bottomPad = maxOf(bars.bottom, ime.bottom)
+            v.setPadding(bars.left, bars.top, bars.right, bottomPad)
+            updateEditorBoxPosition(bottomPad, bars.top)
             insets
         }
+        updateEditorBoxPosition((260f * density).toInt(), (24f * density).toInt())
+
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         lateinit var validate: Runnable
         val confirm = dialogBinding.btnTextConfirm
 
-        // Ширина картки: не ширше за max (ландшафт/планшет), портрет — на всю ширину з полями.
+        // Ширина панелі-пігулки над клавіатурою: не ширше за max (ландшафт/планшет), портрет — на всю ширину з полями 8dp.
         val maxW = resources.getDimensionPixelSize(R.dimen.place_card_max_width) * 4 / 3
+        val sideMargin = (8f * density).toInt()
         dialogBinding.placeTextCard.layoutParams = (dialogBinding.placeTextCard.layoutParams as FrameLayout.LayoutParams).apply {
-            width = minOf(maxW, resources.displayMetrics.widthPixels - 2 * resources.getDimensionPixelSize(R.dimen.place_card_margin))
+            width = minOf(maxW, resources.displayMetrics.widthPixels - 2 * sideMargin)
         }
-        val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        if (landscape) dialogBinding.placeTextTitle.visibility = View.GONE // низька видима частина з клавіатурою
+
+        fun closeAllPopups(): Boolean {
+            val anyOpen = dialogBinding.placeTextColorPopup.isVisible ||
+                dialogBinding.placeTextSizePopup.isVisible ||
+                dialogBinding.placeTextStylePopup.isVisible
+            dialogBinding.placeTextColorPopup.visibility = View.GONE
+            dialogBinding.placeTextSizePopup.visibility = View.GONE
+            dialogBinding.placeTextStylePopup.visibility = View.GONE
+            return anyOpen
+        }
 
         fun render(raw: String): Boolean {
             val unsupported = safeUnsupported(raw)
             if (unsupported == null) {
                 dialogBinding.placeTextInputLayout.error = getString(R.string.error_title)
                 confirm.isEnabled = false
+                confirm.alpha = 0.38f
                 return false
             }
             val verdict = PlaceMarkupLogic.checkText(raw, unsupported)
@@ -1080,56 +1147,170 @@ class ReaderActivity : AppCompatActivity() {
                 TextVerdict.Empty -> if (raw.isEmpty()) null else getString(R.string.text_error_empty)
                 is TextVerdict.Unsupported -> getString(R.string.place_text_unsupported, verdict.chars)
             }
-            confirm.isEnabled = verdict == TextVerdict.Ok
-            return verdict == TextVerdict.Ok
+            val ok = verdict == TextVerdict.Ok
+            confirm.isEnabled = ok
+            confirm.alpha = if (ok) 1f else 0.38f
+            return ok
         }
 
-        // Розмір ▾ і колір: попередній перегляд у самому полі (кегль у sp-пропорції, колір тексту).
+        val accentColor = getColor(R.color.place_card_accent)
+        val onCardColor = getColor(R.color.place_card_on)
+        val styleLabels = intArrayOf(
+            R.string.place_text_style_h1,
+            R.string.place_text_style_h2,
+            R.string.place_text_style_body1,
+            R.string.place_text_style_body2
+        )
+
+        lateinit var rebuildSizeList: () -> Unit
+        lateinit var rebuildStyleList: () -> Unit
+
+        // Живий попередній перегляд: число розміру (напр. «15▾», «21▾», «64▾»), іконка «T» з кольоровою смужкою, реальний кегль 8..64sp на сторінці.
         fun refreshStyle() {
             val size = viewModel.placeSize(PlaceTool.TEXT)
-            dialogBinding.btnTextSize.text = getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(size))
+            dialogBinding.btnTextSize.text = PlaceMarkupLogic.formatSize(size)
+            dialogBinding.btnTextColor.textIconMode = true
             dialogBinding.btnTextColor.swatchColor = viewModel.placeColor or PlaceMarkupLogic.ALPHA_MASK
             dialogBinding.placeTextInput.setTextColor(viewModel.placeColor or PlaceMarkupLogic.ALPHA_MASK)
-            dialogBinding.placeTextInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, size.coerceIn(12f, 28f))
+            dialogBinding.placeTextInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, size.coerceIn(8f, 64f))
         }
+
+        rebuildSizeList = {
+            val list = dialogBinding.placeTextSizeList
+            list.removeAllViews()
+            val curSize = viewModel.placeSize(PlaceTool.TEXT)
+            var selectedRowIndex = 0
+            PlaceBarLogic.TEXT_SIZE_CHOICES.forEachIndexed { idx, choice ->
+                val isSelected = kotlin.math.abs(choice - curSize) < 0.4f
+                if (isSelected) selectedRowIndex = idx
+                val itemRow = android.widget.LinearLayout(this).apply {
+                    orientation = android.widget.LinearLayout.HORIZONTAL
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    minimumHeight = (42f * density).toInt()
+                    setPadding((16f * density).toInt(), (6f * density).toInt(), (14f * density).toInt(), (6f * density).toInt())
+                    val outVal = android.util.TypedValue()
+                    if (theme.resolveAttribute(android.R.attr.selectableItemBackground, outVal, true)) {
+                        setBackgroundResource(outVal.resourceId)
+                    }
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener {
+                        viewModel.setPlaceSize(PlaceTool.TEXT, choice)
+                        refreshStyle()
+                        dialogBinding.placeTextSizePopup.visibility = View.GONE
+                    }
+                }
+                val tvNum = android.widget.TextView(this).apply {
+                    text = PlaceMarkupLogic.formatSize(choice)
+                    setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
+                    setTextColor(if (isSelected) accentColor else onCardColor)
+                    setTypeface(typeface, if (isSelected) Typeface.BOLD else Typeface.NORMAL)
+                    layoutParams = android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                val tvCheck = android.widget.TextView(this).apply {
+                    text = if (isSelected) "✓" else ""
+                    setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
+                    setTextColor(accentColor)
+                    setTypeface(typeface, Typeface.BOLD)
+                }
+                itemRow.addView(tvNum)
+                itemRow.addView(tvCheck)
+                list.addView(itemRow)
+            }
+            dialogBinding.placeTextSizePopup.post {
+                val rowH = (42f * density).toInt()
+                val targetScrollY = (selectedRowIndex * rowH - (72f * density).toInt()).coerceAtLeast(0)
+                dialogBinding.placeTextSizePopup.scrollTo(0, targetScrollY)
+            }
+        }
+
+        rebuildStyleList = {
+            val list = dialogBinding.placeTextStyleList
+            list.removeAllViews()
+            val curSize = viewModel.placeSize(PlaceTool.TEXT)
+            styleLabels.forEachIndexed { idx, labelRes ->
+                val presetSize = PlaceBarLogic.TEXT_STYLE_SIZES_PT.getOrElse(idx) { 14f }
+                val isSelected = kotlin.math.abs(presetSize - curSize) < 0.4f
+                val itemRow = android.widget.LinearLayout(this).apply {
+                    orientation = android.widget.LinearLayout.HORIZONTAL
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    minimumHeight = (44f * density).toInt()
+                    setPadding((16f * density).toInt(), (8f * density).toInt(), (16f * density).toInt(), (8f * density).toInt())
+                    val outVal = android.util.TypedValue()
+                    if (theme.resolveAttribute(android.R.attr.selectableItemBackground, outVal, true)) {
+                        setBackgroundResource(outVal.resourceId)
+                    }
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener {
+                        viewModel.setPlaceSize(PlaceTool.TEXT, presetSize)
+                        refreshStyle()
+                        dialogBinding.placeTextStylePopup.visibility = View.GONE
+                    }
+                }
+                val tvLabel = android.widget.TextView(this).apply {
+                    text = getString(labelRes)
+                    setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15f)
+                    setTextColor(if (isSelected) accentColor else onCardColor)
+                    setTypeface(typeface, if (isSelected) Typeface.BOLD else Typeface.NORMAL)
+                    layoutParams = android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                val tvCheck = android.widget.TextView(this).apply {
+                    text = if (isSelected) "✓" else ""
+                    setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15f)
+                    setTextColor(accentColor)
+                    setTypeface(typeface, Typeface.BOLD)
+                }
+                itemRow.addView(tvLabel)
+                itemRow.addView(tvCheck)
+                list.addView(itemRow)
+            }
+        }
+
+        dialogBinding.btnKbToolText.isSelected = true
+        dialogBinding.btnKbToolPen.setOnClickListener {
+            handler.removeCallbacks(validate)
+            val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
+            if (raw.isNotBlank() && render(raw)) onAccept(raw)
+            dialog.dismiss()
+            placeBarHost.chooseTool(PlaceTool.INK)
+        }
+        dialogBinding.btnKbToolCheck.setOnClickListener {
+            handler.removeCallbacks(validate)
+            val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
+            if (raw.isNotBlank() && render(raw)) onAccept(raw)
+            dialog.dismiss()
+            placeBarHost.chooseTool(PlaceTool.CHECK)
+        }
+
         if (allowStyle) {
             refreshStyle()
-            val styleLabels = intArrayOf(
-                R.string.place_text_style_h1,
-                R.string.place_text_style_h2,
-                R.string.place_text_style_body1,
-                R.string.place_text_style_body2
-            )
-            dialogBinding.btnTextStyle.setOnClickListener { anchor ->
-                val menu = android.widget.PopupMenu(this, anchor)
-                styleLabels.forEachIndexed { i, labelRes ->
-                    menu.menu.add(0, i, i, getString(labelRes))
+            dialogBinding.btnTextStyle.setOnClickListener {
+                val show = !dialogBinding.placeTextStylePopup.isVisible
+                closeAllPopups()
+                if (show) {
+                    rebuildStyleList()
+                    dialogBinding.placeTextStylePopup.visibility = View.VISIBLE
                 }
-                menu.setOnMenuItemClickListener { item ->
-                    val presetSize = PlaceBarLogic.TEXT_STYLE_SIZES_PT.getOrElse(item.itemId) { 14f }
-                    viewModel.setPlaceSize(PlaceTool.TEXT, presetSize)
-                    refreshStyle()
-                    true
-                }
-                menu.show()
             }
-            dialogBinding.btnTextSize.setOnClickListener { anchor ->
-                val menu = android.widget.PopupMenu(this, anchor)
-                TEXT_SIZE_CHOICES.forEachIndexed { i, size ->
-                    menu.menu.add(0, i, i, getString(R.string.place_size_format, PlaceMarkupLogic.formatSize(size)))
+            val toggleSizePopup = View.OnClickListener {
+                val show = !dialogBinding.placeTextSizePopup.isVisible
+                closeAllPopups()
+                if (show) {
+                    rebuildSizeList()
+                    dialogBinding.placeTextSizePopup.visibility = View.VISIBLE
                 }
-                menu.setOnMenuItemClickListener { item ->
-                    viewModel.setPlaceSize(PlaceTool.TEXT, TEXT_SIZE_CHOICES[item.itemId])
-                    refreshStyle()
-                    true
-                }
-                menu.show()
             }
+            dialogBinding.btnTextSize.setOnClickListener(toggleSizePopup)
+            dialogBinding.btnKbSizeMinus.setOnClickListener(toggleSizePopup)
+
             val row = dialogBinding.placeTextColorRow
-            fun updateTextColorRow(pickedView: SwatchView) {
+            fun updateTextColorRow(pickedColor: Int) {
                 for (i in 0 until row.childCount) {
-                    (row.getChildAt(i) as SwatchView).picked = row.getChildAt(i) === pickedView
+                    val sw = row.getChildAt(i) as SwatchView
+                    sw.picked = (sw.swatchColor and 0xFFFFFF) == (pickedColor and 0xFFFFFF)
                 }
+                dialogBinding.btnTextCustomColor.picked = PlaceBarLogic.isCustomColor(pickedColor)
                 refreshStyle()
             }
             PlaceBarLogic.PALETTE.forEach { color ->
@@ -1139,24 +1320,36 @@ class ReaderActivity : AppCompatActivity() {
                     contentDescription = getString(R.string.place_text_color_toggle)
                     setOnClickListener {
                         viewModel.placeColor = color
-                        updateTextColorRow(this)
+                        updateTextColorRow(color)
                     }
                 })
             }
-            row.addView(SwatchView(this).apply {
+            dialogBinding.btnTextCustomColor.apply {
                 rainbow = true
                 picked = PlaceBarLogic.isCustomColor(viewModel.placeColor)
-                contentDescription = getString(R.string.color_custom)
                 setOnClickListener {
                     showCustomColorDialog(viewModel.placeColor) { rgb ->
-                        viewModel.placeColor = 0xFF000000.toInt() or rgb
-                        updateTextColorRow(this)
+                        val full = 0xFF000000.toInt() or rgb
+                        viewModel.placeColor = full
+                        updateTextColorRow(full)
                     }
                 }
-            })
+            }
+            dialogBinding.btnTextColorClose.setOnClickListener {
+                dialogBinding.placeTextColorPopup.visibility = View.GONE
+            }
+            dialogBinding.placeTextColorScroll.setOnScrollChangeListener { _, scrollX, _, _, _ ->
+                val secondPage = scrollX > (60f * density).toInt()
+                dialogBinding.dotColorPage1.alpha = if (secondPage) 0.35f else 1f
+                dialogBinding.dotColorPage2.alpha = if (secondPage) 1f else 0.35f
+            }
             dialogBinding.btnTextColor.setOnClickListener {
-                dialogBinding.placeTextColorScroll.visibility =
-                    if (dialogBinding.placeTextColorScroll.isVisible) View.GONE else View.VISIBLE
+                val show = !dialogBinding.placeTextColorPopup.isVisible
+                closeAllPopups()
+                if (show) {
+                    updateTextColorRow(viewModel.placeColor)
+                    dialogBinding.placeTextColorPopup.visibility = View.VISIBLE
+                }
             }
         } else {
             dialogBinding.btnTextStyle.visibility = View.GONE
@@ -1164,34 +1357,90 @@ class ReaderActivity : AppCompatActivity() {
             dialogBinding.btnTextColor.visibility = View.GONE
         }
 
+        // Історія Undo / Redo для введеного тексту безпосередньо з панелі над клавіатурою.
+        val undoStack = ArrayDeque<String>().apply { addLast(initial) }
+        val redoStack = ArrayDeque<String>()
+        var suppressHistory = false
+
+        fun updateUndoRedoUi() {
+            val canUndo = undoStack.size > 1
+            val canRedo = redoStack.isNotEmpty()
+            dialogBinding.btnTextUndo.isEnabled = canUndo
+            dialogBinding.btnTextUndo.alpha = if (canUndo) 1f else 0.38f
+            dialogBinding.btnTextRedo.isEnabled = canRedo
+            dialogBinding.btnTextRedo.alpha = if (canRedo) 1f else 0.38f
+        }
+        updateUndoRedoUi()
+
+        dialogBinding.btnTextUndo.setOnClickListener {
+            if (undoStack.size > 1) {
+                val cur = undoStack.removeLast()
+                redoStack.addLast(cur)
+                val prev = undoStack.last()
+                suppressHistory = true
+                dialogBinding.placeTextInput.setText(prev)
+                dialogBinding.placeTextInput.setSelection(prev.length)
+                suppressHistory = false
+                render(prev)
+                updateUndoRedoUi()
+            }
+        }
+        dialogBinding.btnTextRedo.setOnClickListener {
+            if (redoStack.isNotEmpty()) {
+                val next = redoStack.removeLast()
+                undoStack.addLast(next)
+                suppressHistory = true
+                dialogBinding.placeTextInput.setText(next)
+                dialogBinding.placeTextInput.setSelection(next.length)
+                suppressHistory = false
+                render(next)
+                updateUndoRedoUi()
+            }
+        }
+
         validate = Runnable { render(dialogBinding.placeTextInput.text?.toString().orEmpty()) }
         dialogBinding.placeTextInput.setText(initial)
         dialogBinding.placeTextInput.setSelection(initial.length)
+        dialogBinding.placeTextInput.setOnClickListener { closeAllPopups() }
         dialogBinding.placeTextInput.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
             override fun afterTextChanged(s: android.text.Editable?) {
+                val cur = s?.toString().orEmpty()
+                if (!suppressHistory && undoStack.lastOrNull() != cur) {
+                    if (undoStack.size >= 40) undoStack.removeFirst()
+                    undoStack.addLast(cur)
+                    redoStack.clear()
+                    updateUndoRedoUi()
+                }
                 handler.removeCallbacks(validate)
-                if (s.isNullOrBlank()) {
-                    validate.run() // порожнє: без затримки вимикаємо «Додати»
+                if (cur.isBlank()) {
+                    validate.run()
                 } else {
                     handler.postDelayed(validate, TEXT_VALIDATE_DEBOUNCE_MS)
                 }
             }
         })
         dialogBinding.btnTextCancel.setOnClickListener { dialog.dismiss() }
-        dialogBinding.placeTextRoot.setOnClickListener { dialog.dismiss() } // тап поза карткою
+        dialogBinding.placeTextRoot.setOnClickListener {
+            if (closeAllPopups()) return@setOnClickListener
+            handler.removeCallbacks(validate)
+            val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
+            if (raw.isNotBlank() && render(raw)) {
+                onAccept(raw)
+            }
+            dialog.dismiss()
+        }
         confirm.setOnClickListener {
             handler.removeCallbacks(validate)
             val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
-            if (render(raw)) { // остаточна перевірка без затримки
+            if (render(raw)) {
                 onAccept(raw)
                 dialog.dismiss()
             }
         }
         dialog.setOnShowListener {
             render(dialogBinding.placeTextInput.text?.toString().orEmpty())
-            // SOFT_INPUT_STATE_VISIBLE сам клавіатуру не показує (Gboard на S24 Ultra): фокус + явний показ IME.
             val input = dialogBinding.placeTextInput
             input.requestFocus()
             input.post {
@@ -2176,7 +2425,6 @@ class ReaderActivity : AppCompatActivity() {
         const val EXTRA_DOCUMENT_TITLE = "extra_document_title"
         private const val TAG = "ReaderActivity"
         private const val TEXT_VALIDATE_DEBOUNCE_MS = 120L
-        private val TEXT_SIZE_CHOICES = floatArrayOf(8f, 10f, 12f, 14f, 16f, 18f, 24f, 32f, 48f, 72f)
         private const val TAG_PDF_VIEWER = "tag_pdf_viewer_fragment"
         private const val KEY_SAVED_URI = "key_saved_reader_uri"
 

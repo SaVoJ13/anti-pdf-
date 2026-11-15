@@ -240,5 +240,6 @@ class PlaceBarLogicTest {
         assertEquals(5, PlaceBarLogic.gridColumns(landscape = false))
         assertEquals(10, PlaceBarLogic.gridColumns(landscape = true))
         assertArrayEquals(floatArrayOf(24f, 18f, 14f, 11f), PlaceBarLogic.TEXT_STYLE_SIZES_PT, 0f)
+        assertTrue(PlaceBarLogic.TEXT_SIZE_CHOICES.toList().containsAll(listOf(8f, 14f, 15f, 19f, 21f, 26f, 32f, 48f, 64f, 72f)))
     }
 }
