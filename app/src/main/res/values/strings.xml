@@ -253,6 +253,7 @@
     <string name="save_not_completed">Saving was not completed</string>
     <string name="place_copy_saved_password_hint">Copy saved. To view it, enter the password again in the viewer</string>
     <string name="action_licenses">Open source licenses</string>
+    <string name="action_dynamic_colors">Colors from wallpaper</string>
     <string name="dialog_licenses_title">Open Source Licenses</string>
     <string name="action_create_pdf">Create PDF</string>
     <string name="tool_create_blank_title">Create PDF</string>

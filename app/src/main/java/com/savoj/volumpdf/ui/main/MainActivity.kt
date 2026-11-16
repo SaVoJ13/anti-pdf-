@@ -22,6 +22,7 @@ import com.savoj.volumpdf.core.ads.AdMobAdsManager
 import com.savoj.volumpdf.core.ads.AdsManager
 import com.savoj.volumpdf.data.model.SortOrder
 import com.savoj.volumpdf.databinding.ActivityMainBinding
+import com.savoj.volumpdf.ui.common.AppearancePreferences
 import com.savoj.volumpdf.ui.common.LicensesDialogHelper
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
@@ -245,6 +246,11 @@ class MainActivity : AppCompatActivity() {
         val hasDocs = viewModel.recentDocuments.value.isNotEmpty()
         menu.findItem(R.id.action_clear_history)?.isEnabled = hasDocs
         menu.findItem(R.id.action_privacy_settings)?.isVisible = adsManager.isPrivacyOptionsRequired()
+        menu.findItem(R.id.action_dynamic_colors)?.apply {
+            // Material You існує лише на Android 12+; на старших пункт не показуємо.
+            isVisible = com.google.android.material.color.DynamicColors.isDynamicColorAvailable()
+            isChecked = AppearancePreferences(this@MainActivity).dynamicColorsEnabled
+        }
         return true
     }
 
@@ -287,6 +293,14 @@ class MainActivity : AppCompatActivity() {
                 adsManager.showPrivacyOptionsForm(this) {
                     adsManager.bindAdaptiveBanner(this, binding.bannerContainer)
                 }
+                true
+            }
+            R.id.action_dynamic_colors -> {
+                val prefs = AppearancePreferences(this)
+                prefs.dynamicColorsEnabled = !prefs.dynamicColorsEnabled
+                item.isChecked = prefs.dynamicColorsEnabled
+                // Нова тема застосовується при створенні Activity; recreate() зберігає стан (ViewModel, пошук, вкладка).
+                recreate()
                 true
             }
             R.id.action_licenses -> {
