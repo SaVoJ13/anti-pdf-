@@ -1,7 +1,23 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
+
+// Підписування релізу: локальний keystore.properties (поза git, див. docs/store/RELEASE_SIGNING.md).
+// Якщо файла або будь-якого з ключів немає, release лишається непідписаним, а збірка НЕ падає.
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.isFile) f.inputStream().use { load(it) }
+}
+val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { !keystoreProps.getProperty(it).isNullOrBlank() } &&
+    rootProject.file(keystoreProps.getProperty("storeFile", "")).isFile
+
+// URL політики приватності: ПЛЕЙСХОЛДЕР, поки власник не розмістив її. Перевизначення: -PprivacyPolicyUrl=...
+val privacyPolicyUrl: String = (project.findProperty("privacyPolicyUrl") as String?)
+    ?: "https://example.com/anti-pdf/privacy-policy"
 
 android {
     namespace = "com.savoj.volumpdf"
@@ -16,10 +32,38 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "PRIVACY_POLICY_URL", "\"$privacyPolicyUrl\"")
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
     }
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     compileOptions {
