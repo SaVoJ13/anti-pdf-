@@ -44,6 +44,91 @@
             android:layout_height="match_parent"
             android:importantForAccessibility="no" />
 
+        <!-- Екран «Не вдалося відкрити файл»: накриває переглядач, поки документ не відкрився (P0-3) -->
+        <ScrollView
+            android:id="@+id/openErrorPanel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/colorSurface"
+            android:clickable="true"
+            android:fillViewport="true"
+            android:focusable="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="24dp"
+                android:paddingVertical="32dp">
+
+                <ImageView
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_pdf_document"
+                    app:tint="?attr/colorOnSurfaceVariant" />
+
+                <TextView
+                    android:id="@+id/openErrorTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:accessibilityHeading="true"
+                    android:gravity="center"
+                    android:text="@string/open_error_title"
+                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <TextView
+                    android:id="@+id/openErrorFileName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="middle"
+                    android:gravity="center"
+                    android:maxLines="2"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <TextView
+                    android:id="@+id/openErrorMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenErrorRetry"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:minHeight="48dp"
+                    android:text="@string/open_error_retry" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenErrorPick"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:minHeight="48dp"
+                    android:text="@string/open_error_pick" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenErrorClose"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:minHeight="48dp"
+                    android:text="@string/open_error_close" />
+            </LinearLayout>
+        </ScrollView>
+
         <!-- Ненав'язлива плаваюча панель швидкого доступу: номер сторінки, масштаб і пошук -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardReaderHud"

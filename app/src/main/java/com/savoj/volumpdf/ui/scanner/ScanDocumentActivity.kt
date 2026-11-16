@@ -29,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.savoj.volumpdf.util.ErrorMessages
 
 /**
  * Екран вбудованого документ-сканера (ТОП-1).
@@ -137,7 +138,8 @@ class ScanDocumentActivity : AppCompatActivity() {
 
                 openScannedDocument(persistentUri, persistedFile.name)
             } catch (e: Exception) {
-                Toast.makeText(this@ScanDocumentActivity, e.localizedMessage ?: "Помилка збереження", Toast.LENGTH_LONG).show()
+                ErrorMessages.report("ScanDocument", e)
+                Toast.makeText(this@ScanDocumentActivity, ErrorMessages.forFailure(e, R.string.err_save_scan).resolve(this@ScanDocumentActivity), Toast.LENGTH_LONG).show()
                 finish()
             }
         }
@@ -168,13 +170,15 @@ class ScanDocumentActivity : AppCompatActivity() {
                         openScannedDocument(outputUri, targetFile.name)
                     }
                     is PdfOperationResult.Error -> {
-                        Toast.makeText(this@ScanDocumentActivity, result.userMessage, Toast.LENGTH_LONG).show()
+                        ErrorMessages.report("ScanDocument", result.cause)
+                        Toast.makeText(this@ScanDocumentActivity, ErrorMessages.forFailure(result.cause, R.string.err_convert_images).resolve(this@ScanDocumentActivity), Toast.LENGTH_LONG).show()
                         finish()
                     }
                     else -> finish()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@ScanDocumentActivity, e.localizedMessage ?: "Помилка конвертації", Toast.LENGTH_LONG).show()
+                ErrorMessages.report("ScanDocument", e)
+                Toast.makeText(this@ScanDocumentActivity, ErrorMessages.forFailure(e, R.string.err_convert_images).resolve(this@ScanDocumentActivity), Toast.LENGTH_LONG).show()
                 finish()
             }
         }

@@ -14,7 +14,7 @@ object PageRangeParser {
     fun parsePageIndices(input: String, totalPages: Int = 0): List<Int> {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) {
-            throw IllegalArgumentException("Введіть номери сторінок")
+            throw PageRangeException(PageRangeException.Reason.EMPTY, technical = "empty input")
         }
 
         val resultIndices = mutableSetOf<Int>()
@@ -27,16 +27,16 @@ object PageRangeParser {
             if (token.contains('-')) {
                 val rangeParts = token.split('-')
                 if (rangeParts.size != 2) {
-                    throw IllegalArgumentException("Некоректний діапазон сторінок: '$token'")
+                    throw PageRangeException(PageRangeException.Reason.BAD_FORMAT, technical = "bad range")
                 }
 
                 val startPage = rangeParts[0].trim().toIntOrNull()
-                    ?: throw IllegalArgumentException("Некоректний номер початку діапазону: '${rangeParts[0]}'")
+                    ?: throw PageRangeException(PageRangeException.Reason.BAD_FORMAT, technical = "bad range start")
                 val endPage = rangeParts[1].trim().toIntOrNull()
-                    ?: throw IllegalArgumentException("Некоректний номер кінця діапазону: '${rangeParts[1]}'")
+                    ?: throw PageRangeException(PageRangeException.Reason.BAD_FORMAT, technical = "bad range end")
 
                 if (startPage < 1 || endPage < 1) {
-                    throw IllegalArgumentException("Номери сторінок мають бути більше 0")
+                    throw PageRangeException(PageRangeException.Reason.NOT_POSITIVE, technical = "page < 1")
                 }
 
                 val min = minOf(startPage, endPage)
@@ -45,28 +45,28 @@ object PageRangeParser {
                 for (page in min..max) {
                     val index0 = page - 1
                     if (totalPages > 0 && index0 >= totalPages) {
-                        throw IllegalArgumentException("Сторінка $page виходить за межі документа (всього сторінок: $totalPages)")
+                        throw PageRangeException(PageRangeException.Reason.OUT_OF_RANGE, page, totalPages, technical = "page $page out of $totalPages")
                     }
                     resultIndices.add(index0)
                 }
             } else {
                 val page = token.toIntOrNull()
-                    ?: throw IllegalArgumentException("Некоректний номер сторінки: '$token'")
+                    ?: throw PageRangeException(PageRangeException.Reason.BAD_FORMAT, technical = "bad page number")
 
                 if (page < 1) {
-                    throw IllegalArgumentException("Номер сторінки має бути більше 0: $page")
+                    throw PageRangeException(PageRangeException.Reason.NOT_POSITIVE, page, technical = "page < 1")
                 }
 
                 val index0 = page - 1
                 if (totalPages > 0 && index0 >= totalPages) {
-                    throw IllegalArgumentException("Сторінка $page виходить за межі документа (всього сторінок: $totalPages)")
+                    throw PageRangeException(PageRangeException.Reason.OUT_OF_RANGE, page, totalPages, technical = "page $page out of $totalPages")
                 }
                 resultIndices.add(index0)
             }
         }
 
         if (resultIndices.isEmpty()) {
-            throw IllegalArgumentException("Не вказано жодної дійсної сторінки")
+            throw PageRangeException(PageRangeException.Reason.NONE_SELECTED, technical = "no valid pages")
         }
 
         return resultIndices.sorted()

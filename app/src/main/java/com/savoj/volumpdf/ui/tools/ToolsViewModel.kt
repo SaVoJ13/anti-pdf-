@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.savoj.volumpdf.R
+import com.savoj.volumpdf.util.ErrorMessages
+import com.savoj.volumpdf.util.UserMessage
 
 sealed interface OperationUiState {
     data object Idle : OperationUiState
@@ -27,7 +30,7 @@ sealed interface OperationUiState {
         val originalSizeBytes: Long = 0L,
         val newSizeBytes: Long = 0L
     ) : OperationUiState
-    data class Error(val message: String) : OperationUiState
+    data class Error(val message: UserMessage) : OperationUiState
 }
 
 class ToolsViewModel(application: Application) : AndroidViewModel(application) {
@@ -77,7 +80,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
     fun executeMerge(context: Context, outputUri: Uri) {
         val sourceUris = _selectedFiles.value.map { it.uri }
         if (sourceUris.size < 2) {
-            _uiState.value = OperationUiState.Error("Для злиття потрібно щонайменше 2 файли")
+            _uiState.value = OperationUiState.Error(UserMessage(R.string.error_select_min_two_files))
             return
         }
 
@@ -92,14 +95,14 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
     fun executeSplit(context: Context, pagesInput: String, outputUri: Uri) {
         val source = _selectedFiles.value.firstOrNull()
         if (source == null) {
-            _uiState.value = OperationUiState.Error("Виберіть документ")
+            _uiState.value = OperationUiState.Error(UserMessage(R.string.error_select_source_file))
             return
         }
 
         val pageIndices = try {
             PageRangeParser.parsePageIndices(pagesInput, sourceDocumentPages)
         } catch (e: Exception) {
-            _uiState.value = OperationUiState.Error(e.localizedMessage ?: "Помилка введення номерів сторінок")
+            _uiState.value = OperationUiState.Error(ErrorMessages.forFailure(e))
             return
         }
 
@@ -114,7 +117,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
     fun executeRotate(context: Context, degrees: Int, pagesInput: String?, outputUri: Uri) {
         val source = _selectedFiles.value.firstOrNull()
         if (source == null) {
-            _uiState.value = OperationUiState.Error("Виберіть документ")
+            _uiState.value = OperationUiState.Error(UserMessage(R.string.error_select_source_file))
             return
         }
 
@@ -125,7 +128,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 PageRangeParser.parsePageIndices(pagesInput, sourceDocumentPages)
             } catch (e: Exception) {
-                _uiState.value = OperationUiState.Error(e.localizedMessage ?: "Помилка номерів сторінок")
+                _uiState.value = OperationUiState.Error(ErrorMessages.forFailure(e))
                 return
             }
         }
@@ -140,14 +143,14 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
     fun executeDelete(context: Context, pagesInput: String, outputUri: Uri) {
         val source = _selectedFiles.value.firstOrNull()
         if (source == null) {
-            _uiState.value = OperationUiState.Error("Виберіть документ")
+            _uiState.value = OperationUiState.Error(UserMessage(R.string.error_select_source_file))
             return
         }
 
         val pageIndicesToDelete = try {
             PageRangeParser.parsePageIndices(pagesInput, sourceDocumentPages)
         } catch (e: Exception) {
-            _uiState.value = OperationUiState.Error(e.localizedMessage ?: "Помилка номерів сторінок")
+            _uiState.value = OperationUiState.Error(ErrorMessages.forFailure(e))
             return
         }
 
@@ -161,7 +164,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
     fun executeImagesToPdf(context: Context, outputUri: Uri) {
         val imageUris = _selectedFiles.value.map { it.uri }
         if (imageUris.isEmpty()) {
-            _uiState.value = OperationUiState.Error("Виберіть щонайменше одне зображення")
+            _uiState.value = OperationUiState.Error(UserMessage(R.string.error_select_images))
             return
         }
 
@@ -175,11 +178,11 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
     fun executeWatermark(context: Context, watermarkText: String, pagesInput: String?, outputUri: Uri) {
         val source = _selectedFiles.value.firstOrNull()
         if (source == null) {
-            _uiState.value = OperationUiState.Error("Виберіть документ")
+            _uiState.value = OperationUiState.Error(UserMessage(R.string.error_select_source_file))
             return
         }
         if (watermarkText.isBlank()) {
-            _uiState.value = OperationUiState.Error("Введіть текст водяного знака")
+            _uiState.value = OperationUiState.Error(UserMessage(R.string.error_empty_watermark))
             return
         }
 
@@ -187,7 +190,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 PageRangeParser.parsePageIndices(pagesInput, sourceDocumentPages)
             } catch (e: Exception) {
-                _uiState.value = OperationUiState.Error(e.localizedMessage ?: "Помилка введення номерів сторінок")
+                _uiState.value = OperationUiState.Error(ErrorMessages.forFailure(e))
                 return
             }
         } else null
@@ -202,7 +205,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
     fun executePageNumbers(context: Context, formatPattern: String, pagesInput: String?, outputUri: Uri) {
         val source = _selectedFiles.value.firstOrNull()
         if (source == null) {
-            _uiState.value = OperationUiState.Error("Виберіть документ")
+            _uiState.value = OperationUiState.Error(UserMessage(R.string.error_select_source_file))
             return
         }
 
@@ -210,7 +213,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 PageRangeParser.parsePageIndices(pagesInput, sourceDocumentPages)
             } catch (e: Exception) {
-                _uiState.value = OperationUiState.Error(e.localizedMessage ?: "Помилка введення номерів сторінок")
+                _uiState.value = OperationUiState.Error(ErrorMessages.forFailure(e))
                 return
             }
         } else null
@@ -225,7 +228,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
     fun executeCompress(context: Context, level: CompressionLevel, outputUri: Uri) {
         val source = _selectedFiles.value.firstOrNull()
         if (source == null) {
-            _uiState.value = OperationUiState.Error("Виберіть документ")
+            _uiState.value = OperationUiState.Error(UserMessage(R.string.error_select_source_file))
             return
         }
 
@@ -252,7 +255,8 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             is PdfOperationResult.Error -> {
-                _uiState.value = OperationUiState.Error(result.userMessage)
+                ErrorMessages.report("ToolsViewModel", result.cause)
+                _uiState.value = OperationUiState.Error(ErrorMessages.forFailure(result.cause))
             }
         }
     }

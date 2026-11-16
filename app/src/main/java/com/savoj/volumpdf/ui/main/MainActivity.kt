@@ -28,6 +28,7 @@ import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.ui.reader.ReaderActivity
 import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
 import kotlinx.coroutines.launch
+import com.savoj.volumpdf.util.ErrorMessages
 
 class MainActivity : AppCompatActivity() {
 
@@ -151,7 +152,8 @@ class MainActivity : AppCompatActivity() {
                 val file = com.savoj.volumpdf.util.DocumentCreationHelper.createBlankDocument(this@MainActivity)
                 com.savoj.volumpdf.util.DocumentCreationHelper.openNewDocument(this@MainActivity, file)
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, e.localizedMessage ?: "Помилка створення PDF", Toast.LENGTH_SHORT).show()
+                ErrorMessages.report("MainActivity", e)
+                Toast.makeText(this@MainActivity, ErrorMessages.forFailure(e, R.string.err_create_pdf).resolve(this@MainActivity), Toast.LENGTH_LONG).show()
             }
         }
     }

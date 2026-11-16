@@ -10,6 +10,7 @@ import android.print.PrintAttributes
 import android.print.PrintDocumentAdapter
 import android.print.PrintDocumentInfo
 import java.io.FileOutputStream
+import com.savoj.volumpdf.R
 
 class PdfPrintDocumentAdapter(
     private val context: Context,
@@ -41,7 +42,7 @@ class PdfPrintDocumentAdapter(
         callback: WriteResultCallback?
     ) {
         if (destination == null) {
-            callback?.onWriteFailed("Помилка створення файлу для друку")
+            callback?.onWriteFailed(context.getString(R.string.err_print_failed))
             return
         }
         try {
@@ -52,7 +53,8 @@ class PdfPrintDocumentAdapter(
             }
             callback?.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
         } catch (e: Exception) {
-            callback?.onWriteFailed(e.localizedMessage)
+            ErrorMessages.report("PdfPrint", e)
+            callback?.onWriteFailed(context.getString(R.string.err_print_failed))
         }
     }
 }

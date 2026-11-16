@@ -48,6 +48,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_save_copy"
+        android:title="@string/action_save_copy"
+        android:visible="false"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_forms"
         android:icon="@drawable/ic_forms"
         android:title="@string/action_forms"

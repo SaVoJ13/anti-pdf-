@@ -21,6 +21,8 @@ import com.savoj.volumpdf.ui.tools.ToolsAdapter
 import com.savoj.volumpdf.util.DocumentCreationHelper
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.launch
+import com.savoj.volumpdf.R
+import com.savoj.volumpdf.util.ErrorMessages
 
 class ToolsFragment : Fragment() {
 
@@ -69,7 +71,8 @@ class ToolsFragment : Fragment() {
                     val file = DocumentCreationHelper.createBlankDocument(requireContext())
                     DocumentCreationHelper.openNewDocument(requireActivity(), file)
                 } catch (e: Exception) {
-                    Toast.makeText(requireContext(), e.localizedMessage ?: "Помилка створення PDF", Toast.LENGTH_SHORT).show()
+                    ErrorMessages.report("ToolsFragment", e)
+                    Toast.makeText(requireContext(), ErrorMessages.forFailure(e, R.string.err_create_pdf).resolve(requireContext()), Toast.LENGTH_LONG).show()
                 }
             }
             return

@@ -25,6 +25,7 @@ import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.ui.reader.ReaderActivity
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.launch
+import com.savoj.volumpdf.util.ErrorMessages
 
 class ToolsActivity : AppCompatActivity() {
 
@@ -116,7 +117,8 @@ class ToolsActivity : AppCompatActivity() {
                     val file = com.savoj.volumpdf.util.DocumentCreationHelper.createBlankDocument(this@ToolsActivity)
                     com.savoj.volumpdf.util.DocumentCreationHelper.openNewDocument(this@ToolsActivity, file)
                 } catch (e: Exception) {
-                    Toast.makeText(this@ToolsActivity, e.localizedMessage ?: "Помилка створення PDF", Toast.LENGTH_SHORT).show()
+                    ErrorMessages.report("ToolsActivity", e)
+                    Toast.makeText(this@ToolsActivity, ErrorMessages.forFailure(e, R.string.err_create_pdf).resolve(this@ToolsActivity), Toast.LENGTH_LONG).show()
                 }
                 finish()
             }
@@ -474,7 +476,7 @@ class ToolsActivity : AppCompatActivity() {
                             binding.containerProgress.visibility = View.GONE
                             binding.btnProcessAndSave.isEnabled = true
                             binding.btnSelectFiles.isEnabled = true
-                            showError(state.message)
+                            showError(state.message.resolve(this@ToolsActivity))
                         }
                     }
                 }
