@@ -53,7 +53,9 @@ import com.savoj.volumpdf.databinding.DialogDocumentPasswordBinding
 import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
+import com.savoj.volumpdf.util.ErrorMessages
 import com.savoj.volumpdf.util.ImageRotationHelper
+import com.savoj.volumpdf.util.ReadOnlyCheck
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +74,12 @@ class ReaderActivity : AppCompatActivity() {
 
     private var documentUri: Uri? = null
     private var documentTitle: String? = null
+
+    /** P0-3: переглядач не зміг відкрити документ; показано власний екран помилки, HUD і дії редагування сховано. */
+    private var openFailed = false
+
+    /** P1-8: документ відкрито без права запису; у заголовку підпис «Лише читання», у меню «Зберегти копію». */
+    private var readOnlyDocument = false
     private var viewerFragment: VolumPdfViewerFragment? = null
 
     private val formEngine: FormEngine = PdfBoxFormEngine()
@@ -117,6 +125,8 @@ class ReaderActivity : AppCompatActivity() {
 
         binding.toolbar.title = documentTitle
         viewModel.initDocument(uri, documentTitle)
+        setupOpenErrorPanel()
+        refreshReadOnlyState(announce = savedInstanceState == null)
 
         readingPreferences = ReadingPreferences(this)
         applyReadingTheme(readingPreferences.theme)
@@ -152,6 +162,7 @@ class ReaderActivity : AppCompatActivity() {
         fragment.bridge.addViewportListener(progressViewportListener)
 
         fragment.onDocumentLoadedListener = { count ->
+            if (openFailed) hideOpenFailure()
             loadedPageCount = count
             viewModel.viewerOpened = true
             viewModel.updatePageCount(count)
@@ -162,8 +173,13 @@ class ReaderActivity : AppCompatActivity() {
         }
 
         fragment.onDocumentErrorListener = { cause ->
-            val msg = cause.localizedMessage ?: getString(R.string.error_open_document, cause.javaClass.simpleName)
-            Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+            ErrorMessages.report(TAG, cause)
+            if (viewModel.viewerOpened) {
+                // Документ уже відкривався (збій оновлення після збереження): лишаємо його на екрані, пояснюємо коротко.
+                showError(ErrorMessages.forFailure(cause, R.string.err_view_copy).resolve(this))
+            } else {
+                showOpenFailure(cause)
+            }
         }
 
         val shown = fragment.documentUri
@@ -256,7 +272,7 @@ class ReaderActivity : AppCompatActivity() {
         val bridge = viewerFragment?.bridge ?: return
         val next = !bridge.isTextSearchActive
         bridge.isTextSearchActive = next
-        if (!viewModel.placeModeActive) {
+        if (!viewModel.placeModeActive && !openFailed) {
             binding.cardReaderHud.visibility = if (next) View.GONE else View.VISIBLE
         }
     }
@@ -442,13 +458,140 @@ class ReaderActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // P0-3: екран «Не вдалося відкрити файл»
+    // ---------------------------------------------------------------------------------------------
+
+    private fun setupOpenErrorPanel() {
+        binding.btnOpenErrorRetry.setOnClickListener { retryOpen() }
+        binding.btnOpenErrorPick.setOnClickListener { pickOtherDocumentLauncher.launch(arrayOf("application/pdf")) }
+        binding.btnOpenErrorClose.setOnClickListener { finish() }
+    }
+
+    /** Показує екран помилки замість блідого напису бібліотеки; ховає HUD, нижню панель і дії редагування. */
+    private fun showOpenFailure(cause: Throwable) {
+        openFailed = true
+        errorSnackbar?.dismiss()
+        binding.openErrorFileName.text = documentTitle?.takeIf { it.isNotBlank() } ?: getString(R.string.reader_title_unknown)
+        binding.openErrorMessage.text = ErrorMessages.forOpenFailure(cause).resolve(this)
+        binding.openErrorPanel.visibility = View.VISIBLE
+        binding.cardReaderHud.visibility = View.GONE
+        binding.bottomActionBar.visibility = View.GONE
+        binding.markupOverlay.visibility = View.GONE
+        invalidateOptionsMenu()
+    }
+
+    private fun hideOpenFailure() {
+        openFailed = false
+        binding.openErrorPanel.visibility = View.GONE
+        binding.markupOverlay.visibility = View.VISIBLE
+        if (!viewModel.placeModeActive) {
+            binding.cardReaderHud.visibility = View.VISIBLE
+            binding.bottomActionBar.visibility = View.VISIBLE
+        }
+        invalidateOptionsMenu()
+    }
+
+    /** «Спробувати ще»: бібліотека не перечитує той самий URI, тому відкриваємо читач заново з тими самими даними. */
+    private fun retryOpen() {
+        val uri = documentUri ?: return
+        fun again(withGrant: Boolean) = Intent(this, ReaderActivity::class.java).apply {
+            data = uri
+            documentTitle?.let { putExtra(EXTRA_DOCUMENT_TITLE, it) }
+            if (withGrant) addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            startActivity(again(withGrant = uri.scheme == "content"))
+        } catch (_: SecurityException) {
+            startActivity(again(withGrant = false))
+        }
+        finish()
+    }
+
+    private val pickOtherDocumentLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { picked: Uri? ->
+        if (picked != null) {
+            SafUtils.takePersistableUriPermissionSafe(this, picked)
+            val next = Intent(this, ReaderActivity::class.java).apply {
+                data = picked
+                putExtra(EXTRA_DOCUMENT_TITLE, SafUtils.queryDisplayName(this@ReaderActivity, picked))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(next)
+            finish()
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // P1-8: «Лише читання» і «Зберегти копію» (без зміни логіки збереження: її веде окрема гілка)
+    // ---------------------------------------------------------------------------------------------
+
+    /** Перевіряє право запису поза головним потоком і виставляє підпис під назвою; [announce] — один раз підказати про копію. */
+    private fun refreshReadOnlyState(announce: Boolean) {
+        val uri = documentUri ?: return
+        lifecycleScope.launch {
+            val readOnly = withContext(Dispatchers.IO) { SafUtils.isReadOnly(applicationContext, uri) }
+            if (uri != documentUri) return@launch
+            readOnlyDocument = readOnly
+            binding.toolbar.subtitle = if (readOnly) getString(R.string.reader_read_only_subtitle) else null
+            invalidateOptionsMenu()
+            if (readOnly && announce && !openFailed) {
+                val notice = Snackbar.make(binding.root, R.string.reader_read_only_notice, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.action_save_copy) { launchSaveCopy() }
+                if (binding.placeToolBar.isVisible) notice.setAnchorView(binding.placeToolBar)
+                notice.show()
+            }
+        }
+    }
+
+    private fun launchSaveCopy() {
+        saveCopyLauncher.launch(ReadOnlyCheck.copyName(documentTitle))
+    }
+
+    private val saveCopyLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { out ->
+        if (out != null) copyDocumentTo(out)
+    }
+
+    /** Побайтова копія документа, як він лежить на диску (незбережені зміни не входять). Пароль не потрібен: шифрування лишається. */
+    private fun copyDocumentTo(out: Uri) {
+        val source = documentUri ?: return
+        lifecycleScope.launch {
+            showLoadingOverlay(getString(R.string.saving_annotations))
+            val failure: Throwable? = try {
+                withContext(Dispatchers.IO) {
+                    ViewerCopyCache.openSource(contentResolver, source).use { input ->
+                        val sink = contentResolver.openOutputStream(out, "wt") ?: throw java.io.FileNotFoundException()
+                        sink.use { input.copyTo(it) }
+                    }
+                }
+                null
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                e
+            }
+            hideLoadingOverlay()
+            if (failure != null) {
+                ErrorMessages.report(TAG, failure)
+                if (SafUtils.queryFileSizeOrNull(this@ReaderActivity, out) == 0L) SafUtils.deleteDocumentQuietly(this@ReaderActivity, out)
+                showError(getString(R.string.save_copy_failed))
+                return@launch
+            }
+            if (viewModel.hasUnsaved.value) {
+                // Незбережені об'єкти належать поточному документу: лишаємося в ньому, копія просто лежить поруч.
+                showMessage(getString(R.string.save_copy_done_kept), long = true)
+            } else {
+                switchToDocument(out)
+                showMessage(getString(R.string.save_copy_done), long = true)
+            }
+        }
+    }
+
     private fun setupBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 val bridge = viewerFragment?.bridge
                 if (bridge != null && bridge.isTextSearchActive) {
                     bridge.isTextSearchActive = false
-                    if (!viewModel.placeModeActive) binding.cardReaderHud.visibility = View.VISIBLE
+                    if (!viewModel.placeModeActive && !openFailed) binding.cardReaderHud.visibility = View.VISIBLE
                     return
                 }
                 if (viewModel.placeModeActive) {
@@ -816,8 +959,10 @@ class ReaderActivity : AppCompatActivity() {
         viewerFragment?.bridge?.setPlaceMode(false)
         placeBar.closeCard(animate = false)
         binding.placeToolBar.visibility = View.GONE
-        binding.cardReaderHud.visibility = View.VISIBLE
-        binding.bottomActionBar.visibility = View.VISIBLE
+        if (!openFailed) {
+            binding.cardReaderHud.visibility = View.VISIBLE
+            binding.bottomActionBar.visibility = View.VISIBLE
+        }
         renderUnsavedUi()
         invalidateOptionsMenu()
     }
@@ -2058,7 +2203,7 @@ class ReaderActivity : AppCompatActivity() {
                 }
                 hideLoadingOverlay()
                 if (bitmap == null) {
-                    showError(getString(R.string.error_title))
+                    showError(getString(R.string.err_image_failed))
                     return@launch
                 }
 
@@ -2066,7 +2211,8 @@ class ReaderActivity : AppCompatActivity() {
                 placeImageOnPage(bitmap, currPage)
             } catch (e: Exception) {
                 hideLoadingOverlay()
-                showError(e.localizedMessage ?: getString(R.string.error_title))
+                ErrorMessages.report(TAG, e)
+                showError(ErrorMessages.forFailure(e, R.string.err_image_failed).resolve(this@ReaderActivity))
             }
         }
     }
@@ -2087,7 +2233,7 @@ class ReaderActivity : AppCompatActivity() {
                 }
                 hideLoadingOverlay()
                 if (bitmap == null) {
-                    showError(getString(R.string.error_title))
+                    showError(getString(R.string.err_image_failed))
                     return@launch
                 }
 
@@ -2102,7 +2248,8 @@ class ReaderActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 hideLoadingOverlay()
-                showError(e.localizedMessage ?: getString(R.string.error_title))
+                ErrorMessages.report(TAG, e)
+                showError(ErrorMessages.forFailure(e, R.string.err_image_failed).resolve(this@ReaderActivity))
             }
         }
     }
@@ -2182,9 +2329,10 @@ class ReaderActivity : AppCompatActivity() {
         val totalPages = loadedPageCount.coerceAtLeast(1)
         val items = ArrayList<String>()
         for (i in 0 until totalPages) {
-            val label = getString(R.string.page_number_item, i + 1)
-            val currentMark = if (i == sel.pageIndex) " (поточна)" else ""
-            items.add(label + currentMark)
+            items.add(
+                if (i == sel.pageIndex) getString(R.string.page_number_item_current, i + 1)
+                else getString(R.string.page_number_item, i + 1)
+            )
         }
         items.add(getString(R.string.place_create_new_page_option))
 
@@ -2244,7 +2392,8 @@ class ReaderActivity : AppCompatActivity() {
                         reloadViewerDocument()
                     }
                     is com.savoj.volumpdf.core.pdf.model.PdfOperationResult.Error -> {
-                        showError(result.userMessage)
+                        ErrorMessages.report(TAG, result.cause)
+                        showError(ErrorMessages.forFailure(result.cause, R.string.err_add_failed).resolve(this@ReaderActivity))
                     }
                     else -> Unit
                 }
@@ -2279,7 +2428,8 @@ class ReaderActivity : AppCompatActivity() {
                         onComplete?.invoke(true)
                     }
                     is com.savoj.volumpdf.core.pdf.model.PdfOperationResult.Error -> {
-                        showError(result.userMessage)
+                        ErrorMessages.report(TAG, result.cause)
+                        showError(ErrorMessages.forFailure(result.cause, R.string.err_add_failed).resolve(this@ReaderActivity))
                         onComplete?.invoke(false)
                     }
                     else -> onComplete?.invoke(false)
@@ -2345,7 +2495,8 @@ class ReaderActivity : AppCompatActivity() {
                 printManager.print(title, printAdapter, null)
             }
         } catch (e: Exception) {
-            showError(e.localizedMessage ?: getString(R.string.error_title))
+            ErrorMessages.report(TAG, e)
+            showError(ErrorMessages.forFailure(e, R.string.err_print_failed).resolve(this))
         }
     }
 
@@ -2485,6 +2636,7 @@ class ReaderActivity : AppCompatActivity() {
         documentTitle = SafUtils.queryDisplayName(this, newUri)
         intent.putExtra(EXTRA_DOCUMENT_TITLE, documentTitle)
         binding.toolbar.title = documentTitle
+        refreshReadOnlyState(announce = false)
         initialPageRestored = true // позицію копії відновлює reloadViewerDocument() нижче
         viewModel.initDocument(newUri, documentTitle) // запис у «Останніх» і порожнє незбережене нового ключа
         reloadViewerDocument()
@@ -2578,8 +2730,8 @@ class ReaderActivity : AppCompatActivity() {
             } catch (e: Throwable) {
                 if (e is CancellationException) throw e
                 viewModel.progressSuppressed = false
-                val msg = e.localizedMessage ?: getString(R.string.error_title)
-                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+                ErrorMessages.report(TAG, e)
+                showError(ErrorMessages.forFailure(e, R.string.err_view_copy).resolve(this@ReaderActivity))
                 return@launch
             }
             Log.i(TAG, "view copy: ${copy.bytes} bytes in ${copy.elapsedMs} ms (${copy.file.name})")
@@ -2616,7 +2768,9 @@ class ReaderActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.document.collect { doc ->
-                    if (doc != null && !doc.title.isNullOrBlank()) {
+                    if (doc != null && !doc.title.isNullOrBlank() &&
+                        !(SafUtils.isOpaqueName(doc.title) && !SafUtils.isOpaqueName(documentTitle))
+                    ) {
                         binding.toolbar.title = doc.title
                     }
                     if (doc != null) {
@@ -2662,6 +2816,11 @@ class ReaderActivity : AppCompatActivity() {
         menu.findItem(R.id.action_reading_theme_overflow)?.isVisible = place
         menu.findItem(R.id.action_place)?.isVisible = !place
         menu.findItem(R.id.action_forms)?.isVisible = formFieldCount > 0
+        menu.findItem(R.id.action_save_copy)?.isVisible = readOnlyDocument && !place
+        if (openFailed) {
+            // Документ не відкрито: жодних дій над ним (пошук, обране, поділитися, інструменти, редагування).
+            for (i in 0 until menu.size()) menu.getItem(i).isVisible = false
+        }
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -2747,6 +2906,10 @@ class ReaderActivity : AppCompatActivity() {
             }
             R.id.action_reading_theme_overflow -> {
                 showReadingThemeDialog()
+                true
+            }
+            R.id.action_save_copy -> {
+                launchSaveCopy()
                 true
             }
             android.R.id.home -> {
