@@ -15,7 +15,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorSurface"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationContentDescription="@string/action_cancel"
+        app:navigationContentDescription="@string/action_back"
         app:title="@string/reader_title"
         app:titleTextAppearance="@style/TextAppearance.Material3.TitleMedium"
         app:titleTextColor="?attr/colorOnSurface" />

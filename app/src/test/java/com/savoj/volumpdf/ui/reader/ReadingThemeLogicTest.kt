@@ -95,4 +95,21 @@ class ReadingThemeLogicTest {
 
         assertTrue("Themes should have distinct background colors", dayBg != nightBg && nightBg != sepiaBg)
     }
+
+    @Test
+    fun `filtered background preimage gives the container color after the theme filter (D5)`() {
+        ReadingTheme.entries.forEach { theme ->
+            val bg = ReadingThemeLogic.containerBackgroundColor(theme)
+            val pre = ReadingThemeLogic.filteredBackgroundPreimage(theme)
+            val out = ReadingThemeLogic.transformRgb(theme, (pre shr 16) and 0xFF, (pre shr 8) and 0xFF, pre and 0xFF)
+            // Округлення прообразу дає похибку до 1 одиниці на канал (крок матриці 0.78-0.82)
+            assertTrue("R $theme", kotlin.math.abs(out.first - ((bg shr 16) and 0xFF)) <= 1)
+            assertTrue("G $theme", kotlin.math.abs(out.second - ((bg shr 8) and 0xFF)) <= 1)
+            assertTrue("B $theme", kotlin.math.abs(out.third - (bg and 0xFF)) <= 1)
+        }
+        // Нічна тема: смужка темна, а не світло-сіра
+        val nightPre = ReadingThemeLogic.filteredBackgroundPreimage(ReadingTheme.NIGHT)
+        val night = ReadingThemeLogic.transformRgb(ReadingTheme.NIGHT, (nightPre shr 16) and 0xFF, (nightPre shr 8) and 0xFF, nightPre and 0xFF)
+        assertTrue("нічна смужка має бути темною: $night", night.first < 40 && night.second < 40 && night.third < 40)
+    }
 }

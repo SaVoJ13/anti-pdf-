@@ -17,6 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_arrow_back"
+            app:navigationContentDescription="@string/action_back"
             app:title="@string/tool_scan_title" />
 
     </com.google.android.material.appbar.AppBarLayout>

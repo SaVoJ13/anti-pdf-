@@ -55,6 +55,23 @@ object ReadingThemeLogic {
     }
 
     /**
+     * Колір, який треба задати ФОНУ шару, що малюється через колірний фільтр теми, щоб ПІСЛЯ фільтра вийшов
+     * [containerBackgroundColor]. Для DAY фільтра нема, тож колір той самий. Матриці діагональні, тож обернення покановне.
+     */
+    fun filteredBackgroundPreimage(theme: ReadingTheme): Int {
+        val target = containerBackgroundColor(theme)
+        val m = matrixForTheme(theme) ?: return target
+        fun channel(shift: Int, scale: Float, offset: Float): Int {
+            val t = (target shr shift) and 0xFF
+            return kotlin.math.round((t - offset) / scale).toInt().coerceIn(0, 255)
+        }
+        val r = channel(16, m[0], m[4])
+        val g = channel(8, m[6], m[9])
+        val b = channel(0, m[12], m[14])
+        return (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+    }
+
+    /**
      * Математичне перетворення RGB для верифікації та тестів без необхідності завантаження Android UI стеків.
      */
     fun transformRgb(theme: ReadingTheme, r: Int, g: Int, b: Int): Triple<Int, Int, Int> {
