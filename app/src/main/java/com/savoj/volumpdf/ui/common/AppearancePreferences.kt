@@ -10,8 +10,11 @@ import android.content.SharedPreferences
  */
 class AppearancePreferences(context: Context) {
 
-    private val prefs: SharedPreferences =
+    // Лениво: створення об'єкта не торкається сховища. В ізольованому процесі (сервіс androidx.pdf,
+    // isolatedProcess=true) getSharedPreferences кидає IllegalStateException; об'єкт там має бути безпечним.
+    private val prefs: SharedPreferences by lazy {
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
 
     var dynamicColorsEnabled: Boolean
         get() = prefs.getBoolean(KEY_DYNAMIC_COLORS, DYNAMIC_COLORS_DEFAULT)

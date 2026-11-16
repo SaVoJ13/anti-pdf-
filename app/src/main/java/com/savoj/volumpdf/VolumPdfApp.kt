@@ -1,6 +1,7 @@
 package com.savoj.volumpdf
 
 import android.app.Application
+import android.os.Process
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.color.DynamicColorsOptions
 import com.savoj.volumpdf.core.pdf.PdfBoxPageOperationsEngine
@@ -24,13 +25,18 @@ class VolumPdfApp : Application() {
         instance = this
         // Material You: лише якщо користувач сам увімкнув «Кольори зі шпалер» (за замовчуванням вимкнено).
         // Умова перевіряється при створенні кожної Activity, тож перемикач діє після recreate() без втрати стану.
-        val appearance = AppearancePreferences(this)
-        DynamicColors.applyToActivitiesIfAvailable(
-            this,
-            DynamicColorsOptions.Builder()
-                .setPrecondition { _, _ -> appearance.dynamicColorsEnabled }
-                .build()
-        )
+        // К-1: сервіс androidx.pdf працює в ізольованому процесі (isolatedProcess=true), де немає Activity, а
+        // SharedPreferences кидає IllegalStateException. Application там не має падати, інакше сервіс помирає,
+        // а читач вічно показує спіннер. Тому в ізольованому процесі блок пропускаємо.
+        if (!Process.isIsolated()) {
+            val appearance = AppearancePreferences(this)
+            DynamicColors.applyToActivitiesIfAvailable(
+                this,
+                DynamicColorsOptions.Builder()
+                    .setPrecondition { _, _ -> appearance.dynamicColorsEnabled }
+                    .build()
+            )
+        }
         // Ініціалізація ресурсів PDFBox
         PdfBoxPageOperationsEngine.init(this)
         // Незбережене старше 7 днів прибираємо (фоновий потік, без блокування запуску).
