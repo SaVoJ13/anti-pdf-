@@ -324,4 +324,7 @@
     <string name="place_text_style_h2">Überschrift 2 (18 pt)</string>
     <string name="place_text_style_body1">Text 1 (14 pt)</string>
     <string name="place_text_style_body2">Text 2 (11 pt)</string>
+    <string name="action_privacy_policy">Datenschutzerklärung</string>
+    <string name="action_privacy_settings">Datenschutzeinstellungen</string>
+    <string name="privacy_policy_open_failed">Link zur Datenschutzerklärung konnte nicht geöffnet werden</string>
 </resources>

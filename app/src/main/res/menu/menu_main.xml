@@ -49,4 +49,14 @@
         android:title="@string/action_licenses"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/action_privacy_policy"
+        android:title="@string/action_privacy_policy"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_privacy_settings"
+        android:title="@string/action_privacy_settings"
+        app:showAsAction="never" />
+
 </menu>

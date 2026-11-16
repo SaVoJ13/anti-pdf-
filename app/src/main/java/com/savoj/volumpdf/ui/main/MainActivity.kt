@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import com.savoj.volumpdf.BuildConfig
 import com.savoj.volumpdf.R
 import com.savoj.volumpdf.core.ads.AdMobAdsManager
 import com.savoj.volumpdf.core.ads.AdsManager
@@ -241,6 +242,7 @@ class MainActivity : AppCompatActivity() {
         super.onPrepareOptionsMenu(menu)
         val hasDocs = viewModel.recentDocuments.value.isNotEmpty()
         menu.findItem(R.id.action_clear_history)?.isEnabled = hasDocs
+        menu.findItem(R.id.action_privacy_settings)?.isVisible = adsManager.isPrivacyOptionsRequired()
         return true
     }
 
@@ -275,11 +277,29 @@ class MainActivity : AppCompatActivity() {
                 showClearHistoryConfirmationDialog()
                 true
             }
+            R.id.action_privacy_policy -> {
+                openPrivacyPolicy()
+                true
+            }
+            R.id.action_privacy_settings -> {
+                adsManager.showPrivacyOptionsForm(this) {
+                    adsManager.bindAdaptiveBanner(this, binding.bannerContainer)
+                }
+                true
+            }
             R.id.action_licenses -> {
                 LicensesDialogHelper.showLicensesDialog(this)
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun openPrivacyPolicy() {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.PRIVACY_POLICY_URL)))
+        } catch (_: Exception) {
+            Toast.makeText(this, R.string.privacy_policy_open_failed, Toast.LENGTH_SHORT).show()
         }
     }
 

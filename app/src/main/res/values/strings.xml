@@ -324,4 +324,7 @@
     <string name="place_text_style_h2">Heading 2 (18 pt)</string>
     <string name="place_text_style_body1">Text 1 (14 pt)</string>
     <string name="place_text_style_body2">Text 2 (11 pt)</string>
+    <string name="action_privacy_policy">Privacy policy</string>
+    <string name="action_privacy_settings">Privacy settings</string>
+    <string name="privacy_policy_open_failed">Could not open the privacy policy link</string>
 </resources>
