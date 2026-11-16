@@ -26,6 +26,9 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.ArrayDeque
+import com.savoj.volumpdf.R
+import com.savoj.volumpdf.util.ErrorMessages
+import com.savoj.volumpdf.util.UserMessage
 
 /**
  * ViewModel для візуального організатора сторінок (ТОП-3).
@@ -77,7 +80,7 @@ class PageOrganizerViewModel @JvmOverloads constructor(
                 initialItems = created
                 _items.value = created
             } catch (e: Exception) {
-                _saveState.value = OperationUiState.Error(e.localizedMessage ?: "Помилка відкриття PDF")
+                _saveState.value = OperationUiState.Error(ErrorMessages.forFailure(e, R.string.err_open_pdf))
             } finally {
                 _isLoading.value = false
             }
@@ -191,7 +194,7 @@ class PageOrganizerViewModel @JvmOverloads constructor(
     fun saveOrganizedPdf(sourceUri: Uri, outputUri: Uri) {
         val transforms = PageOrganizerLogic.toPageTransforms(_items.value)
         if (transforms.isEmpty()) {
-            _saveState.value = OperationUiState.Error("Список сторінок порожній")
+            _saveState.value = OperationUiState.Error(UserMessage(R.string.err_organizer_empty))
             return
         }
 
@@ -216,7 +219,7 @@ class PageOrganizerViewModel @JvmOverloads constructor(
                     )
                 }
                 is PdfOperationResult.Error -> {
-                    _saveState.value = OperationUiState.Error(result.userMessage)
+                    _saveState.value = OperationUiState.Error(ErrorMessages.forFailure(result.cause).also { ErrorMessages.report("PageOrganizerVM", result.cause) })
                 }
                 is PdfOperationResult.Progress -> {
                     _saveState.value = OperationUiState.Loading(result.currentStep, result.totalSteps)

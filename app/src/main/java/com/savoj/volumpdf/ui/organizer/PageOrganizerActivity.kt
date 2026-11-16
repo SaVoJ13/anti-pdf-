@@ -209,7 +209,7 @@ class PageOrganizerActivity : AppCompatActivity() {
                 binding.loadingOverlay.visibility = View.GONE
                 MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.error_title)
-                    .setMessage(state.message)
+                    .setMessage(state.message.resolve(this))
                     .setPositiveButton(R.string.action_ok, null)
                     .show()
                 viewModel.resetSaveState()

@@ -42,8 +42,9 @@ object DocumentCreationHelper {
         val engine = PdfBoxPageOperationsEngine()
         val result = engine.createBlankPdf(context, outputUri, pageCount)
         if (result !is PdfOperationResult.Success) {
-            val errorMsg = (result as? PdfOperationResult.Error)?.userMessage ?: "Помилка створення файлу"
-            throw IllegalStateException(errorMsg)
+            // Технічний текст лишається в виняткові (для логу); людині його покаже ErrorMessages за причиною.
+            val cause = (result as? PdfOperationResult.Error)?.cause
+            throw IllegalStateException("blank pdf not created", cause)
         }
 
         try {

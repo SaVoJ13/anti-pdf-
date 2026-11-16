@@ -63,7 +63,35 @@ object SafUtils {
             }
         }
 
-        return uri.lastPathSegment ?: "document.pdf"
+        return nameFromPathLike(uri.lastPathSegment) ?: "document.pdf"
+    }
+
+    /**
+     * Назва з «шляхоподібного» сегмента URI (`primary:Documents/a.pdf` -> `a.pdf`). Числовий ідентифікатор
+     * (`content://media/external/file/1000012345`) назвою не є: повертаємо null, щоб у заголовку не було числа.
+     */
+    fun nameFromPathLike(segment: String?): String? {
+        val tail = segment?.substringAfterLast('/')?.substringAfterLast(':')?.trim().orEmpty()
+        return tail.takeIf { !isOpaqueName(it) }
+    }
+
+    /** Порожня назва або лише цифри: це ідентифікатор запису, а не ім'я файлу. */
+    fun isOpaqueName(name: String?): Boolean = name.isNullOrBlank() || name.all { it.isDigit() }
+
+    /**
+     * P1-8: чи відкрито документ лише для читання (немає права запису). Не відкриває файл для запису (щоб не зачепити
+     * хмарні провайдери): `file://` перевіряє `canWrite`, `content://` — наявність права запису на URI.
+     */
+    fun isReadOnly(context: Context, uri: Uri): Boolean {
+        return try {
+            val writeGranted = uri.scheme == "content" &&
+                context.checkCallingOrSelfUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            val fileWritable = if (uri.scheme == "file") uri.path?.let { File(it).canWrite() } else null
+            ReadOnlyCheck.decide(uri.scheme, writeGranted, fileWritable)
+        } catch (_: Throwable) {
+            false // невідомо: не лякаємо підписом
+        }
     }
 
     /**
@@ -189,5 +217,24 @@ object SafUtils {
         val date = Date(timestamp)
         val format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
         return format.format(date)
+    }
+}
+
+/** Чисте рішення «лише читання» (тестується без Android). */
+object ReadOnlyCheck {
+    /** Пропонована назва копії лише-для-читання файлу: «<ім'я>_copy.pdf». */
+    fun copyName(title: String?): String {
+        val base = (title ?: "").trim().let { if (it.endsWith(".pdf", ignoreCase = true)) it.dropLast(4) else it }.trim()
+        return (if (base.isEmpty()) "document" else base) + "_copy.pdf"
+    }
+
+    /**
+     * @param writeGranted для `content://`: чи є право запису на URI
+     * @param fileCanWrite для `file://`: результат `File.canWrite` (null — невідомо)
+     */
+    fun decide(scheme: String?, writeGranted: Boolean, fileCanWrite: Boolean?): Boolean = when (scheme) {
+        "content" -> !writeGranted
+        "file" -> fileCanWrite == false
+        else -> false
     }
 }
