@@ -80,4 +80,60 @@ class StringsParityTest {
             }
         }
     }
+
+    private fun loadPlurals(folder: String): Map<String, Set<String>> {
+        val file = File(resDir, "$folder/strings.xml")
+        val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
+        val out = LinkedHashMap<String, Set<String>>()
+        val nodes = doc.getElementsByTagName("plurals")
+        for (i in 0 until nodes.length) {
+            val n = nodes.item(i)
+            val items = n.childNodes
+            val quantities = LinkedHashSet<String>()
+            for (j in 0 until items.length) {
+                val it = items.item(j)
+                if (it.nodeName == "item") {
+                    quantities += it.attributes.getNamedItem("quantity").nodeValue
+                    assertTrue("порожній елемент plurals у $folder", it.textContent.isNotBlank())
+                }
+            }
+            out[n.attributes.getNamedItem("name").nodeValue] = quantities
+        }
+        return out
+    }
+
+    @Test
+    fun `plurals exist in all languages with the quantities each language needs`() {
+        val en = loadPlurals("values")
+        assertTrue(en.containsKey("pages_count"))
+        val required = mapOf(
+            "values" to setOf("one", "other"),
+            "values-de" to setOf("one", "other"),
+            "values-uk" to setOf("one", "few", "many", "other"),
+            "values-ru" to setOf("one", "few", "many", "other")
+        )
+        required.forEach { (folder, quantities) ->
+            val map = loadPlurals(folder)
+            assertEquals("ключі plurals у $folder", en.keys, map.keys)
+            map.forEach { (name, q) -> assertTrue("$name у $folder: $q має містити $quantities", q.containsAll(quantities)) }
+        }
+    }
+
+    @Test
+    fun `a11y and unified-name strings exist in all four languages and no hardcoded english page hint remains`() {
+        val keys = listOf("action_back", "a11y_page_jump", "a11y_zoom", "action_tools", "tools_sheet_title", "err_pages_range")
+        (locales + ("en" to base)).forEach { (lang, map) ->
+            keys.forEach { assertTrue("$it відсутній у $lang", map.containsKey(it)) }
+        }
+        // «Назад» у читачі не «Скасувати»
+        assertEquals("Назад", locales.getValue("uk").getValue("action_back"))
+        // Назва дії «Інструменти документа» у читачі одна в меню й у шторці
+        (locales + ("en" to base)).forEach { (lang, map) ->
+            assertEquals("action_tools і tools_sheet_title мають збігатися в $lang", map["action_tools"], map["tools_sheet_title"])
+        }
+        // Тема читання: однакова назва у верхній і нижній панелях
+        (locales + ("en" to base)).forEach { (lang, map) ->
+            assertEquals("тема читання в $lang", map["action_reading_theme"], map["place_menu_reading_mode"])
+        }
+    }
 }

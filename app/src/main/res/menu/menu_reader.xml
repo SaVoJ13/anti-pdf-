@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Верхня панель читача мінімальна: режим читання, «+», (у режимі «Редагувати»: «Зберегти», «Готово») і меню ⋮.
+<!-- Верхня панель читача мінімальна: тема читання, «+», (у режимі «Редагувати»: «Зберегти», «Готово») і меню ⋮.
      Усе інше (пошук, обране, поділитися, інструменти, сторінки, форми, відомості) — у меню ⋮. -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
@@ -74,7 +74,7 @@
 
     <item
         android:id="@+id/action_tools"
-        android:icon="@drawable/ic_tab_tools"
+        android:icon="@drawable/ic_pages_file"
         android:title="@string/action_tools"
         app:showAsAction="never" />
 

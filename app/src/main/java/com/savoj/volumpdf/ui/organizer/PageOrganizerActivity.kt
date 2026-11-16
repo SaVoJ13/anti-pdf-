@@ -203,7 +203,7 @@ class PageOrganizerActivity : AppCompatActivity() {
             is OperationUiState.Success -> {
                 binding.loadingOverlay.visibility = View.GONE
                 viewModel.resetSaveState()
-                showSuccessDialog(state.outputUri)
+                showSuccessDialog(state.outputUri, viewModel.items.value.size)
             }
             is OperationUiState.Error -> {
                 binding.loadingOverlay.visibility = View.GONE
@@ -217,10 +217,15 @@ class PageOrganizerActivity : AppCompatActivity() {
         }
     }
 
-    private fun showSuccessDialog(outputUri: Uri) {
+    private fun showSuccessDialog(outputUri: Uri, savedPagesCount: Int) {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.operation_success_title)
-            .setMessage(R.string.operation_success_message)
+            .setMessage(
+                getString(
+                    R.string.operation_success_message,
+                    resources.getQuantityString(R.plurals.pages_count, savedPagesCount, savedPagesCount)
+                )
+            )
             .setIcon(R.drawable.ic_check_circle)
             .setPositiveButton(R.string.action_open_result) { _, _ ->
                 val readerIntent = Intent(this, ReaderActivity::class.java).apply {
