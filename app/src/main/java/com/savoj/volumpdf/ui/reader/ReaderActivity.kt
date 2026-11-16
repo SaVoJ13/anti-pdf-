@@ -57,6 +57,8 @@ import com.savoj.volumpdf.util.ImageRotationHelper
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -90,6 +92,7 @@ class ReaderActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lastConfig = Configuration(resources.configuration)
         binding = ActivityReaderBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -308,7 +311,7 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
     }
 
     private fun checkForFormFields(uri: Uri) {
@@ -440,6 +443,7 @@ class ReaderActivity : AppCompatActivity() {
         dialog.setOnDismissListener { answer(null) }
         cont.invokeOnCancellation { if (dialog.isShowing) dialog.dismiss() }
         dialog.show()
+        trackDialog(dialog)
     }
 
     private fun setupBackNavigation() {
@@ -866,7 +870,7 @@ class ReaderActivity : AppCompatActivity() {
                 action()
             }
             .setNeutralButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
     }
 
     private fun onPageTapped(point: PageViewPoint) {
@@ -1882,6 +1886,7 @@ class ReaderActivity : AppCompatActivity() {
         }
         dialog.setOnDismissListener { handler.removeCallbacks(validate) }
         dialog.show()
+        trackDialog(dialog)
     }
 
     /**
@@ -2212,7 +2217,7 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            .showTracked()
     }
 
     private val insertFilesLauncher = registerForActivityResult(
@@ -2359,7 +2364,7 @@ class ReaderActivity : AppCompatActivity() {
                 createCopyLauncher.launch(CopyNaming.suggestedName(documentTitle))
             }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
     }
 
     /** Записує зміни: [copy] = false — у документ ([output] = той самий URI); true — у нову копію [output]. */
@@ -2464,7 +2469,7 @@ class ReaderActivity : AppCompatActivity() {
             .setMessage(text)
             .setPositiveButton(R.string.action_ok, null)
         if (onDismiss != null) builder.setOnDismissListener { onDismiss() }
-        builder.show()
+        builder.showTracked()
     }
 
     /**
@@ -2558,6 +2563,43 @@ class ReaderActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         applyPlacePanelOrientation()
+        val changed = lastConfig?.diff(newConfig) ?: 0
+        lastConfig = Configuration(newConfig)
+        if (ConfigRecreateLogic.needsRecreate(changed)) {
+            // Масштаб шрифту, тема, мова: ресурси треба перечитати (recreate), але не поки відкрито вікно/картку,
+            // інакше вони зникають разом із введеним текстом (Д1). Відкладаємо до їх закриття.
+            configRecreatePending = true
+            scheduleDeferredRecreate()
+        }
+    }
+
+    private val trackedDialogs = ArrayList<java.lang.ref.WeakReference<android.app.Dialog>>()
+    private var lastConfig: Configuration? = null
+    private var configRecreatePending = false
+    private var deferredRecreateJob: Job? = null
+
+    private fun trackDialog(d: android.app.Dialog) {
+        trackedDialogs.removeAll { it.get()?.isShowing != true }
+        trackedDialogs.add(java.lang.ref.WeakReference(d))
+    }
+
+    private fun MaterialAlertDialogBuilder.showTracked(): AlertDialog = show().also { trackDialog(it) }
+
+    /** Є відкрите вікно чи картка, яка не переживе recreate() разом зі своїм станом. */
+    private fun isUiBusyForRecreate(): Boolean =
+        trackedDialogs.any { it.get()?.isShowing == true } ||
+            (::placeBar.isInitialized && placeBar.isCardOpen) ||
+            supportFragmentManager.fragments.any { it is androidx.fragment.app.DialogFragment && it.isAdded }
+
+    private fun scheduleDeferredRecreate() {
+        if (deferredRecreateJob?.isActive == true) return
+        deferredRecreateJob = lifecycleScope.launch {
+            while (configRecreatePending && isUiBusyForRecreate()) delay(ConfigRecreateLogic.POLL_MS)
+            if (configRecreatePending && !isFinishing && !isDestroyed) {
+                configRecreatePending = false
+                recreate()
+            }
+        }
     }
 
     /**
@@ -2724,7 +2766,7 @@ class ReaderActivity : AppCompatActivity() {
                 onPicked((values[0] shl 16) or (values[1] shl 8) or values[2])
             }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -2828,7 +2870,7 @@ class ReaderActivity : AppCompatActivity() {
             .setTitle(R.string.dialog_details_title)
             .setMessage(msg)
             .setPositiveButton(R.string.action_ok, null)
-            .show()
+            .showTracked()
     }
 
     private fun showReadingThemeDialog() {
@@ -2851,7 +2893,7 @@ class ReaderActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
     }
 
     private fun applyReadingTheme(theme: ReadingTheme) {
