@@ -15,7 +15,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorSurface"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationContentDescription="@string/action_cancel"
+        app:navigationContentDescription="@string/action_back"
         app:title="@string/reader_title"
         app:titleTextAppearance="@style/TextAppearance.Material3.TitleMedium"
         app:titleTextColor="?attr/colorOnSurface" />
@@ -148,17 +148,18 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="6dp"
-                android:paddingVertical="4dp">
+                android:paddingVertical="0dp">
 
+                <!-- Цілі натискання 48 dp (P0-4): висота 48 dp, вигляд кнопки лишається 36 dp за рахунок inset 6 dp -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnHudPage"
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
+                    android:layout_height="48dp"
+                    android:insetTop="6dp"
+                    android:insetBottom="6dp"
                     android:minWidth="64dp"
-                    android:minHeight="36dp"
+                    android:minHeight="48dp"
                     android:paddingHorizontal="10dp"
                     android:text="1 / 1"
                     android:textSize="13sp" />
@@ -172,11 +173,11 @@
                     android:id="@+id/btnHudZoom"
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
+                    android:layout_height="48dp"
+                    android:insetTop="6dp"
+                    android:insetBottom="6dp"
                     android:minWidth="56dp"
-                    android:minHeight="36dp"
+                    android:minHeight="48dp"
                     android:paddingHorizontal="10dp"
                     android:text="100%"
                     android:textSize="13sp" />
@@ -189,11 +190,13 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnHudSearch"
                     style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:contentDescription="@string/action_search"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
+                    android:insetLeft="6dp"
+                    android:insetTop="6dp"
+                    android:insetRight="6dp"
+                    android:insetBottom="6dp"
                     app:icon="@drawable/ic_search"
                     app:iconSize="18dp"
                     app:iconTint="?attr/colorPrimary" />

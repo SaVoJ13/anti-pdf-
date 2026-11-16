@@ -19,9 +19,9 @@
 
         <ImageView
             android:id="@+id/ivThumbnail"
+            tools:ignore="ContentDescription"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:contentDescription="@string/organize_page_badge"
             android:scaleType="fitCenter"
             android:background="?attr/colorSurfaceVariant"
             app:layout_constraintDimensionRatio="1:1.414"
@@ -64,12 +64,11 @@
 
         <ImageButton
             android:id="@+id/btnDelete"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="4dp"
-            android:background="@drawable/bg_circle_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_circle_button_touch"
             android:contentDescription="@string/action_delete"
-            android:padding="6dp"
+            android:padding="14dp"
             android:src="@drawable/ic_close"
             app:tint="?attr/colorOnErrorContainer"
             app:layout_constraintEnd_toEndOf="parent"
@@ -77,12 +76,11 @@
 
         <ImageButton
             android:id="@+id/btnRotate"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="4dp"
-            android:background="@drawable/bg_circle_button_primary"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_circle_button_primary_touch"
             android:contentDescription="@string/tool_rotate_title"
-            android:padding="6dp"
+            android:padding="14dp"
             android:src="@drawable/ic_rotate"
             app:tint="?attr/colorOnPrimaryContainer"
             app:layout_constraintBottom_toBottomOf="@id/ivThumbnail"

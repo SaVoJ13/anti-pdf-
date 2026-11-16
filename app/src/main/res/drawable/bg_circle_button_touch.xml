@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Кружок 32 dp усередині цілі натискання 48 dp (P0-4) -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/bg_circle_button"
+    android:inset="8dp" />

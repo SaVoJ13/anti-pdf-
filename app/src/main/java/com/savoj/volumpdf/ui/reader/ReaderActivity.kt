@@ -54,6 +54,9 @@ import com.savoj.volumpdf.databinding.DialogPlaceTextBinding
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
 import com.savoj.volumpdf.util.ErrorMessages
+import com.savoj.volumpdf.util.hapticReject
+import com.savoj.volumpdf.util.hapticTick
+import com.savoj.volumpdf.util.hapticConfirm
 import com.savoj.volumpdf.util.ImageRotationHelper
 import com.savoj.volumpdf.util.ReadOnlyCheck
 import com.savoj.volumpdf.util.SafUtils
@@ -127,7 +130,13 @@ class ReaderActivity : AppCompatActivity() {
             ?: SafUtils.queryDisplayName(this, uri)
 
         binding.toolbar.title = documentTitle
-        viewModel.initDocument(uri, documentTitle)
+        // Після відновлення процесу прапорець з інтенту застарілий (документ уже в «Останніх»): визначаємо наново.
+        val openedAsNewHint = if (savedInstanceState == null && intent.hasExtra(EXTRA_OPENED_AS_NEW)) {
+            intent.getBooleanExtra(EXTRA_OPENED_AS_NEW, false)
+        } else {
+            null
+        }
+        viewModel.initDocument(uri, documentTitle, openedAsNewHint)
         setupOpenErrorPanel()
         refreshReadOnlyState(announce = savedInstanceState == null)
 
@@ -258,6 +267,8 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
+        // TalkBack оголошує зміну сторінки (ввічливо, без переривання поточної мови).
+        ViewCompat.setAccessibilityLiveRegion(binding.btnHudPage, ViewCompat.ACCESSIBILITY_LIVE_REGION_POLITE)
         binding.btnHudPage.setOnClickListener {
             showJumpToPageDialog()
         }
@@ -290,6 +301,10 @@ class ReaderActivity : AppCompatActivity() {
         }
         val zoomPct = (zoom * 100f).toInt().coerceIn(25, 500)
         binding.btnHudZoom.text = "$zoomPct%"
+        // TalkBack: пігулка читається цілими фразами, а не уривками «3 / 12» і «100%».
+        binding.btnHudZoom.contentDescription = getString(R.string.a11y_zoom, zoomPct)
+        binding.btnHudPage.contentDescription =
+            if (total > 0) getString(R.string.a11y_page_jump, (currentPageZeroBased + 1).coerceIn(1, total), total) else null
     }
 
     private fun showJumpToPageDialog() {
@@ -476,6 +491,10 @@ class ReaderActivity : AppCompatActivity() {
     private fun showOpenFailure(cause: Throwable) {
         openFailed = true
         errorSnackbar?.dismiss()
+        documentUri?.let { viewModel.dropFailedFirstOpen(it, cause) }
+        // TalkBack: власний напис бібліотеки під екраном помилки дублює наш текст, тож ховаємо його з дерева доступності.
+        binding.pdfViewerContainer.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        binding.openErrorPanel.accessibilityPaneTitle = getString(R.string.open_error_title)
         binding.openErrorFileName.text = documentTitle?.takeIf { it.isNotBlank() } ?: getString(R.string.reader_title_unknown)
         binding.openErrorMessage.text = ErrorMessages.forOpenFailure(cause).resolve(this)
         binding.openErrorPanel.visibility = View.VISIBLE
@@ -487,6 +506,7 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun hideOpenFailure() {
         openFailed = false
+        binding.pdfViewerContainer.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
         binding.openErrorPanel.visibility = View.GONE
         binding.markupOverlay.visibility = View.VISIBLE
         if (!viewModel.placeModeActive) {
@@ -499,9 +519,12 @@ class ReaderActivity : AppCompatActivity() {
     /** «Спробувати ще»: бібліотека не перечитує той самий URI, тому відкриваємо читач заново з тими самими даними. */
     private fun retryOpen() {
         val uri = documentUri ?: return
+        // Запис міг бути прибраний після помилки; повторна спроба знову його створить, тож «новизну» передаємо далі.
+        val openedAsNew = viewModel.wasOpenedAsNew()
         fun again(withGrant: Boolean) = Intent(this, ReaderActivity::class.java).apply {
             data = uri
             documentTitle?.let { putExtra(EXTRA_DOCUMENT_TITLE, it) }
+            putExtra(EXTRA_OPENED_AS_NEW, openedAsNew)
             if (withGrant) addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         try {
@@ -688,7 +711,10 @@ class ReaderActivity : AppCompatActivity() {
         override fun fitImage() = fitSelectedImageToPage()
 
         override fun deleteSelected() {
-            viewModel.editor.value.selectedId?.let { id -> viewModel.edit { PlaceEditor.delete(it, id) } }
+            viewModel.editor.value.selectedId?.let { id ->
+                binding.markupOverlay.hapticReject() // видалення об'єкта
+                viewModel.edit { PlaceEditor.delete(it, id) }
+            }
         }
 
         override fun pickCustomColor(currentRgb: Int, onPicked: (Int) -> Unit) = showCustomColorDialog(currentRgb, onPicked)
@@ -740,6 +766,7 @@ class ReaderActivity : AppCompatActivity() {
             }
 
             override fun onItemDragSnappedBack(id: String) {
+                binding.markupOverlay.hapticTick() // об'єкт повернуто до краю сторінки
                 showMessage(getString(R.string.place_drag_outside_snapped_back), long = false)
             }
 
@@ -2033,6 +2060,7 @@ class ReaderActivity : AppCompatActivity() {
             handler.removeCallbacks(validate)
             val raw = dialogBinding.placeTextInput.text?.toString().orEmpty()
             if (render(raw)) {
+                it.hapticConfirm()
                 onAccept(raw, resolveEditorBoxPagePoint(), userMovedBox)
                 dialog.dismiss()
             }
@@ -2973,6 +3001,7 @@ class ReaderActivity : AppCompatActivity() {
                 true
             }
             R.id.action_place_done -> {
+                binding.root.hapticConfirm()
                 leavePlaceThen { }
                 true
             }
@@ -3106,11 +3135,16 @@ class ReaderActivity : AppCompatActivity() {
         }
         val bgColor = ReadingThemeLogic.containerBackgroundColor(theme)
         binding.viewerWrapper.setBackgroundColor(bgColor)
-        binding.pdfViewerContainer.setBackgroundColor(bgColor)
+        // Д5: шар переглядача проходить через колірний фільтр теми, тож і його фон; тому задаємо прообраз кольору,
+        // щоб після фільтра смужка між сторінками мала потрібний колір (а не світло-сірий в нічній темі).
+        binding.pdfViewerContainer.setBackgroundColor(ReadingThemeLogic.filteredBackgroundPreimage(theme))
     }
 
     companion object {
         const val EXTRA_DOCUMENT_TITLE = "extra_document_title"
+
+        /** Boolean: документа не було в «Останніх» до цього відкриття (визначає той, хто відкриває читач, до запису). */
+        const val EXTRA_OPENED_AS_NEW = "extra_opened_as_new"
         private const val TAG = "ReaderActivity"
         private const val TEXT_VALIDATE_DEBOUNCE_MS = 120L
         private const val TAG_PDF_VIEWER = "tag_pdf_viewer_fragment"

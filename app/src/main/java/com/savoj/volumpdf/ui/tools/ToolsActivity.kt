@@ -431,7 +431,11 @@ class ToolsActivity : AppCompatActivity() {
                         } else {
                             val single = files.first()
                             val totalPages = viewModel.sourceDocumentPages
-                            val pagesHint = if (totalPages > 0) " ($totalPages pages)" else ""
+                            val pagesHint = if (totalPages > 0) {
+                                " (" + resources.getQuantityString(R.plurals.pages_count, totalPages, totalPages) + ")"
+                            } else {
+                                ""
+                            }
                             binding.tvSelectedSummary.text = single.displayName + pagesHint
                         }
                         binding.btnProcessAndSave.isEnabled = true
@@ -490,7 +494,10 @@ class ToolsActivity : AppCompatActivity() {
         originalBytes: Long = 0L,
         newBytes: Long = 0L
     ) {
-        val baseMsg = getString(R.string.operation_success_message, pagesCount)
+        val baseMsg = getString(
+            R.string.operation_success_message,
+            resources.getQuantityString(R.plurals.pages_count, pagesCount, pagesCount)
+        )
         val finalMsg = if (originalBytes > 0L && newBytes > 0L) {
             val savedRatio = (originalBytes - newBytes).toFloat() / originalBytes
             val savedPercent = (savedRatio * 100).toInt().coerceAtLeast(0)

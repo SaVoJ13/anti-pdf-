@@ -115,14 +115,14 @@
 
         </LinearLayout>
 
-        <!-- Зручні зони натискання 44x44dp для обраного та контекстного меню -->
+        <!-- Зручні зони натискання 48x48dp для обраного та контекстного меню -->
         <ImageView
             android:id="@+id/ivFavorite"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/action_favorite"
-            android:padding="8dp"
+            android:padding="12dp"
             android:src="@drawable/ic_star_outline"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/ivMoreMenu"
@@ -130,11 +130,11 @@
 
         <ImageView
             android:id="@+id/ivMoreMenu"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/action_details"
-            android:padding="8dp"
+            android:padding="12dp"
             android:src="@drawable/ic_more_vert"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

@@ -12,7 +12,9 @@ import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.data.db.copy
 import com.savoj.volumpdf.data.repository.DocumentRepository
 import com.savoj.volumpdf.util.ImageRotationHelper
+import com.savoj.volumpdf.util.RecentsOpenTracker
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +44,31 @@ class ReaderViewModel(
     @Volatile
     private var pendingPageProgress: Int? = null
 
-    fun initDocument(uri: Uri, titleHint: String?) {
+    /** Документа не було в «Останніх» до цього відкриття (потрібно, щоб не стирати давній запис через разовий збій). */
+    @Volatile
+    private var openedAsNew = false
+    private var recordJob: Job? = null
+
+    /**
+     * Перше відкриття завершилось помилкою «файл пошкоджено/порожній»: прибираємо щойно створений запис з «Останніх»,
+     * щоб не лишався мертвий рядок. Давній запис (документ вже відкривався раніше) не чіпаємо.
+     */
+    fun dropFailedFirstOpen(uri: Uri, cause: Throwable) {
+        val uriString = uri.toString()
+        viewModelScope.launch {
+            recordJob?.join() // прапорець виставляє recordJob: читаємо його лише після завершення запису
+            RecentsOpenTracker.dropIfFirstOpenFailed(repository, uriString, openedAsNew, cause)
+        }
+    }
+
+    /** Чи було це відкриття першим (документа не було в «Останніх»): потрібно для «Спробувати ще». Читати після помилки відкриття. */
+    fun wasOpenedAsNew(): Boolean = openedAsNew
+
+    /**
+     * [openedAsNewHint]: відповідь, визначена ДО запису в «Останні» (екран, що відкриває читач, уже міг записати документ);
+     * `null` означає, що документ ще не записаний, і відповідь визначається тут перед записом.
+     */
+    fun initDocument(uri: Uri, titleHint: String?, openedAsNewHint: Boolean? = null) {
         val uriString = uri.toString()
         val prevUri = savedStateHandle.get<String>(KEY_URI)
         if (prevUri != uriString) {
@@ -54,12 +80,16 @@ class ReaderViewModel(
         savedStateHandle[KEY_URI] = uriString
         loadPending(uriString)
 
-        viewModelScope.launch {
-            var doc = repository.recordDocumentOpened(
+        recordJob = viewModelScope.launch {
+            val record = RecentsOpenTracker.record(
+                repository,
                 getApplication(),
                 uri,
-                pageCountOverride = pendingPageCount
+                pageCountOverride = pendingPageCount,
+                knownNew = openedAsNewHint
             )
+            openedAsNew = record.openedAsNew
+            var doc = record.document
             val countOverride = pendingPageCount
             if (countOverride > 0 && doc.pageCount != countOverride) {
                 doc = doc.copy(pageCount = countOverride)

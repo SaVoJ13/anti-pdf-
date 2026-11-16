@@ -72,6 +72,7 @@ class PageOrganizerAdapter(
         fun bind(item: PageOrganizerItem, position: Int) {
             val context = binding.root.context
             binding.tvPageNumber.text = context.getString(R.string.organize_page_badge, position + 1)
+            binding.ivThumbnail.contentDescription = binding.tvPageNumber.text
 
             if (item.originalPageIndex != position) {
                 binding.tvOriginalPage.visibility = View.VISIBLE

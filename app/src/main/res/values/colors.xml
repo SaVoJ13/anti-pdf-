@@ -28,7 +28,7 @@
     <color name="md_theme_light_onSurface">#1A1B20</color>
     <color name="md_theme_light_surfaceVariant">#EEF0FA</color>
     <color name="md_theme_light_onSurfaceVariant">#454654</color>
-    <color name="md_theme_light_outline">#757685</color>
+    <color name="md_theme_light_outline">#6B6C7B</color>
     <color name="md_theme_light_outlineVariant">#E2E3F0</color>
 
     <!-- Dark Theme Indigo Palette -->
@@ -58,7 +58,7 @@
     <color name="md_theme_dark_onSurface">#E3E1E9</color>
     <color name="md_theme_dark_surfaceVariant">#292B36</color>
     <color name="md_theme_dark_onSurfaceVariant">#C6C5D4</color>
-    <color name="md_theme_dark_outline">#90909E</color>
+    <color name="md_theme_dark_outline">#9A9AA8</color>
     <color name="md_theme_dark_outlineVariant">#353644</color>
 
     <!-- Generic Helpers (Indigo Accent) -->
