@@ -47,7 +47,7 @@ class TouchTargetsTest {
         if (e.getAttributeNS("http://schemas.android.com/apk/res/android", "layout_width").endsWith("dp")) {
             assertTrue("$layout/$id: ширина $w < 48", w >= 48f)
         }
-        assertTrue(wrapW)
+        assertTrue("$layout/$id: layout_width не задано або невідоме значення", wrapW)
     }
 
     @Test

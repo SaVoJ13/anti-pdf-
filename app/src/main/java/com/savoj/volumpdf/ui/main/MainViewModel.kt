@@ -9,6 +9,7 @@ import com.savoj.volumpdf.VolumPdfApp
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.data.model.SortOrder
 import com.savoj.volumpdf.data.repository.DocumentRepository
+import com.savoj.volumpdf.util.RecentsOpenTracker
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,11 +81,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun onDocumentSelected(context: Context, uri: Uri, onReady: (RecentDocument) -> Unit) {
+    /** [onReady] отримує документ і прапорець «його не було в Останніх до цього відкриття» (визначений до запису). */
+    fun onDocumentSelected(context: Context, uri: Uri, onReady: (RecentDocument, Boolean) -> Unit) {
         viewModelScope.launch {
             SafUtils.takePersistableUriPermissionSafe(context, uri)
-            val doc = repository.recordDocumentOpened(context, uri)
-            onReady(doc)
+            val record = RecentsOpenTracker.record(repository, context, uri)
+            onReady(record.document, record.openedAsNew)
         }
     }
 }

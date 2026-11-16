@@ -262,8 +262,8 @@
     <string name="place_add_page_short">Пустая страница</string>
     <string name="tool_insert_file">Добавить файл</string>
     <string name="tool_insert_file_desc">Добавить страницы из PDF или изображений</string>
-    <string name="action_tools">Страницы и файл</string>
-    <string name="tools_sheet_title">Страницы и файл</string>
+    <string name="action_tools">Страницы/файл</string>
+    <string name="tools_sheet_title">Страницы/файл</string>
     <string name="tools_group_pages">Страницы и файлы</string>
     <string name="tools_group_effects">Оформление и оптимизация</string>
     <string name="tools_group_quick">Быстрые действия</string>

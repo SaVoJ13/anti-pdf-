@@ -130,7 +130,13 @@ class ReaderActivity : AppCompatActivity() {
             ?: SafUtils.queryDisplayName(this, uri)
 
         binding.toolbar.title = documentTitle
-        viewModel.initDocument(uri, documentTitle)
+        // Після відновлення процесу прапорець з інтенту застарілий (документ уже в «Останніх»): визначаємо наново.
+        val openedAsNewHint = if (savedInstanceState == null && intent.hasExtra(EXTRA_OPENED_AS_NEW)) {
+            intent.getBooleanExtra(EXTRA_OPENED_AS_NEW, false)
+        } else {
+            null
+        }
+        viewModel.initDocument(uri, documentTitle, openedAsNewHint)
         setupOpenErrorPanel()
         refreshReadOnlyState(announce = savedInstanceState == null)
 
@@ -513,9 +519,12 @@ class ReaderActivity : AppCompatActivity() {
     /** «Спробувати ще»: бібліотека не перечитує той самий URI, тому відкриваємо читач заново з тими самими даними. */
     private fun retryOpen() {
         val uri = documentUri ?: return
+        // Запис міг бути прибраний після помилки; повторна спроба знову його створить, тож «новизну» передаємо далі.
+        val openedAsNew = viewModel.wasOpenedAsNew()
         fun again(withGrant: Boolean) = Intent(this, ReaderActivity::class.java).apply {
             data = uri
             documentTitle?.let { putExtra(EXTRA_DOCUMENT_TITLE, it) }
+            putExtra(EXTRA_OPENED_AS_NEW, openedAsNew)
             if (withGrant) addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         try {
@@ -3116,6 +3125,9 @@ class ReaderActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_DOCUMENT_TITLE = "extra_document_title"
+
+        /** Boolean: документа не було в «Останніх» до цього відкриття (визначає той, хто відкриває читач, до запису). */
+        const val EXTRA_OPENED_AS_NEW = "extra_opened_as_new"
         private const val TAG = "ReaderActivity"
         private const val TEXT_VALIDATE_DEBOUNCE_MS = 120L
         private const val TAG_PDF_VIEWER = "tag_pdf_viewer_fragment"

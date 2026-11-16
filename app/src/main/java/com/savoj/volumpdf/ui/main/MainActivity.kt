@@ -129,15 +129,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleIncomingPdfUri(uri: Uri) {
-        viewModel.onDocumentSelected(this, uri) { doc ->
-            openReader(doc.uri, doc.title)
+        viewModel.onDocumentSelected(this, uri) { doc, openedAsNew ->
+            openReader(doc.uri, doc.title, openedAsNew)
         }
     }
 
-    private fun openReader(uriString: String, title: String) {
+    private fun openReader(uriString: String, title: String, openedAsNew: Boolean) {
         val readerIntent = Intent(this, ReaderActivity::class.java).apply {
             data = Uri.parse(uriString)
             putExtra(ReaderActivity.EXTRA_DOCUMENT_TITLE, title)
+            putExtra(ReaderActivity.EXTRA_OPENED_AS_NEW, openedAsNew)
         }
         startActivity(readerIntent)
     }

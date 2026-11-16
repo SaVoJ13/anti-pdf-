@@ -19,9 +19,9 @@
 
         <ImageView
             android:id="@+id/ivThumbnail"
+            tools:ignore="ContentDescription"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:contentDescription="@string/organize_page_badge"
             android:scaleType="fitCenter"
             android:background="?attr/colorSurfaceVariant"
             app:layout_constraintDimensionRatio="1:1.414"
