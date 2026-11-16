@@ -1,5 +1,6 @@
 package com.savoj.volumpdf.core.ads
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.view.View
@@ -101,6 +102,25 @@ class AdMobAdsManager(
         }
     }
 
+    override fun isPrivacyOptionsRequired(): Boolean {
+        val info = consentInfoProvider(context) ?: return false
+        return info.privacyOptionsRequirementStatus ==
+            ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+    }
+
+    override fun showPrivacyOptionsForm(activity: Activity, onDone: () -> Unit) {
+        try {
+            UserMessagingPlatform.showPrivacyOptionsForm(activity) { _ ->
+                consentInfoProvider(activity)?.let { updateConsentStatus(it) }
+                onDone()
+            }
+        } catch (_: Throwable) {
+            onDone()
+        }
+    }
+
+    // INTERNET оголошено в маніфесті :app (зливається в застосунок); у бібліотеці дозвіл навмисно не дублюється.
+    @SuppressLint("MissingPermission")
     override fun bindAdaptiveBanner(activity: Activity, container: ViewGroup) {
         val consentInformation = consentInfoProvider(activity)
         if (consentInformation == null || !consentInformation.canRequestAds()) {

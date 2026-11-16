@@ -1,91 +1,85 @@
-# Privacy Policy for Volum PDF: Reader & Tools
+# Privacy Policy for Anti PDF
 
-**Last Updated:** November 3, 2026  
-**Application:** Volum PDF: Reader & Tools  
-**Package Name:** `com.savoj.volumpdf`  
-**Developer Contact:** `privacy@volumpdf.com` / `support@volumpdf.com`  
+> ЧЕРНЕТКА для Власника. Не опублікована. Перед публікацією Власник підставляє контактну адресу (замість `[CONTACT EMAIL]`) і розміщує текст за публічною URL (її вписують у Play Console та в `BuildConfig.PRIVACY_POLICY_URL`). Адреси `volumpdf.com` / `privacy@volumpdf.com`: володіння НЕ ПІДТВЕРДЖЕНО, тому не використовуються.
 
----
-
-## 1. Overview and Core Privacy Principles
-
-Volum PDF ("we", "our", or "the app") is designed with a strict **Privacy-First** philosophy. Our fundamental commitment:
-1. **Your documents are yours alone.** All PDF processing (reading, rendering, merging, splitting, rotating, deleting pages, and converting images to PDF) is performed **100% locally on your device**.
-2. **Zero server uploads.** Files selected by the user never leave the local device storage. We do not operate external processing servers or cloud storage for your files.
-3. **No account or registration.** You do not need to create an account, log in, or provide any personal details (name, email, phone number) to use the application.
-4. **No first-party tracking or behavioral analytics.** We do not integrate user tracking, analytics SDKs (such as Firebase Analytics, Facebook SDK, or third-party telemetries), or background data harvesting.
+**Last Updated:** November 16, 2026
+**Application:** Anti PDF
+**Package Name:** `com.savoj.volumpdf.anti`
+**Developer Contact:** `[CONTACT EMAIL]`
 
 ---
 
-## 2. Storage and File Access (Storage Access Framework)
+## 1. Overview
 
-- **Storage Access Framework (SAF):** Volum PDF accesses files exclusively through Android's secure Storage Access Framework (`ACTION_OPEN_DOCUMENT`, `ACTION_OPEN_MULTIPLE_DOCUMENTS`, `ACTION_CREATE_DOCUMENT`).
-- **No Broad Storage Permissions:** The app **does not request** broad filesystem access permissions such as `MANAGE_EXTERNAL_STORAGE` or `READ_EXTERNAL_STORAGE`. Access is strictly limited to the specific documents and export directories explicitly chosen by the user.
-- **Local Database:** The app stores metadata for recently opened files (file name, file size, page count, last read page, and favorite status) strictly in a local SQLite database (Room) on your device. This data is never synchronized with any remote server.
-
----
-
-## 3. Advertising and Google UMP Consent (GDPR / EEA)
-
-To support ongoing development and offer core PDF reading and editing tools for free, Volum PDF displays non-intrusive advertisements provided by **Google AdMob** (`com.google.android.gms:play-services-ads`).
-
-### 3.1 Strict Ad Placement Standards
-In accordance with our Master Specification and Google Play Better Ads policies:
-- **No ads during document viewing or reading.**
-- **No ads on opening a file.**
-- **No disruptive App Open ads.**
-- **No ads covering navigation or functional controls.**
-- Banners are displayed only at the bottom of document lists or tool screens, and collapse automatically (View.GONE) when offline without blank placeholders.
-- Interstitial ads are limited strictly to completed tool actions with a minimum 5-minute cooldown between displays.
-
-### 3.2 User Consent and Google UMP (GDPR / ePrivacy Directive)
-- For users located in the European Economic Area (EEA), the UK, and Switzerland, the application integrates the official **Google User Messaging Platform (UMP) SDK** (`com.google.android.ump:user-messaging-platform`).
-- When launching the application in applicable regions, a standardized consent form is presented to the user.
-- Personalized advertising and tracking identifiers are utilized **only after explicit, informed user consent**.
-- If consent is denied or not required, non-personalized advertising is served or ad loading is restricted in compliance with Google AdMob policies.
-
-### 3.3 Data Processed by Google AdMob
-Depending on user consent, Google AdMob may collect and process:
-- **Device Identifiers:** Google Advertising ID (GAID), device specifications (model, OS version).
-- **Approximate Location:** Derived from IP address for regional ad serving.
-- **Ad Interaction Data:** Views, clicks, diagnostics, and anti-fraud telemetry.
-
-For more details on how Google processes advertising data:
-- [Google Privacy Policy](https://policies.google.com/privacy)
-- [How Google uses information from sites or apps that use our services](https://policies.google.com/technologies/partner-sites)
-- [Google AdMob Data Disclosure Guidelines](https://developers.google.com/admob/android/data-disclosure)
+Anti PDF ("we", "the app") is a PDF reader and editor. In short:
+1. **Your documents stay on your device.** Reading, editing, signing, watermarking, compressing, merging, splitting, rotating and scanning are performed locally. We do not upload your documents to our servers and we do not run servers for your files.
+2. **No account.** You do not create an account and do not give us your name, email or phone.
+3. **The app shows ads** from Google AdMob. To show them, Google's advertising software collects some data about your device (see section 3). This is the only data collection in the app.
+4. **No analytics or crash-reporting SDK of our own** (no Firebase Analytics, Crashlytics, Facebook SDK or similar).
+5. **No cloud backup.** The app disables Android automatic backup (`allowBackup=false`), so app data (recent files list) is not copied to Google Drive backups or device transfers.
 
 ---
 
-## 4. Offline Functionality
+## 2. Files and Storage
 
-Volum PDF is fully functional in offline mode. Reading, searching, page extraction, merging, rotating, and converting operate entirely without an active internet connection. When offline, advertising containers remain hidden and no network requests are dispatched.
-
----
-
-## 5. User Rights and Data Control
-
-- **Resetting or Opting Out of Advertising Identifiers:** You can manage or delete your Android Advertising ID at any time in your device settings:  
-  *Android Settings → Google → Ads → Reset advertising ID / Delete advertising ID.*
-- **Clearing Local History:** You can clear all recent document history directly within the app's settings or via system settings:  
-  *Android Settings → Apps → Volum PDF → Storage → Clear Data.*
-- **Withdrawing Consent:** You can review or change your advertising consent preferences through the app's settings menu at any time.
+- Files are opened and saved only through Android's system file picker (Storage Access Framework). The app does not request broad storage permissions.
+- The app keeps a local list of recently opened files in a local database on your device: file name, size, page count, last read page, and favorite flag. It is never sent to a server. You can clear it in the app menu ("Clear history") or in Android Settings (Apps, Anti PDF, Storage, Clear data).
+- Document scanner: scanning uses the Google ML Kit Document Scanner, provided through Google Play services. Per Google, scanning and image processing run on the device; the scanned pages are given to the app, and the app saves them where you choose. We do not receive or store your scans on any server.
 
 ---
 
-## 6. Children's Privacy
+## 3. Advertising (Google AdMob) and Consent (Google UMP)
 
-Volum PDF is intended for general audiences and professionals (18+). It is not directed at children under the age of 13 (or under 16 in the EEA), and we do not knowingly collect personal information from children.
+The app is free and shows ads from **Google AdMob** (Google Mobile Ads SDK). There are no ads while you read a document or when a file is opened.
+
+### 3.1 Data processed by Google AdMob
+Depending on your region and consent, Google may collect and process:
+- **Device identifiers**, including the advertising ID (when you have not reset or deleted it), and device and OS information.
+- **Approximate location** derived from the IP address.
+- **Ad interaction data** (impressions, clicks) and **diagnostics** (ad load speed, crash and performance data of the ad SDK).
+
+This data is used for showing ads, limiting how often ads are shown, fraud prevention, security and measuring ad performance. We do not receive your personal data from Google.
+Learn more: [Google Privacy Policy](https://policies.google.com/privacy) and [How Google uses information from sites or apps that use its services](https://policies.google.com/technologies/partner-sites).
+
+### 3.2 Consent (GDPR / ePrivacy)
+- In the European Economic Area, the UK and Switzerland the app uses Google's **User Messaging Platform (UMP)** to ask for your consent before ads that use personal data are requested.
+- If consent is required and not given, the app does not request ads.
+- You can review or change your choice at any time in the app menu: **"Privacy settings"**. This item is shown when Google requires it for your region.
+
+### 3.3 Advertising ID
+You can reset or delete the advertising ID in Android Settings (Google, Ads). The app's manifest includes the advertising ID permission through the ads SDK, so it is declared in the Play Console "Advertising ID" declaration.
 
 ---
 
-## 7. Changes to this Privacy Policy
-
-We may update this Privacy Policy periodically to reflect updates in legal requirements or Google Play policies. Any changes will be posted on this page with an updated "Last Updated" date.
+## 4. Internet Use
+Internet is used only by the advertising software (ads and consent form). Reading and editing documents works offline. When offline, no ad is shown and no empty ad space remains.
 
 ---
 
-## 8. Contact Us
+## 5. Data Sharing and Security
+- Data collected by Google AdMob is processed by Google under Google's policies. We do not sell your data.
+- Data sent by the ad SDK is encrypted in transit (HTTPS).
+- We do not share your documents with anyone.
 
-If you have any questions, suggestions, or concerns regarding your privacy while using Volum PDF:
-- **Email:** `privacy@volumpdf.com`
+---
+
+## 6. Your Rights
+- Manage ad personalization and the advertising ID in Android Settings.
+- Change your consent in the app menu ("Privacy settings") when shown.
+- Delete local app data by clearing storage in Android Settings.
+- For questions or requests about your data, contact `[CONTACT EMAIL]`.
+
+---
+
+## 7. Children
+The app is intended for general audiences and is not directed at children under 13 (under 16 in the EEA). We do not knowingly collect personal data from children.
+
+---
+
+## 8. Changes
+We may update this policy. The "Last Updated" date shows the latest change.
+
+---
+
+## 9. Contact
+`[CONTACT EMAIL]`
