@@ -113,7 +113,7 @@ class PendingStoreTest {
     @Test
     fun codecRoundTripKeepsFormSectionOrderAndTypes() {
         val bytes = PendingCodec.encode("k", sample(), forms)
-        assertEquals(3, bytes[0].toInt())
+        assertEquals(4, bytes[0].toInt())
         val back = PendingCodec.decode(bytes)!!
         assertEquals(sample(), back.items)
         assertEquals(forms, back.forms)

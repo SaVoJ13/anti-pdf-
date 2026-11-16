@@ -1185,7 +1185,8 @@ class ReaderActivity : AppCompatActivity() {
                     boxWidthPx = targetW,
                     boxHeightPx = measuredBoxH,
                     cardTopInContentPx = cardTopInContent,
-                    cardGapPx = cardGapPx
+                    cardGapPx = cardGapPx,
+                    hardMinTopPx = (8f * density).toInt()
                 )
 
                 if (!stickAboveToolbar && userDesiredTop > bounds.topPx + 2) {
