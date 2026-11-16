@@ -14,12 +14,14 @@
         android:fillViewport="true"
         android:paddingBottom="104dp">
 
-        <LinearLayout
+        <com.savoj.volumpdf.ui.common.MaxWidthLinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="16dp"
-            android:paddingTop="16dp">
+            android:paddingTop="16dp"
+            android:layout_gravity="center_horizontal"
+            app:maxContentWidth="@dimen/content_max_width">
 
             <!-- Виразний блок «Продовжити читання» для останнього відкритого документа -->
             <com.google.android.material.card.MaterialCardView
@@ -202,7 +204,7 @@
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false" />
 
-        </LinearLayout>
+        </com.savoj.volumpdf.ui.common.MaxWidthLinearLayout>
 
     </androidx.core.widget.NestedScrollView>
 

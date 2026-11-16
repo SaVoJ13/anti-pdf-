@@ -16,6 +16,11 @@ class ConfigRecreateLogicTest {
     }
 
     @Test
+    fun densityChangeNeedsDeferredRecreate() {
+        assertTrue(ConfigRecreateLogic.needsRecreate(ActivityInfo.CONFIG_DENSITY))
+    }
+
+    @Test
     fun orientationAndSizeAreHandledInPlace() {
         assertFalse(ConfigRecreateLogic.needsRecreate(0))
         assertFalse(ConfigRecreateLogic.needsRecreate(

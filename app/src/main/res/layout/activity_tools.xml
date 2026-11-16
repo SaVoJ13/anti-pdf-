@@ -24,11 +24,13 @@
         android:layout_weight="1"
         android:fillViewport="true">
 
-        <LinearLayout
+        <com.savoj.volumpdf.ui.common.MaxWidthLinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:layout_gravity="center_horizontal"
+            app:maxContentWidth="@dimen/content_max_width">
 
             <!-- Tool Description Header Card -->
             <com.google.android.material.card.MaterialCardView
@@ -433,7 +435,7 @@
 
             </LinearLayout>
 
-        </LinearLayout>
+        </com.savoj.volumpdf.ui.common.MaxWidthLinearLayout>
 
     </androidx.core.widget.NestedScrollView>
 

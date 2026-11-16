@@ -260,6 +260,14 @@ object PlaceBarLogic {
     }
 
     /**
+     * Ширина панелі-пігулки над клавіатурою (Н1): не ширше за [maxPx] (ландшафт, планшет), у вузькому вікні
+     * на всю доступну ширину з боковими полями. Рахується від ПОТОЧНОЇ ширини вікна, тож після повороту,
+     * складання чи split-screen панель не лишається завширшки попередньої конфігурації.
+     */
+    fun pillWidthPx(availWidthPx: Int, maxPx: Int, sideMarginPx: Int): Int =
+        minOf(maxPx, availWidthPx - 2 * sideMarginPx).coerceAtLeast(0)
+
+    /**
      * Обчислює відступ знизу (`bottomMarginPx`) для компактної плаваючої картки кольорів/стилів (`placeTextColorPopup`),
      * щоб вона:
      * 1) за замовчуванням була піднята вище над панеллю інструментів (як у Samsung Notes — [defaultBottomMarginPx]);

@@ -45,6 +45,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_dynamic_colors"
+        android:checkable="true"
+        android:title="@string/action_dynamic_colors"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_licenses"
         android:title="@string/action_licenses"
         app:showAsAction="never" />

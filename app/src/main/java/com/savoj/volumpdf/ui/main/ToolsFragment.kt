@@ -1,6 +1,5 @@
 package com.savoj.volumpdf.ui.main
 
-import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,8 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.savoj.volumpdf.databinding.FragmentToolsBinding
 import com.savoj.volumpdf.ui.organizer.PageOrganizerActivity
 import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
@@ -54,13 +51,12 @@ class ToolsFragment : Fragment() {
             onToolSelected(toolType)
         }
 
-        val config = resources.configuration
-        val isWide = config.screenWidthDp >= 600 || config.orientation == Configuration.ORIENTATION_LANDSCAPE
-        binding.recyclerViewTools.layoutManager = if (isWide) {
-            GridLayoutManager(requireContext(), 2)
-        } else {
-            LinearLayoutManager(requireContext())
-        }
+        // Колонки рахуються за шириною списку й оновлюються при зміні розміру вікна (поворот, split-screen).
+        com.savoj.volumpdf.ui.common.AdaptiveGrid.attach(
+            binding.recyclerViewTools,
+            com.savoj.volumpdf.ui.common.AdaptiveLayoutLogic.LIST_ITEM_MIN_DP,
+            com.savoj.volumpdf.ui.common.AdaptiveLayoutLogic.LIST_MAX_COLUMNS
+        )
         binding.recyclerViewTools.adapter = adapter
     }
 

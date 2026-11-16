@@ -1453,8 +1453,25 @@ class ReaderActivity : AppCompatActivity() {
         // Ширина панелі-пігулки над клавіатурою: не ширше за max (ландшафт/планшет), портрет — на всю ширину з полями 8dp.
         val maxW = resources.getDimensionPixelSize(R.dimen.place_card_max_width) * 4 / 3
         val sideMargin = (8f * density).toInt()
-        dialogBinding.placeTextCard.layoutParams = (dialogBinding.placeTextCard.layoutParams as FrameLayout.LayoutParams).apply {
-            width = minOf(maxW, resources.displayMetrics.widthPixels - 2 * sideMargin)
+        // Н1: ширину перераховуємо щоразу, коли змінилась ширина кореня вікна (поворот, складання, split-screen):
+        // вікно тексту не перестворюється при зміні конфігурації, тож одноразове значення лишало б ландшафтну ширину.
+        var pillAppliedForRootWidth = -1
+        fun applyPillWidth() {
+            val root = dialogBinding.placeTextRoot
+            val rootW = root.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+            if (rootW == pillAppliedForRootWidth) return
+            pillAppliedForRootWidth = rootW
+            val avail = (rootW - root.paddingLeft - root.paddingRight).coerceAtLeast(0)
+            val lp = dialogBinding.placeTextCard.layoutParams as FrameLayout.LayoutParams
+            val w = PlaceBarLogic.pillWidthPx(avail, maxW, sideMargin)
+            if (lp.width != w) {
+                lp.width = w
+                dialogBinding.placeTextCard.layoutParams = lp
+            }
+        }
+        applyPillWidth()
+        dialogBinding.placeTextRoot.addOnLayoutChangeListener { _, l, _, r, _, ol, _, or, _ ->
+            if ((r - l) != (or - ol)) applyPillWidth()
         }
 
         fun closeAllPopups(): Boolean {

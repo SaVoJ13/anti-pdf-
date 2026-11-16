@@ -13,7 +13,8 @@ object ConfigRecreateLogic {
         ActivityInfo.CONFIG_UI_MODE or
         ActivityInfo.CONFIG_LOCALE or
         ActivityInfo.CONFIG_LAYOUT_DIRECTION or
-        ActivityInfo.CONFIG_FONT_WEIGHT_ADJUSTMENT
+        ActivityInfo.CONFIG_FONT_WEIGHT_ADJUSTMENT or
+        ActivityInfo.CONFIG_DENSITY
 
     /** [diff] — результат Configuration.diff(): чи потрібно перечитати ресурси. */
     fun needsRecreate(diff: Int): Boolean = diff and RECREATE_MASK != 0

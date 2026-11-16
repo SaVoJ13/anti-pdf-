@@ -394,4 +394,20 @@ class PlaceBarLogicTest {
         val popupTop = popupBottom - 240
         assertTrue("Popup top ($popupTop) must be below editorBoxBottom (240)", popupTop >= 264)
     }
+
+    // --- Н1: ширина панелі-пігулки залежить від поточної ширини вікна ------------------------------
+
+    @Test
+    fun `pill width follows current window width after landscape to portrait`() {
+        val max = 560
+        val margin = 8
+        // ландшафт 2340: обмежено max; портрет 1080: на всю ширину з полями; кнопка «Додати» лишається у вікні
+        assertEquals(560, PlaceBarLogic.pillWidthPx(2340, max, margin))
+        val portrait = PlaceBarLogic.pillWidthPx(1080, max, margin)
+        assertEquals(560, portrait)
+        val narrow = PlaceBarLogic.pillWidthPx(360, max, margin)
+        assertEquals(344, narrow)
+        assertTrue(narrow + 2 * margin <= 360)
+        assertEquals(0, PlaceBarLogic.pillWidthPx(10, max, margin))
+    }
 }

@@ -11,7 +11,6 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.savoj.volumpdf.R
 import com.savoj.volumpdf.data.db.RecentDocument
@@ -83,7 +82,12 @@ class RecentsFragment : Fragment() {
             }
         )
 
-        binding.recyclerViewRecents.layoutManager = LinearLayoutManager(requireContext())
+        com.savoj.volumpdf.ui.common.AdaptiveGrid.attach(
+            binding.recyclerViewRecents,
+            com.savoj.volumpdf.ui.common.AdaptiveLayoutLogic.LIST_ITEM_MIN_DP,
+            com.savoj.volumpdf.ui.common.AdaptiveLayoutLogic.LIST_MAX_COLUMNS,
+            gapDp = 12
+        )
         binding.recyclerViewRecents.adapter = adapter
     }
 

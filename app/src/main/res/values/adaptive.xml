@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- P1-4 (S): обмеження ширини вмісту на великих екранах. Значення збігається з AdaptiveLayoutLogic.CONTENT_MAX_WIDTH_DP. -->
+<resources>
+    <dimen name="content_max_width">840dp</dimen>
+
+    <declare-styleable name="MaxWidthLinearLayout">
+        <attr name="maxContentWidth" format="dimension" />
+    </declare-styleable>
+</resources>

@@ -253,6 +253,7 @@
     <string name="save_not_completed">Das Speichern wurde nicht abgeschlossen</string>
     <string name="place_copy_saved_password_hint">Kopie gespeichert. Um sie anzusehen, geben Sie das Passwort im Viewer erneut ein</string>
     <string name="action_licenses">Open-Source-Lizenzen</string>
+    <string name="action_dynamic_colors">Farben vom Hintergrundbild</string>
     <string name="dialog_licenses_title">Open-Source-Lizenzen</string>
     <string name="action_create_pdf">PDF erstellen</string>
     <string name="tool_create_blank_title">PDF erstellen</string>
