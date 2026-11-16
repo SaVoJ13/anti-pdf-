@@ -71,4 +71,13 @@ class StringsParityTest {
             keys.forEach { assertTrue("$it відсутній у $lang", map.containsKey(it)) }
         }
     }
+
+    @Test
+    fun readOnlySaveOfferStringsExistInAllFourLanguages() {
+        (locales + ("en" to base)).forEach { (lang, map) ->
+            listOf("save_readonly_message", "copy_save").forEach {
+                assertTrue("$it відсутній або порожній у $lang", !map[it].isNullOrBlank())
+            }
+        }
+    }
 }

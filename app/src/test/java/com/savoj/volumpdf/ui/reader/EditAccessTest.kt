@@ -10,6 +10,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
+class SaveFailureKindTest {
+    @Test
+    fun readOnlyMessagesAreRecognised() {
+        assertTrue(SaveFailureKind.isNoWriteAccess(
+            "Помилка збереження розмітки: com.savoj.volumpdf.anti has no access to content://media/external/file/12"))
+        assertTrue(SaveFailureKind.isNoWriteAccess("open failed: EACCES (Permission denied)"))
+        assertTrue(SaveFailureKind.isNoWriteAccess(null, SecurityException("x")))
+        assertTrue(SaveFailureKind.isNoWriteAccess("wrapper", RuntimeException("wrapper", java.io.IOException("Permission denied"))))
+    }
+
+    @Test
+    fun otherFailuresAreNot() {
+        assertFalse(SaveFailureKind.isNoWriteAccess(null))
+        assertFalse(SaveFailureKind.isNoWriteAccess(""))
+        assertFalse(SaveFailureKind.isNoWriteAccess("Недостатньо місця на пристрої"))
+        assertFalse(SaveFailureKind.isNoWriteAccess("boom", IllegalStateException("boom")))
+    }
+}
+
 class EditAccessTest {
 
     private fun ed(enc: Boolean, markup: Boolean = true, forms: Boolean = true) = DocumentEditability(enc, markup, forms)

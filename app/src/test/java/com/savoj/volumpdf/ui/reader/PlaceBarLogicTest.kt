@@ -271,6 +271,36 @@ class PlaceBarLogicTest {
     }
 
     @Test
+    fun `computeEditorBoxBounds in tight landscape raises box above toolbar instead of under the pill`() {
+        // Ландшафт з клавіатурою: тулбар (minTop) 200 px, панель-пігулка починається на 150 px: місця під тулбаром немає.
+        fun bounds(hardMinTop: Int) = PlaceBarLogic.computeEditorBoxBounds(
+            availWidthPx = 1800, availHeightPx = 420, minTopPx = 200, toolbarReservePx = 240,
+            sideMarginPx = 36, minBoxWidthPx = 420, minBoxHeightPx = 160,
+            desiredLeftPx = 100, desiredTopPx = 100, boxWidthPx = 600, boxHeightPx = 160,
+            cardTopInContentPx = 150, cardGapPx = 12, hardMinTopPx = hardMinTop
+        )
+        val raised = bounds(24)
+        assertEquals(24, raised.topPx)
+        assertTrue(raised.topPx + 160 <= raised.maxBottomPx)
+        // Без нового параметра (за замовчуванням) поведінка як раніше: поле лишається під тулбаром.
+        val old = PlaceBarLogic.computeEditorBoxBounds(
+            availWidthPx = 1800, availHeightPx = 420, minTopPx = 200, toolbarReservePx = 240,
+            sideMarginPx = 36, minBoxWidthPx = 420, minBoxHeightPx = 160,
+            desiredLeftPx = 100, desiredTopPx = 100, boxWidthPx = 600, boxHeightPx = 160,
+            cardTopInContentPx = 150, cardGapPx = 12
+        )
+        assertEquals(200, old.topPx)
+        // Коли місця вистачає, hardMinTop нічого не змінює.
+        val roomy = PlaceBarLogic.computeEditorBoxBounds(
+            availWidthPx = 1080, availHeightPx = 1200, minTopPx = 200, toolbarReservePx = 240,
+            sideMarginPx = 36, minBoxWidthPx = 420, minBoxHeightPx = 160,
+            desiredLeftPx = 150, desiredTopPx = 20, boxWidthPx = 500, boxHeightPx = 200,
+            cardTopInContentPx = 960, cardGapPx = 12, hardMinTopPx = 24
+        )
+        assertEquals(200, roomy.topPx)
+    }
+
+    @Test
     fun `computeEditorBoxBounds allows moving box anywhere by tap inside visible page area`() {
         val b = PlaceBarLogic.computeEditorBoxBounds(
             availWidthPx = 1080,

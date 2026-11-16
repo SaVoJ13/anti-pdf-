@@ -14,7 +14,9 @@ import java.security.MessageDigest
  * (кількість; для кожного: fullyQualifiedName, тип 0 = String / 1 = Boolean, значення). Версію 1 читаємо без форм.
  */
 object PendingCodec {
-    const val VERSION: Int = 3
+    const val VERSION: Int = 4
+    /** Версія 3: один слот на кут повороту (не текст) або колір фону (текст). Лише читання (і тести сумісності). */
+    const val VERSION_V3: Int = 3
     const val VERSION_V2: Int = 2
     const val VERSION_OBJECTS_ONLY: Int = 1
     private const val MAX_FORM_UPDATES = 100_000
@@ -51,8 +53,12 @@ object PendingCodec {
                     out.writeInt(xy.size)
                     for (v in xy) out.writeFloat(v)
                 }
-                if (version >= 3) {
+                if (version == VERSION_V3) {
                     out.writeInt(if (p.tool == PlaceTool.TEXT) p.bgColor else p.rotationDeg)
+                } else if (version >= 4) {
+                    // Версія 4: окремі поля, без повторного використання слота.
+                    out.writeInt(p.rotationDeg)
+                    out.writeInt(p.bgColor)
                 }
             }
             if (version >= 2) {
@@ -73,7 +79,7 @@ object PendingCodec {
     fun decode(data: ByteArray): Decoded? = try {
         DataInputStream(ByteArrayInputStream(data)).use { inp ->
             val version = inp.readUnsignedByte()
-            if (version != VERSION && version != VERSION_V2 && version != VERSION_OBJECTS_ONLY) return null
+            if (version != VERSION && version != VERSION_V3 && version != VERSION_V2 && version != VERSION_OBJECTS_ONLY) return null
             val key = readString(inp)
             val count = inp.readInt()
             if (count < 0 || count > MAX_ITEMS) return null
@@ -94,9 +100,17 @@ object PendingCodec {
                     n < 0 || n > MAX_FLOATS || n % 2 != 0 -> return null
                     else -> InkPoints(FloatArray(n) { inp.readFloat() })
                 }
-                val rotOrBg = if (version >= 3) inp.readInt() else 0
-                val rotationDeg = if (tool == PlaceTool.TEXT) 0 else rotOrBg
-                val bgColor = if (tool == PlaceTool.TEXT) rotOrBg else 0
+                val rotationDeg: Int
+                val bgColor: Int
+                when {
+                    version >= 4 -> { rotationDeg = inp.readInt(); bgColor = inp.readInt() }
+                    version == VERSION_V3 -> {
+                        val rotOrBg = inp.readInt()
+                        rotationDeg = if (tool == PlaceTool.TEXT) 0 else rotOrBg
+                        bgColor = if (tool == PlaceTool.TEXT) rotOrBg else 0
+                    }
+                    else -> { rotationDeg = 0; bgColor = 0 }
+                }
                 items += PendingMarkup(id, tool, page, x, y, text, size, color, ink, aspect, null, rotationDeg, bgColor)
             }
             val forms = ArrayList<FormFieldUpdate>()

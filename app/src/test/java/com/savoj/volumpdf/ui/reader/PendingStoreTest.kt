@@ -113,7 +113,7 @@ class PendingStoreTest {
     @Test
     fun codecRoundTripKeepsFormSectionOrderAndTypes() {
         val bytes = PendingCodec.encode("k", sample(), forms)
-        assertEquals(3, bytes[0].toInt())
+        assertEquals(4, bytes[0].toInt())
         val back = PendingCodec.decode(bytes)!!
         assertEquals(sample(), back.items)
         assertEquals(forms, back.forms)
@@ -141,6 +141,28 @@ class PendingStoreTest {
         assertEquals(sample(), back.items)
         assertEquals(forms, back.forms)
         assertEquals(0, back.items.first().rotationDeg)
+    }
+
+    @Test
+    fun version4KeepsRotationAndTextBackgroundInSeparateSlots() {
+        val both = listOf(
+            PendingMarkup("t", PlaceTool.TEXT, 0, 1f, 2f, "a", 14f, red, rotationDeg = 90, bgColor = 0x80FFFF00.toInt()),
+            PendingMarkup("g", PlaceTool.SIGNATURE, 1, 1f, 2f, "", 120f, 0, aspect = 0.4f, rotationDeg = 270, bgColor = 0x11223344)
+        )
+        val bytes = PendingCodec.encode("k", both)
+        assertEquals(4, bytes[0].toInt())
+        assertEquals(both, PendingCodec.decode(bytes)!!.items)
+    }
+
+    @Test
+    fun oldVersion3FileKeepsSharedSlotMeaning() {
+        val items = listOf(
+            PendingMarkup("t", PlaceTool.TEXT, 0, 1f, 2f, "a", 14f, red, bgColor = 0x80FFFF00.toInt()),
+            PendingMarkup("g", PlaceTool.SIGNATURE, 1, 1f, 2f, "", 120f, 0, aspect = 0.4f, rotationDeg = 270)
+        )
+        val v3 = PendingCodec.encodeVersion(3, "k", items, emptyList())
+        assertEquals(3, v3[0].toInt())
+        assertEquals(items, PendingCodec.decode(v3)!!.items)
     }
 
     @Test

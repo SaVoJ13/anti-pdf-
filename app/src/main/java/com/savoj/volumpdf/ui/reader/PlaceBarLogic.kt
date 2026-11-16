@@ -184,7 +184,8 @@ object PlaceBarLogic {
         boxWidthPx: Int,
         boxHeightPx: Int,
         cardTopInContentPx: Int = -1,
-        cardGapPx: Int = 0
+        cardGapPx: Int = 0,
+        hardMinTopPx: Int = Int.MAX_VALUE
     ): EditorBoxBounds {
         val safeSide = sideMarginPx.coerceAtLeast(0)
         val safeMinW = minBoxWidthPx.coerceAtLeast(60)
@@ -196,7 +197,12 @@ object PlaceBarLogic {
         if (cardTopInContentPx > 0) {
             maxBottom = minOf(maxBottom, cardTopInContentPx - cardGapPx)
         }
-        val safeMinTop = minTopPx.coerceAtLeast(0)
+        // Д3: у ландшафті з клавіатурою місця під тулбаром бракує. Замість того щоб лишити поле під панеллю-пігулкою,
+        // піднімаємо його вище (до [hardMinTopPx], тобто над тулбар): вікно тексту лежить поверх усього.
+        val preferredMinTop = minTopPx.coerceAtLeast(0)
+        val floorTop = minOf(hardMinTopPx.coerceAtLeast(0), preferredMinTop)
+        val safeMinTop = if (maxBottom - preferredMinTop >= safeMinH) preferredMinTop
+        else (maxBottom - safeMinH).coerceIn(floorTop, preferredMinTop)
         maxBottom = maxBottom.coerceAtLeast(safeMinTop + safeMinH)
 
         val maxBoxTotalHeight = (maxBottom - safeMinTop).coerceAtLeast(safeMinH)

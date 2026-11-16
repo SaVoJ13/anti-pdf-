@@ -245,6 +245,7 @@
     <string name="copy_warning_title">Файл захищено</string>
     <string name="copy_warning_message">Файл захищено. Копію буде збережено з тим самим паролем; пароль власника й обмеження прав не переносяться.</string>
     <string name="copy_save">Зберегти копію</string>
+    <string name="save_readonly_message">Цей файл відкрито лише для читання, тому змінити його на місці не вдалося. Ваші правки не втрачено: їх можна зберегти копією.</string>
     <string name="place_copy_saved">Копію збережено</string>
     <string name="save_no_changes_copy_not_created">Змін немає, копію не створено</string>
     <string name="save_no_changes">Змін немає</string>

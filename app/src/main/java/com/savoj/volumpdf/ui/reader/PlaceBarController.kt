@@ -41,6 +41,7 @@ class PlaceBarController(
     private val density = res.displayMetrics.density
 
     private var cardOpen = false
+    val isCardOpen: Boolean get() = cardOpen
     private var page = 0
     private var syncing = false
     private var lastActionTool = PlaceTool.CHECK

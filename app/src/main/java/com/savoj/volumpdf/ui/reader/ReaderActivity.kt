@@ -59,6 +59,8 @@ import com.savoj.volumpdf.util.ReadOnlyCheck
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -98,6 +100,7 @@ class ReaderActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lastConfig = Configuration(resources.configuration)
         binding = ActivityReaderBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -324,7 +327,7 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
     }
 
     private fun checkForFormFields(uri: Uri) {
@@ -456,6 +459,7 @@ class ReaderActivity : AppCompatActivity() {
         dialog.setOnDismissListener { answer(null) }
         cont.invokeOnCancellation { if (dialog.isShowing) dialog.dismiss() }
         dialog.show()
+        trackDialog(dialog)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -1011,7 +1015,7 @@ class ReaderActivity : AppCompatActivity() {
                 action()
             }
             .setNeutralButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
     }
 
     private fun onPageTapped(point: PageViewPoint) {
@@ -1326,7 +1330,8 @@ class ReaderActivity : AppCompatActivity() {
                     boxWidthPx = targetW,
                     boxHeightPx = measuredBoxH,
                     cardTopInContentPx = cardTopInContent,
-                    cardGapPx = cardGapPx
+                    cardGapPx = cardGapPx,
+                    hardMinTopPx = (8f * density).toInt()
                 )
 
                 if (!stickAboveToolbar && userDesiredTop > bounds.topPx + 2) {
@@ -2027,6 +2032,7 @@ class ReaderActivity : AppCompatActivity() {
         }
         dialog.setOnDismissListener { handler.removeCallbacks(validate) }
         dialog.show()
+        trackDialog(dialog)
     }
 
     /**
@@ -2360,7 +2366,7 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            .showTracked()
     }
 
     private val insertFilesLauncher = registerForActivityResult(
@@ -2504,13 +2510,15 @@ class ReaderActivity : AppCompatActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.copy_warning_title)
             .setMessage(R.string.copy_warning_message)
-            .setPositiveButton(R.string.copy_save) { _, _ ->
-                copyOnSuccess = onSuccess
-                viewModel.awaitingCopyLocation = true // переживе am kill; після будь-якого завершення скидається
-                createCopyLauncher.launch(CopyNaming.suggestedName(documentTitle))
-            }
+            .setPositiveButton(R.string.copy_save) { _, _ -> startCopyPick(onSuccess) }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
+    }
+
+    private fun startCopyPick(onSuccess: () -> Unit) {
+        copyOnSuccess = onSuccess
+        viewModel.awaitingCopyLocation = true // переживе am kill; після будь-якого завершення скидається
+        createCopyLauncher.launch(CopyNaming.suggestedName(documentTitle))
     }
 
     /** Записує зміни: [copy] = false — у документ ([output] = той самий URI); true — у нову копію [output]. */
@@ -2558,7 +2566,11 @@ class ReaderActivity : AppCompatActivity() {
                 }
                 is SaveOutcome.Failed -> {
                     val deleted = removeEmptyCopy(output, copy)
-                    showFailure(outcome.message.ifBlank { getString(R.string.error_title) }, SaveNotices.forFailed(deleted))
+                    if (!copy && SaveFailureKind.isNoWriteAccess(outcome.message)) {
+                        showReadOnlyOffer(onSuccess)
+                    } else {
+                        showFailure(outcome.message.ifBlank { getString(R.string.error_title) }, SaveNotices.forFailed(deleted))
+                    }
                 }
                 SaveOutcome.NothingToSave -> {
                     val deleted = removeEmptyCopy(output, copy)
@@ -2570,13 +2582,27 @@ class ReaderActivity : AppCompatActivity() {
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
             val deleted = removeEmptyCopy(output, copy)
-            showFailure(e.localizedMessage ?: getString(R.string.error_title), SaveNotices.forFailed(deleted))
+            if (!copy && SaveFailureKind.isNoWriteAccess(e.localizedMessage, e)) {
+                showReadOnlyOffer(onSuccess)
+            } else {
+                showFailure(e.localizedMessage ?: getString(R.string.error_title), SaveNotices.forFailed(deleted))
+            }
         } finally {
             if (copy) ownedCopyUri = null
             hideLoadingOverlay()
             savingPlace = false
             binding.markupOverlay.editingEnabled = viewModel.placeModeActive
         }
+    }
+
+    /** Д2: документ відкрито лише на читання. Пояснення простою мовою й пропозиція зберегти копію (незбережене лишається). */
+    private fun showReadOnlyOffer(onSuccess: () -> Unit) {
+        if (isDestroyed || isFinishing) return
+        MaterialAlertDialogBuilder(this)
+            .setMessage(R.string.save_readonly_message)
+            .setPositiveButton(R.string.copy_save) { _, _ -> startCopyPick(onSuccess) }
+            .setNegativeButton(R.string.action_cancel, null)
+            .showTracked()
     }
 
     private fun noticeText(notice: SaveNotice): String = getString(
@@ -2615,7 +2641,7 @@ class ReaderActivity : AppCompatActivity() {
             .setMessage(text)
             .setPositiveButton(R.string.action_ok, null)
         if (onDismiss != null) builder.setOnDismissListener { onDismiss() }
-        builder.show()
+        builder.showTracked()
     }
 
     /**
@@ -2710,6 +2736,43 @@ class ReaderActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         applyPlacePanelOrientation()
+        val changed = lastConfig?.diff(newConfig) ?: 0
+        lastConfig = Configuration(newConfig)
+        if (ConfigRecreateLogic.needsRecreate(changed)) {
+            // Масштаб шрифту, тема, мова: ресурси треба перечитати (recreate), але не поки відкрито вікно/картку,
+            // інакше вони зникають разом із введеним текстом (Д1). Відкладаємо до їх закриття.
+            configRecreatePending = true
+            scheduleDeferredRecreate()
+        }
+    }
+
+    private val trackedDialogs = ArrayList<java.lang.ref.WeakReference<android.app.Dialog>>()
+    private var lastConfig: Configuration? = null
+    private var configRecreatePending = false
+    private var deferredRecreateJob: Job? = null
+
+    private fun trackDialog(d: android.app.Dialog) {
+        trackedDialogs.removeAll { it.get()?.isShowing != true }
+        trackedDialogs.add(java.lang.ref.WeakReference(d))
+    }
+
+    private fun MaterialAlertDialogBuilder.showTracked(): AlertDialog = show().also { trackDialog(it) }
+
+    /** Є відкрите вікно чи картка, яка не переживе recreate() разом зі своїм станом. */
+    private fun isUiBusyForRecreate(): Boolean =
+        trackedDialogs.any { it.get()?.isShowing == true } ||
+            (::placeBar.isInitialized && placeBar.isCardOpen) ||
+            supportFragmentManager.fragments.any { it is androidx.fragment.app.DialogFragment && it.isAdded }
+
+    private fun scheduleDeferredRecreate() {
+        if (deferredRecreateJob?.isActive == true) return
+        deferredRecreateJob = lifecycleScope.launch {
+            while (configRecreatePending && isUiBusyForRecreate()) delay(ConfigRecreateLogic.POLL_MS)
+            if (configRecreatePending && !isFinishing && !isDestroyed) {
+                configRecreatePending = false
+                recreate()
+            }
+        }
     }
 
     /**
@@ -2883,7 +2946,7 @@ class ReaderActivity : AppCompatActivity() {
                 onPicked((values[0] shl 16) or (values[1] shl 8) or values[2])
             }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -2991,7 +3054,7 @@ class ReaderActivity : AppCompatActivity() {
             .setTitle(R.string.dialog_details_title)
             .setMessage(msg)
             .setPositiveButton(R.string.action_ok, null)
-            .show()
+            .showTracked()
     }
 
     private fun showReadingThemeDialog() {
@@ -3014,7 +3077,7 @@ class ReaderActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .showTracked()
     }
 
     private fun applyReadingTheme(theme: ReadingTheme) {
