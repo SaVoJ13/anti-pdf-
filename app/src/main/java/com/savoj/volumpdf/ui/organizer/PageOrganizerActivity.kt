@@ -18,7 +18,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -97,8 +96,12 @@ class PageOrganizerActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        val spanCount = if (resources.configuration.screenWidthDp >= 600) 3 else 2
-        binding.rvPageGrid.layoutManager = GridLayoutManager(this, spanCount)
+        // Колонки за фактичною шириною: 2 на вузькому, до 6 на планшеті; оновлюються при зміні розміру вікна.
+        com.savoj.volumpdf.ui.common.AdaptiveGrid.attach(
+            binding.rvPageGrid,
+            com.savoj.volumpdf.ui.common.AdaptiveLayoutLogic.PAGE_THUMB_MIN_DP,
+            com.savoj.volumpdf.ui.common.AdaptiveLayoutLogic.PAGE_MAX_COLUMNS
+        )
 
         organizerAdapter = PageOrganizerAdapter(
             onRotateClicked = { position ->
