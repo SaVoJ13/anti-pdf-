@@ -1,5 +1,35 @@
 # Журнал проєкту (нові записи зверху)
 
+## 2026-11-16 — Підготовка до публікації: резервні копії вимкнено, підпис і R8 для release, політика приватності й налаштування згоди (Android і UI, гілка `feature/release-prep`)
+**Простими словами:**
+- Автокопіювання даних застосунку вимкнено (`allowBackup=false`), як ти вирішив 2026-11-14.
+- Реліз тепер стискається (R8) і підписується твоїм ключем, якщо ти поклав файл `keystore.properties`. Без нього збірка не падає, просто виходить непідписаний файл.
+- У меню додано «Політика приватності» (посилання поки заглушка) і «Налаштування конфіденційності» (показується, коли Google цього вимагає).
+- Стиснений реліз на Galaxy S24 Ultra запустився, PDF відкрився, малюнок додався й зберігся. Підписано лише тимчасово debug-ключем на моєму комп'ютері.
+- Документи магазину (опис, приватність, Data safety) приведено до реальності: назва «Anti PDF», пакет `com.savoj.volumpdf.anti`, реклама є.
+- Ключ, паролі й бойові ID реклами в репозиторій не потрапили. Створення ключа й публікація лишаються за тобою (інструкція `docs/store/RELEASE_SIGNING.md`).
+- Самоперевірки статусу «QA Verified» немає: потрібна окрема перевірка.
+
+**Що зроблено:**
+1. `allowBackup="false"`; `dataExtractionRules`/`fullBackupContent` не задано (за вимкненого копіювання не потрібні). Запис у `DECISIONS.md`.
+2. Підпис: `keystore.properties` (у `.gitignore` вже був) + `keystore.properties.example` без значень; `docs/store/RELEASE_SIGNING.md`.
+3. R8: `isMinifyEnabled` і `isShrinkResources` у release, правила `app/proguard-rules.pro` (PdfBox, androidx.pdf, ML Kit, AdMob/UMP). `assembleRelease` і `bundleRelease` збираються (unsigned APK 16,4 МБ, AAB 15,3 МБ).
+4. Меню «Політика приватності» (URL у `BuildConfig.PRIVACY_POLICY_URL`, плейсхолдер `https://example.com/anti-pdf/privacy-policy`, змінюється `-PprivacyPolicyUrl=...`) і «Налаштування конфіденційності» (UMP `showPrivacyOptionsForm`, видимий лише коли `PrivacyOptionsRequirementStatus.REQUIRED`). Нових дозволів немає.
+5. `:core-ads:lintDebug`: `MissingPermission` (Д4) приглушено `@SuppressLint` із поясненням (INTERNET є в маніфесті `:app`).
+6. `docs/store/STORE_LISTING.md`, `DATA_SAFETY.md`, `PRIVACY_POLICY.md` переписано (контакт `[CONTACT EMAIL]`, бо `volumpdf.com` не підтверджено).
+7. Склеєний маніфест release: дозволи INTERNET, ACCESS_NETWORK_STATE, `com.google.android.gms.permission.AD_ID`, ACCESS_ADSERVICES_AD_ID/ATTRIBUTION/TOPICS, WAKE_LOCK, FOREGROUND_SERVICE, `<пакет>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (signature). Експортовані: `MainActivity` (потрібно), WorkManager `SystemJobService` (захищений BIND_JOB_SERVICE), `DiagnosticsReceiver` і `ProfileInstallReceiver` (захищені DUMP), ще один експортований приймач/сервіс бібліотек із дозволом. Усі наші інші activity `exported=false`. `allowBackup=false` у склеєному маніфесті.
+8. Версії: `versionCode=1`, `versionName=1.0.0` не змінено.
+
+**Що змінено:** `app/build.gradle.kts`, `app/proguard-rules.pro`, `AndroidManifest.xml`, `MainActivity.kt`, `menu_main.xml`, `strings.xml` (4 мови, +3 рядки), `core-ads` (`AdsManager`, `AdMobAdsManager`), тести `PrivacyMenuTest` (+3) і 2 нових у `AdMobAdsManagerTest`, `docs/store/*`, `DECISIONS.md`.
+
+**Рішення:** URL політики через `BuildConfig` (не `strings`), бо ключі `strings` мають збігатися у 4 мовах (тест паритету). Правила R8 широкі (keep для PdfBox і androidx.pdf), бо захисту від зворотної розробки не вимагалося, важлива працездатність.
+
+**Перевірка (мої тести, не QA):** `./gradlew :app:assembleDebug :app:testDebugUnitTest :core-pdf:testDebugUnitTest :core-ads:testDebugUnitTest :app:lintDebug :core-ads:lintDebug :app:bundleRelease` BUILD SUCCESSFUL (JDK 21 з `gradle.properties`). З XML: `:app` 291 (0 збоїв), `:core-pdf` 107 (1 пропущений), `:core-ads` 6. Lint: `:app` 0 помилок / 126 попереджень, `:core-ads` 0 помилок / 6 попереджень. Телефон (Galaxy S24 Ultra): minified release, підписаний debug-ключем локально, відкрив PDF через content-URI, намалював лінію, зберіг (файл 35292 до 38441 байт), перевідкрив: лінія видно; пункти меню приватності видно. Тестові файли й записи «Останніх» прибрано.
+
+**Що передати далі:** QA: R8 на інших сценаріях (сканер, водяні знаки, стиснення, підпис, форми, пароль, Room); перевірка форми UMP на пристрої в ЄЕЗ; `bundletool` на AAB. Власнику: ключ, URL політики, контакт, бойові AdMob ID, декларація AD_ID, Data safety.
+
+**Відкриті питання:** 1) пункт «Налаштування конфіденційності» був видимий на телефоні: треба переконатися, що форма реально відкривається. 2) Посилання політики поки example.com: не публікувати реліз із плейсхолдером. 3) Бойові AdMob ID (App ID в маніфесті й unit ID у коді тестові). 4) Файл `file://` відкривається з помилкою без дозволу (це поведінка Android, не R8); перевірено через content-URI.
+
 ## 2026-11-15 — Незалежна QA-верифікація опції «Фон шрифту», компактної піднятої картки кольорів і захисту від перекриття тексту (Агент 3, гілка `feature/place-ui-redesign`, коміт `b772b34`) — `QA Verified`
 **Простими словами:**
 - Окремий незалежний QA-субагент (Агент 3, `244a3bb9-8202-474a-95f5-9d5f8d05b3e4`) провів огляд коміту `b772b34` (`feature/place-ui-redesign`) і надав вердикт **`QA Verified`** (п. 2.1 Конституції v2.0, Червона лінія №9).

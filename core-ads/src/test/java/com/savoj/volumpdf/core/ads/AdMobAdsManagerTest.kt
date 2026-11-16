@@ -82,4 +82,26 @@ class AdMobAdsManagerTest {
         assertTrue("Якщо оголошення ще не закешоване, onDismissed має викликатися негайно", dismissedCalled)
         assertFalse(manager.hasCachedInterstitial())
     }
+
+    @Test
+    fun privacyOptionsRequiredIsTrueOnlyWhenUmpSaysRequired() {
+        `when`(mockConsentInformation.privacyOptionsRequirementStatus)
+            .thenReturn(ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED)
+        val required = AdMobAdsManager(mockContext, consentInfoProvider = { mockConsentInformation })
+        assertTrue(required.isPrivacyOptionsRequired())
+
+        `when`(mockConsentInformation.privacyOptionsRequirementStatus)
+            .thenReturn(ConsentInformation.PrivacyOptionsRequirementStatus.NOT_REQUIRED)
+        assertFalse(required.isPrivacyOptionsRequired())
+
+        `when`(mockConsentInformation.privacyOptionsRequirementStatus)
+            .thenReturn(ConsentInformation.PrivacyOptionsRequirementStatus.UNKNOWN)
+        assertFalse(required.isPrivacyOptionsRequired())
+    }
+
+    @Test
+    fun privacyOptionsNotRequiredWhenConsentInfoUnavailable() {
+        val manager = AdMobAdsManager(mockContext, consentInfoProvider = { null })
+        assertFalse(manager.isPrivacyOptionsRequired())
+    }
 }
