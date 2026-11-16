@@ -16,6 +16,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.savoj.volumpdf.R
+import com.savoj.volumpdf.util.hapticConfirm
 import com.savoj.volumpdf.databinding.DialogSignatureBottomSheetBinding
 
 class SignatureBottomSheetDialogFragment : BottomSheetDialogFragment() {
@@ -117,6 +118,7 @@ class SignatureBottomSheetDialogFragment : BottomSheetDialogFragment() {
         // Захист від подвійного тапа: після першого натиску кнопки вимкнено, вікно закривається після успіху.
         binding.btnInsertSignature.isEnabled = false
         binding.btnClearSignature.isEnabled = false
+        binding.root.hapticConfirm()
         onSignatureConfirmed?.invoke(bitmap)
         dismissAllowingStateLoss()
     }

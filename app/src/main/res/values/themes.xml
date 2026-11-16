@@ -30,10 +30,19 @@
         <item name="colorOutline">@color/md_theme_light_outline</item>
         <item name="colorOutlineVariant">@color/md_theme_light_outlineVariant</item>
 
+        <item name="android:windowAnimationStyle">@style/Animation.VolumPdf.Activity</item>
         <item name="android:statusBarColor">?attr/colorSurface</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
         <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <!-- P1-7: короткі (150 мс) плавні переходи між екранами замість стандартного зсуву -->
+    <style name="Animation.VolumPdf.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/screen_fade_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/screen_fade_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/screen_fade_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/screen_fade_out</item>
     </style>
 
     <!-- Чіп на темній картці параметрів: світлий текст, ≥ 48 dp -->

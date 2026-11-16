@@ -113,4 +113,16 @@ class ErrorMessagesTest {
         assertEquals(R.string.open_error_corrupt, ErrorMessages.forOpenFailure(IOException("Header doesn't contain versioninfo")).res)
         assertEquals(R.string.open_error_corrupt, ErrorMessages.forOpenFailure(IllegalStateException()).res)
     }
+
+    @Test
+    fun `failed first open drops the recents entry only for corrupt or empty files`() {
+        assertTrue(ErrorMessages.shouldDropFromRecents(IOException("Cannot read PDF header")))
+        assertTrue(ErrorMessages.shouldDropFromRecents(IllegalStateException("odd")))
+        // файл може бути справним: запис лишаємо
+        assertFalse(ErrorMessages.shouldDropFromRecents(SecurityException("has no access to content://x")))
+        assertFalse(ErrorMessages.shouldDropFromRecents(PdfPermissionException("no permission")))
+        assertFalse(ErrorMessages.shouldDropFromRecents(FileNotFoundException("/x: ENOENT")))
+        assertFalse(ErrorMessages.shouldDropFromRecents(IOException("write failed: ENOSPC (No space left on device)")))
+        assertFalse(ErrorMessages.shouldDropFromRecents(OutOfMemoryError()))
+    }
 }

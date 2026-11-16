@@ -79,6 +79,15 @@ object ErrorMessages {
         else -> UserMessage(R.string.open_error_corrupt)
     }
 
+    /**
+     * Чи прибирати запис з «Останніх» після невдалого ПЕРШОГО відкриття: лише коли файл пошкоджено/порожній (IO, інше).
+     * Для «лише читання/немає дозволу», «не знайдено», «мало місця», «завеликий» файл може бути справним, запис лишаємо.
+     */
+    fun shouldDropFromRecents(cause: Throwable): Boolean = when (classify(cause)) {
+        Kind.IO, Kind.OTHER -> true
+        else -> false
+    }
+
     fun pageRange(e: PageRangeException): UserMessage = when (e.reason) {
         PageRangeException.Reason.EMPTY -> UserMessage(R.string.err_pages_empty)
         PageRangeException.Reason.BAD_FORMAT -> UserMessage(R.string.err_pages_format)

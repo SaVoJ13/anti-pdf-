@@ -30,6 +30,7 @@
         <item name="colorOutline">@color/md_theme_dark_outline</item>
         <item name="colorOutlineVariant">@color/md_theme_dark_outlineVariant</item>
 
+        <item name="android:windowAnimationStyle">@style/Animation.VolumPdf.Activity</item>
         <item name="android:statusBarColor">?attr/colorSurface</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>

@@ -11,8 +11,10 @@ import com.savoj.volumpdf.core.pdf.model.FormFieldUpdate
 import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.data.db.copy
 import com.savoj.volumpdf.data.repository.DocumentRepository
+import com.savoj.volumpdf.util.ErrorMessages
 import com.savoj.volumpdf.util.ImageRotationHelper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +44,24 @@ class ReaderViewModel(
     @Volatile
     private var pendingPageProgress: Int? = null
 
+    /** Документа не було в «Останніх» до цього відкриття (потрібно, щоб не стирати давній запис через разовий збій). */
+    @Volatile
+    private var openedAsNew = false
+    private var recordJob: Job? = null
+
+    /**
+     * Перше відкриття завершилось помилкою «файл пошкоджено/порожній»: прибираємо щойно створений запис з «Останніх»,
+     * щоб не лишався мертвий рядок. Давній запис (документ вже відкривався раніше) не чіпаємо.
+     */
+    fun dropFailedFirstOpen(uri: Uri, cause: Throwable) {
+        if (!openedAsNew || !ErrorMessages.shouldDropFromRecents(cause)) return
+        val uriString = uri.toString()
+        viewModelScope.launch {
+            recordJob?.join()
+            repository.deleteDocument(uriString)
+        }
+    }
+
     fun initDocument(uri: Uri, titleHint: String?) {
         val uriString = uri.toString()
         val prevUri = savedStateHandle.get<String>(KEY_URI)
@@ -54,7 +74,8 @@ class ReaderViewModel(
         savedStateHandle[KEY_URI] = uriString
         loadPending(uriString)
 
-        viewModelScope.launch {
+        recordJob = viewModelScope.launch {
+            openedAsNew = repository.getDocument(uriString) == null
             var doc = repository.recordDocumentOpened(
                 getApplication(),
                 uri,

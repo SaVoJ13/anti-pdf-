@@ -9,6 +9,8 @@ import android.widget.LinearLayout
 import androidx.annotation.StringRes
 import com.savoj.volumpdf.R
 import com.savoj.volumpdf.databinding.ActivityReaderBinding
+import com.savoj.volumpdf.util.hapticReject
+import com.savoj.volumpdf.util.hapticTick
 
 /**
  * Нижній рядок інструментів і темна картка параметрів режиму «Редагувати» (етап A1, лише вигляд і взаємодія).
@@ -68,7 +70,7 @@ class PlaceBarController(
             setCard(PlaceBarLogic.onOptionsTap(cardOpen, PlaceBarLogic.hasOptions(vm.placeTool, sel?.tool)))
             render(vm.editor.value)
         }
-        b.btnSlotDelete.setOnClickListener { host.deleteSelected() }
+        b.btnSlotDelete.setOnClickListener { it.hapticReject(); host.deleteSelected() }
         b.btnPlaceUndo.setOnClickListener { vm.edit { PlaceEditor.undo(it) } }
         b.btnPlaceRedo.setOnClickListener { vm.edit { PlaceEditor.redo(it) } }
         b.btnOptionsClose.setOnClickListener { setCard(false) }
@@ -115,13 +117,19 @@ class PlaceBarController(
         val r = PlaceBarLogic.onSlotTap(
             vm.placeTool, cardOpen, slot, lastActionTool, PlaceBarLogic.hasOptions(vm.placeTool, sel?.tool)
         )
-        if (r.tool != vm.placeTool) host.chooseTool(r.tool)
+        if (r.tool != vm.placeTool) {
+            b.root.hapticTick() // вибір інструмента
+            host.chooseTool(r.tool)
+        }
         setCard(r.cardOpen)
         render(vm.editor.value)
     }
 
     private fun chooseAction(tool: PlaceTool) {
-        if (vm.placeTool != tool) host.chooseTool(tool)
+        if (vm.placeTool != tool) {
+            b.root.hapticTick()
+            host.chooseTool(tool)
+        }
         render(vm.editor.value)
     }
 
@@ -276,7 +284,7 @@ class PlaceBarController(
             val v = SwatchView(grid.context).apply {
                 swatchColor = color
                 contentDescription = res.getString(paletteNames[i])
-                setOnClickListener { host.applyColor(color); host.refresh() }
+                setOnClickListener { hapticTick(); host.applyColor(color); host.refresh() }
             }
             list += v
         }
