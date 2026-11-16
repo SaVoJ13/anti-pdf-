@@ -245,6 +245,7 @@
     <string name="copy_warning_title">Protected file</string>
     <string name="copy_warning_message">The file is protected. The copy will be saved with the same password; the owner password and rights restrictions are not carried over.</string>
     <string name="copy_save">Save copy</string>
+    <string name="save_readonly_message">This file was opened read-only, so it cannot be changed in place. Your edits are not lost: you can save them as a copy.</string>
     <string name="place_copy_saved">Copy saved</string>
     <string name="save_no_changes_copy_not_created">No changes to save, the copy was not created</string>
     <string name="save_no_changes">No changes</string>

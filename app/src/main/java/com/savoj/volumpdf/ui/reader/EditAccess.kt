@@ -138,6 +138,46 @@ object SaveNotices {
         if (deleted == DeleteResult.FAILED) listOf(SaveNotice.EMPTY_FILE_LEFT) else emptyList()
 }
 
+/**
+ * Д2 (QA 2026-11-16): файл відкрито з іншого застосунку лише на читання, запис у нього заборонено системою.
+ * Бібліотека повертає сирий текст на кшталт «<пакет> has no access to content://…»; людині показуємо пояснення
+ * й пропозицію зберегти копію. Чиста функція: без Android, тестується в JVM.
+ */
+object SaveFailureKind {
+    private val markers = listOf(
+        "has no access to",
+        "permission denied",
+        "eacces",
+        "eperm",
+        "read-only",
+        "read only",
+        "securityexception",
+        "permission denial",
+        "not granted"
+    )
+
+    /** true, якщо збій схожий на відсутність права запису в документ. */
+    fun isNoWriteAccess(message: String?, cause: Throwable? = null): Boolean {
+        if (cause != null) {
+            var c: Throwable? = cause
+            var depth = 0
+            while (c != null && depth < 8) {
+                if (c is SecurityException) return true
+                if (matches(c.message)) return true
+                c = c.cause
+                depth++
+            }
+        }
+        return matches(message)
+    }
+
+    private fun matches(text: String?): Boolean {
+        if (text.isNullOrBlank()) return false
+        val low = text.lowercase()
+        return markers.any { it in low }
+    }
+}
+
 /** Як показати повідомлення про підсумок: діалог з «ОК» (не зникає сам) чи короткий Snackbar. */
 enum class NoticeDisplay { SNACKBAR, DIALOG }
 

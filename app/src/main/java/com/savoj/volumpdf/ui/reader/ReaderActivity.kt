@@ -2358,13 +2358,15 @@ class ReaderActivity : AppCompatActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.copy_warning_title)
             .setMessage(R.string.copy_warning_message)
-            .setPositiveButton(R.string.copy_save) { _, _ ->
-                copyOnSuccess = onSuccess
-                viewModel.awaitingCopyLocation = true // переживе am kill; після будь-якого завершення скидається
-                createCopyLauncher.launch(CopyNaming.suggestedName(documentTitle))
-            }
+            .setPositiveButton(R.string.copy_save) { _, _ -> startCopyPick(onSuccess) }
             .setNegativeButton(R.string.action_cancel, null)
             .showTracked()
+    }
+
+    private fun startCopyPick(onSuccess: () -> Unit) {
+        copyOnSuccess = onSuccess
+        viewModel.awaitingCopyLocation = true // переживе am kill; після будь-якого завершення скидається
+        createCopyLauncher.launch(CopyNaming.suggestedName(documentTitle))
     }
 
     /** Записує зміни: [copy] = false — у документ ([output] = той самий URI); true — у нову копію [output]. */
@@ -2412,7 +2414,11 @@ class ReaderActivity : AppCompatActivity() {
                 }
                 is SaveOutcome.Failed -> {
                     val deleted = removeEmptyCopy(output, copy)
-                    showFailure(outcome.message.ifBlank { getString(R.string.error_title) }, SaveNotices.forFailed(deleted))
+                    if (!copy && SaveFailureKind.isNoWriteAccess(outcome.message)) {
+                        showReadOnlyOffer(onSuccess)
+                    } else {
+                        showFailure(outcome.message.ifBlank { getString(R.string.error_title) }, SaveNotices.forFailed(deleted))
+                    }
                 }
                 SaveOutcome.NothingToSave -> {
                     val deleted = removeEmptyCopy(output, copy)
@@ -2424,13 +2430,27 @@ class ReaderActivity : AppCompatActivity() {
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
             val deleted = removeEmptyCopy(output, copy)
-            showFailure(e.localizedMessage ?: getString(R.string.error_title), SaveNotices.forFailed(deleted))
+            if (!copy && SaveFailureKind.isNoWriteAccess(e.localizedMessage, e)) {
+                showReadOnlyOffer(onSuccess)
+            } else {
+                showFailure(e.localizedMessage ?: getString(R.string.error_title), SaveNotices.forFailed(deleted))
+            }
         } finally {
             if (copy) ownedCopyUri = null
             hideLoadingOverlay()
             savingPlace = false
             binding.markupOverlay.editingEnabled = viewModel.placeModeActive
         }
+    }
+
+    /** Д2: документ відкрито лише на читання. Пояснення простою мовою й пропозиція зберегти копію (незбережене лишається). */
+    private fun showReadOnlyOffer(onSuccess: () -> Unit) {
+        if (isDestroyed || isFinishing) return
+        MaterialAlertDialogBuilder(this)
+            .setMessage(R.string.save_readonly_message)
+            .setPositiveButton(R.string.copy_save) { _, _ -> startCopyPick(onSuccess) }
+            .setNegativeButton(R.string.action_cancel, null)
+            .showTracked()
     }
 
     private fun noticeText(notice: SaveNotice): String = getString(
