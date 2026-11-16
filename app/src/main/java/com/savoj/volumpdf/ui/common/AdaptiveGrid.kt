@@ -14,19 +14,23 @@ object AdaptiveGrid {
 
     fun attach(rv: RecyclerView, minItemDp: Float, maxColumns: Int, gapDp: Int = 0): GridLayoutManager {
         val density = rv.resources.displayMetrics.density
-        val lm = GridLayoutManager(rv.context, 1)
+        // Колонки вираховуються в onMeasure менеджера: до розкладки елементів і при кожній зміні ширини
+        // (поворот, складання, split-screen) без перестворення Activity.
+        val lm = object : GridLayoutManager(rv.context, 1) {
+            override fun onMeasure(
+                recycler: RecyclerView.Recycler,
+                state: RecyclerView.State,
+                widthSpec: Int,
+                heightSpec: Int
+            ) {
+                val widthPx = View.MeasureSpec.getSize(widthSpec) - rv.paddingLeft - rv.paddingRight
+                val columns = AdaptiveLayoutLogic.columnsFor(widthPx / density, minItemDp, maxColumns)
+                if (spanCount != columns) spanCount = columns
+                super.onMeasure(recycler, state, widthSpec, heightSpec)
+            }
+        }
         rv.layoutManager = lm
         if (gapDp > 0) rv.addItemDecoration(GapDecoration((gapDp * density).toInt()))
-
-        fun update(widthPx: Int) {
-            val usable = widthPx - rv.paddingLeft - rv.paddingRight
-            val columns = AdaptiveLayoutLogic.columnsFor(usable / density, minItemDp, maxColumns)
-            if (lm.spanCount != columns) lm.spanCount = columns
-        }
-        if (rv.width > 0) update(rv.width)
-        rv.addOnLayoutChangeListener { v, l, _, r, _, ol, _, or, _ ->
-            if ((r - l) != (or - ol)) update(v.width)
-        }
         return lm
     }
 
