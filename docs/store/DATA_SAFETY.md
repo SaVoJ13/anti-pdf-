@@ -1,92 +1,57 @@
-# Google Play Data Safety Form Responses
+# Google Play Data Safety: відповіді для Anti PDF (чернетка)
 
-**Application:** Volum PDF: Reader & Tools  
-**Package:** `com.savoj.volumpdf`  
-**Target Release:** Android 9.0 (API 28) – Android 16 (API 36)  
-**SDKs with Network Access:** Google AdMob SDK (`com.google.android.gms:play-services-ads:23.6.0`), Google User Messaging Platform SDK (`com.google.android.ump:user-messaging-platform:3.1.0`)  
-**Primary References:**  
-- Google Play Console Help: *Provide information for Google Play's Data safety section*  
-- Google AdMob Documentation: *Google Mobile Ads SDK Data Disclosure* (`https://developers.google.com/admob/android/data-disclosure`)
+> Чернетка для Власника, форму в Play Console заповнює Власник. Нічого не подано. Звірено з кодом 2026-11-16. Список даних AdMob може змінитися: перед поданням звір з актуальною сторінкою Google "Google Mobile Ads SDK data disclosure" (https://developers.google.com/admob/android/privacy/play-data-disclosure) для версії SDK, що йде в релізі (зараз `play-services-ads:23.6.0`; на сторінці Google згадано 25.5.0, тобто можливі відмінності).
+
+**Application:** Anti PDF
+**Package:** `com.savoj.volumpdf.anti`
+**Min / target SDK:** 28 / 36
+**SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:23.6.0`), Google UMP (`com.google.android.ump:user-messaging-platform:3.1.0`).
+**Інші SDK:** Google ML Kit Document Scanner (`play-services-mlkit-document-scanner:16.0.0-beta1`, через Google Play services), PdfBox-Android, androidx.pdf, Room (усе локально).
+**Резервне копіювання:** `allowBackup="false"` (рішення Власника 2026-11-14); `dataExtractionRules` / `fullBackupContent` не задано, бо автокопіювання вимкнено.
+**Дозволи у власному маніфесті:** лише `INTERNET`. Склеєний маніфест релізу перевірено, дивись `docs/project_log.md` (запис release-prep).
 
 ---
 
-## 1. Overview Questions
+## 1. Overview
 
-| Question | Answer | Details / Justification |
+| Питання | Відповідь | Пояснення |
 |---|---|---|
-| **Does your app collect or share any of the required user data types?** | **Yes** | Data collection is strictly performed by third-party advertising SDK (Google AdMob). The app itself does not collect any first-party data. |
-| **Is all of the user data collected by your app encrypted in transit?** | **Yes** | All network traffic between Google Mobile Ads SDK and Google servers is transmitted over HTTPS/TLS encrypted connections. |
-| **Do you provide a way for users to request that their data be deleted?** | **Yes** | Users can reset or delete their Google Advertising ID directly in Android Settings, clear local app data, or contact the developer (`privacy@volumpdf.com`). |
+| Збирає або передає застосунок обов'язкові типи даних? | **Так** | Збір виконує рекламний SDK (AdMob). Власного збору даних застосунок не робить. |
+| Усі дані шифруються під час передачі? | **Так** | Мережевий обмін SDK із серверами Google йде через HTTPS. |
+| Чи можна запросити видалення даних? | **Так (через налаштування Android / Google)** | Користувач скидає/видаляє рекламний ID у налаштуваннях Android; локальні дані видаляються очищенням даних застосунку. Власних серверних даних користувача немає. Контакт: `[CONTACT EMAIL]` (підставляє Власник). |
+| Чи є політика приватності (URL)? | **Так, після розміщення Власником** | URL ще не розміщено (плейсхолдер у `BuildConfig.PRIVACY_POLICY_URL`). |
+| Чи дотримано Families / дитячі правила? | Не застосовується | Застосунок не для дітей. |
 
 ---
 
-## 2. Data Types Breakdown
+## 2. Типи даних
 
-### 2.1 Files and Documents (PDFs, Images)
-- **Status:** **NOT COLLECTED (No)**
-- **Explanation:** Files and documents opened by the user via Storage Access Framework (SAF) are processed **100% locally on the device**. No files, text, page contents, or images are ever uploaded, collected, or shared.
+### 2.1 Файли й документи, фото
+- **Не збираються і не передаються.** PDF, зображення та результати сканера обробляються локально. Сканер (Google ML Kit Document Scanner) працює на пристрої через Google Play services; застосунок не отримує доступу до мережі для скану й не завантажує скани.
 
 ### 2.2 Location
-- **Data Type:** **Approximate Location** (Network-derived coarse location, e.g., country/city level based on IP address)
-  - **Collected:** Yes (by Google AdMob)
-  - **Shared:** Yes (shared with Google AdMob / advertising partners)
-  - **Processed ephemerally:** No
-  - **Required or Optional:** **Optional** (Subject to UMP consent in EEA/UK; non-personalized or disabled if consent revoked)
-  - **Purposes:**
-    - *Advertising or marketing*
-    - *Fraud prevention, security, and compliance*
+- **Approximate location:** збирається AdMob (з IP). Передається. Необов'язково (залежить від згоди UMP). Цілі: Advertising or marketing; Fraud prevention, security and compliance.
 
-### 2.3 Device or Other IDs
-- **Data Type:** **Device or other IDs** (Google Advertising ID / GAID, Android advertising identifiers)
-  - **Collected:** Yes (by Google AdMob)
-  - **Shared:** Yes (with Google AdMob)
-  - **Processed ephemerally:** No
-  - **Required or Optional:** **Optional** (Governed by UMP consent dialog; users can also reset/delete advertising ID in device settings)
-  - **Purposes:**
-    - *Advertising or marketing* (ad personalization, frequency capping)
-    - *Fraud prevention, security, and compliance* (invalid traffic detection)
-    - *Analytics* (ad delivery performance)
+### 2.3 Device or other IDs
+- **Device or other IDs** (рекламний ID, ідентифікатори пристрою/додатка SDK): збирається AdMob. Передається. Цілі: Advertising or marketing; Fraud prevention, security and compliance; Analytics.
 
-### 2.4 App Activity
-- **Data Type:** **App interactions** (Interactions with ads: impressions, clicks, video views)
-  - **Collected:** Yes (by Google AdMob)
-  - **Shared:** Yes
-  - **Processed ephemerally:** No
-  - **Required or Optional:** **Optional**
-  - **Purposes:**
-    - *Advertising or marketing*
-    - *Analytics*
-    - *Fraud prevention, security, and compliance*
+### 2.4 App activity
+- **App interactions** (покази й кліки реклами): збирає AdMob. Передається. Цілі: Advertising or marketing; Analytics; Fraud prevention, security and compliance.
 
-### 2.5 App Info and Performance
-- **Data Type:** **Crash logs** (Ad-related crashes and diagnostic traces)
-  - **Collected:** Yes (by Google AdMob)
-  - **Shared:** Yes
-  - **Processed ephemerally:** No
-  - **Required or Optional:** **Optional**
-  - **Purposes:**
-    - *Analytics*
-    - *Fraud prevention, security, and compliance*
-- **Data Type:** **Diagnostics** (Ad load latency, response rates)
-  - **Collected:** Yes (by Google AdMob)
-  - **Shared:** Yes
-  - **Purposes:**
-    - *Analytics*
-    - *Advertising or marketing*
+### 2.5 App info and performance
+- **Crash logs** і **Diagnostics** рекламного SDK: збирає AdMob. Передається. Цілі: Analytics; Fraud prevention, security and compliance.
 
-### 2.6 All Other Categories
-- **Personal info (Name, Email, Phone, Address, User IDs):** **NOT COLLECTED**
-- **Financial Info:** **NOT COLLECTED**
-- **Health and Fitness:** **NOT COLLECTED**
-- **Messages / SMS / Emails:** **NOT COLLECTED**
-- **Photos and Videos:** **NOT COLLECTED**
-- **Audio Files:** **NOT COLLECTED**
-- **Calendar:** **NOT COLLECTED**
-- **Contacts:** **NOT COLLECTED**
-- **Web Browsing History:** **NOT COLLECTED**
+### 2.6 Усе інше
+Не збирається: Personal info (ім'я, email, телефон, адреса, User IDs), Financial info, Health and fitness, Messages, Photos and videos, Audio, Calendar, Contacts, Web browsing, Files and docs.
 
 ---
 
-## 3. Privacy Policy URL for Play Console
-- URL to be entered in Google Play Console Policy Section:  
-  `https://volumpdf.com/privacy-policy` *(or hosted raw GitHub/public URL prior to domain deployment)*
+## 3. Обробка згоди
+Google UMP показує форму в ЄЕЗ/Великій Британії/Швейцарії. Пункт меню «Налаштування конфіденційності» (UMP privacy options) показується, коли Google цього вимагає. Пункт «Політика приватності» відкриває URL політики.
+
+## 4. Декларація Advertising ID (App content)
+Реліз тягне дозвіл `com.google.android.gms.permission.AD_ID` через SDK реклами (підтвердження зі склеєного маніфесту в журналі). У Play Console: App content / Advertising ID: так, застосунок використовує рекламний ID для реклами.
+
+## 5. Що вирішує Власник
+- Остаточні відповіді у формі Data safety (після звірки з актуальною сторінкою Google).
+- URL політики приватності та контактна адреса.
