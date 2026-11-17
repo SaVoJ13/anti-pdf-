@@ -60,4 +60,25 @@ class StructuralEditKeepsPendingTest {
             dir.deleteRecursively()
         }
     }
+
+    private fun src(rel: String): String = listOf(File("src/main/java/com/savoj/volumpdf/$rel"), File("app/src/main/java/com/savoj/volumpdf/$rel"))
+        .first { it.isFile }.readText()
+
+    /** Ризик "інструменти змінюють той самий файл, поки чернетка в читачі": вони пишуть лише в НОВИЙ файл (CreateDocument). */
+    @Test
+    fun pageToolsWriteToNewFileNotTheOpenDocument() {
+        val tools = src("ui/tools/ToolsActivity.kt")
+        assertTrue(tools.contains("ActivityResultContracts.CreateDocument"))
+        assertFalse(tools.contains("outputUri = sourceUri"))
+        val organizer = src("ui/organizer/PageOrganizerActivity.kt")
+        assertTrue(organizer.contains("ActivityResultContracts.CreateDocument"))
+    }
+
+    /** Єдині операції "на місці" з читача лише додають сторінки в кінець (індекси чернетки не зсуваються). */
+    @Test
+    fun inPlaceReaderOperationsOnlyAppendPages() {
+        val s = readerSource()
+        val inPlace = Regex("""engine\.(\w+)\(""").findAll(s).map { it.groupValues[1] }.toSet()
+        assertEquals(setOf("appendBlankPages", "appendFiles"), inPlace)
+    }
 }
