@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Політика приватності / Privacy Policy — Anti PDF</title>
+<style>
+:root{--bg:#fff;--fg:#1c1b1f;--muted:#5f6368;--accent:#0b57d0;--line:#dadce0;--card:#f6f8fc}
+@media (prefers-color-scheme:dark){:root{--bg:#121316;--fg:#e6e6ea;--muted:#a3a7ad;--accent:#a8c7fa;--line:#3a3d42;--card:#1b1d22}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:46rem;margin:0 auto;padding:1.25rem 1rem 3rem}
+h1{font-size:1.6rem;line-height:1.25;margin:.5rem 0}
+h2{font-size:1.2rem;margin:2rem 0 .5rem;padding-top:.5rem;border-top:1px solid var(--line)}
+h3{font-size:1.02rem;margin:1.2rem 0 .3rem}
+a{color:var(--accent);overflow-wrap:anywhere}
+ul{padding-left:1.25rem}
+li{margin:.25rem 0}
+.lang{display:flex;gap:.75rem;margin:.5rem 0 1rem}
+.lang a{padding:.35rem .8rem;border:1px solid var(--line);border-radius:999px;text-decoration:none;background:var(--card)}
+.meta{color:var(--muted);font-size:.92rem}
+.box{background:var(--card);border:1px solid var(--line);border-radius:.6rem;padding:.75rem 1rem}
+section{scroll-margin-top:1rem}
+</style>
+</head>
+<body>
+<main>
+<nav class="lang" aria-label="Language / Мова">
+<a href="#uk" hreflang="uk">Українська</a>
+<a href="#en" hreflang="en">English</a>
+</nav>
+
+<section id="uk" lang="uk">
+<h1>Політика приватності застосунку Anti PDF</h1>
+<p class="meta">Остання редакція: 2026-11-17<br>Застосунок: Anti PDF (Volum PDF), пакет <code>com.savoj.volumpdf.anti</code><br>Контакт розробника: <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a></p>
+
+<h2>1. Коротко</h2>
+<div class="box"><ul>
+<li><strong>Ваші документи залишаються на пристрої.</strong> Читання, редагування, підпис, водяні знаки, стиснення, об'єднання, розділення, поворот і сканування виконуються локально. Ми не завантажуємо ваші файли на сервери і не маємо серверів для них.</li>
+<li><strong>Без акаунта.</strong> Ви не вказуєте ім'я, email чи телефон.</li>
+<li><strong>Застосунок показує рекламу Google AdMob.</strong> Щоб її показати, рекламне програмне забезпечення Google збирає дані про ваш пристрій (розділ 3). Це єдиний збір даних у застосунку.</li>
+<li><strong>Немає власної аналітики чи звітів про збої</strong> (немає Firebase Analytics, Crashlytics, Facebook SDK тощо).</li>
+<li><strong>Немає хмарного резервного копіювання:</strong> автоматичне резервне копіювання Android вимкнено (<code>allowBackup=false</code>).</li>
+</ul></div>
+
+<h2>2. Файли та сховище на пристрої</h2>
+<ul>
+<li>Файли відкриваються й зберігаються лише через системний вибір файлів Android (Storage Access Framework). Застосунок не просить широкого доступу до сховища. Застосунок також може відкривати PDF, які ви надсилаєте йому з іншого застосунку («Відкрити за допомогою»).</li>
+<li>Список «Останні» зберігається в локальній базі даних на пристрої: адреса файлу (URI), назва, розмір, кількість сторінок, остання прочитана сторінка, час останнього відкриття та позначка «обране». Він нікуди не надсилається. Його можна очистити в застосунку («Очистити історію») або в налаштуваннях Android (Застосунки, Anti PDF, Сховище, Очистити дані).</li>
+<li>Налаштування вигляду та читання (наприклад, тема) зберігаються локально на пристрої.</li>
+<li>Для перегляду результату застосунок може створювати тимчасову копію PDF у власному кеші; вона не залишає пристрій.</li>
+<li>Сканер документів використовує Google ML Kit Document Scanner, що надається через сервіси Google Play. За інформацією Google, сканування та обробка зображень виконуються на пристрої; готові сторінки передаються застосунку, який зберігає їх туди, куди ви вкажете. Ми не отримуємо і не зберігаємо ваші скани.</li>
+</ul>
+
+<h2>3. Реклама (Google AdMob) і згода (Google UMP)</h2>
+<p>Застосунок безкоштовний і показує рекламу Google AdMob (Google Mobile Ads SDK): банер на головному екрані та екрані інструментів і, не частіше ніж раз на 5 хвилин, повноекранну рекламу після завершення дії в інструментах. Реклами немає під час читання документа й під час відкриття файлу.</p>
+<h3>3.1 Які дані обробляє Google AdMob</h3>
+<p>Залежно від вашого регіону та згоди, Google може збирати й обробляти:</p>
+<ul>
+<li><strong>ідентифікатори пристрою</strong>, зокрема рекламний ідентифікатор (якщо ви його не скинули чи не видалили), а також дані про пристрій і версію ОС;</li>
+<li><strong>приблизне місцезнаходження</strong>, визначене за IP-адресою;</li>
+<li><strong>дані про взаємодію з рекламою</strong> (покази, кліки) та <strong>діагностику</strong> (швидкість завантаження реклами, дані про збої та продуктивність рекламного SDK).</li>
+</ul>
+<p>Ці дані використовуються для показу реклами, обмеження частоти показів, захисту від шахрайства, безпеки та вимірювання ефективності реклами. Ми не отримуємо від Google ваших персональних даних. Докладніше: <a href="https://policies.google.com/privacy">Політика конфіденційності Google</a> і <a href="https://policies.google.com/technologies/partner-sites">Як Google використовує дані із сайтів і застосунків партнерів</a>.</p>
+<h3>3.2 Згода (GDPR / ePrivacy)</h3>
+<ul>
+<li>У Європейській економічній зоні, Великій Британії та Швейцарії застосунок використовує Google User Messaging Platform (UMP) і запитує вашу згоду до того, як запитуватиме рекламу, що використовує персональні дані.</li>
+<li>Якщо згода потрібна, але не надана, застосунок не запитує рекламу.</li>
+<li>Змінити вибір можна будь-коли в меню застосунку: <strong>«Налаштування конфіденційності»</strong>. Цей пункт показується, коли Google вимагає його для вашого регіону.</li>
+</ul>
+<h3>3.3 Рекламний ідентифікатор</h3>
+<p>Ви можете скинути або видалити рекламний ідентифікатор і керувати персоналізацією реклами в налаштуваннях Android (Google, Реклама). Застосунок через рекламний SDK оголошує дозвіл на рекламний ідентифікатор (<code>AD_ID</code>).</p>
+
+<h2>4. Використання інтернету</h2>
+<p>У власному маніфесті застосунок запитує лише дозвіл <code>INTERNET</code>. Інтернет потрібен тільки рекламному програмному забезпеченню (реклама та форма згоди). Читання й редагування документів працює офлайн; без мережі реклама не показується.</p>
+
+<h2>5. Передавання даних і безпека</h2>
+<ul>
+<li>Дані, зібрані Google AdMob, обробляє Google за власними політиками. Ми не продаємо ваші дані.</li>
+<li>Обмін рекламного SDK з серверами Google відбувається через HTTPS.</li>
+<li>Ми нікому не передаємо ваші документи: вони не залишають пристрій.</li>
+<li>Застосунок може записувати в системний журнал Android технічні повідомлення (наприклад, тип помилки). Вони лишаються на пристрої й не надсилаються нам.</li>
+</ul>
+
+<h2>6. Ваші права та видалення даних</h2>
+<ul>
+<li>Керуйте персоналізацією реклами та рекламним ідентифікатором у налаштуваннях Android.</li>
+<li>Змінюйте згоду в меню застосунку («Налаштування конфіденційності»), коли цей пункт показано.</li>
+<li>Видаліть локальні дані застосунку: «Очистити історію» в застосунку, очищення даних у налаштуваннях Android або видалення застосунку. Ваші PDF-файли при цьому не видаляються.</li>
+<li>Ми не зберігаємо ваших персональних даних на своїх серверах, тому нічого видаляти на нашому боці. Дані, які обробляє Google AdMob, ви можете запитувати в Google за його політикою (див. розділ 3.1).</li>
+<li>З питань і запитів щодо даних пишіть: <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a>.</li>
+</ul>
+
+<h2>7. Діти</h2>
+<p>Застосунок призначений для загальної аудиторії і не спрямований на дітей віком до 13 років (до 16 років у ЄЕЗ). Ми свідомо не збираємо персональних даних дітей.</p>
+
+<h2>8. Зміни</h2>
+<p>Ми можемо оновлювати цю політику. Дата «Остання редакція» вказує на останню зміну.</p>
+
+<h2>9. Контакт</h2>
+<p><a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a></p>
+<p><a href="#en">English version</a></p>
+</section>
+
+<section id="en" lang="en">
+<h1>Anti PDF Privacy Policy</h1>
+<p class="meta">Last updated: 2026-11-17<br>Application: Anti PDF (Volum PDF), package <code>com.savoj.volumpdf.anti</code><br>Developer contact: <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a></p>
+
+<h2>1. Overview</h2>
+<div class="box"><ul>
+<li><strong>Your documents stay on your device.</strong> Reading, editing, signing, watermarking, compressing, merging, splitting, rotating and scanning are performed locally. We do not upload your files to any server and we do not operate servers for them.</li>
+<li><strong>No account.</strong> You do not give us your name, email or phone.</li>
+<li><strong>The app shows ads from Google AdMob.</strong> To show them, Google's advertising software collects some data about your device (section 3). This is the only data collection in the app.</li>
+<li><strong>No analytics or crash-reporting SDK of our own</strong> (no Firebase Analytics, Crashlytics, Facebook SDK or similar).</li>
+<li><strong>No cloud backup:</strong> Android automatic backup is disabled (<code>allowBackup=false</code>).</li>
+</ul></div>
+
+<h2>2. Files and storage on your device</h2>
+<ul>
+<li>Files are opened and saved only through Android's system file picker (Storage Access Framework). The app does not request broad storage access. The app can also open PDFs that you send to it from another app ("Open with").</li>
+<li>The "Recent" list is kept in a local database on your device: file address (URI), name, size, page count, last read page, last opened time and a favorite flag. It is never sent anywhere. You can clear it in the app ("Clear history") or in Android Settings (Apps, Anti PDF, Storage, Clear data).</li>
+<li>Appearance and reading settings (for example the theme) are stored locally on your device.</li>
+<li>To show a result, the app may create a temporary copy of the PDF in its own cache; it never leaves the device.</li>
+<li>The document scanner uses the Google ML Kit Document Scanner, provided through Google Play services. Per Google, scanning and image processing run on the device; the scanned pages are handed to the app, which saves them where you choose. We do not receive or store your scans.</li>
+</ul>
+
+<h2>3. Advertising (Google AdMob) and consent (Google UMP)</h2>
+<p>The app is free and shows ads from Google AdMob (Google Mobile Ads SDK): a banner on the home and tools screens and, at most once every 5 minutes, a full-screen ad after you finish an action in the tools. There are no ads while you read a document or when a file is opened.</p>
+<h3>3.1 Data processed by Google AdMob</h3>
+<p>Depending on your region and consent, Google may collect and process:</p>
+<ul>
+<li><strong>device identifiers</strong>, including the advertising ID (if you have not reset or deleted it), and device and OS information;</li>
+<li><strong>approximate location</strong> derived from the IP address;</li>
+<li><strong>ad interaction data</strong> (impressions, clicks) and <strong>diagnostics</strong> (ad load speed, crash and performance data of the ad SDK).</li>
+</ul>
+<p>This data is used to show ads, limit ad frequency, prevent fraud, ensure security and measure ad performance. We do not receive your personal data from Google. Learn more: <a href="https://policies.google.com/privacy">Google Privacy Policy</a> and <a href="https://policies.google.com/technologies/partner-sites">How Google uses information from sites or apps that use its services</a>.</p>
+<h3>3.2 Consent (GDPR / ePrivacy)</h3>
+<ul>
+<li>In the European Economic Area, the UK and Switzerland the app uses Google's User Messaging Platform (UMP) to ask for your consent before requesting ads that use personal data.</li>
+<li>If consent is required and not given, the app does not request ads.</li>
+<li>You can review or change your choice at any time in the app menu: <strong>"Privacy settings"</strong>. This item is shown when Google requires it for your region.</li>
+</ul>
+<h3>3.3 Advertising ID</h3>
+<p>You can reset or delete the advertising ID and manage ad personalization in Android Settings (Google, Ads). Through the ads SDK the app declares the advertising ID permission (<code>AD_ID</code>).</p>
+
+<h2>4. Internet use</h2>
+<p>In its own manifest the app requests only the <code>INTERNET</code> permission. The internet is used only by the advertising software (ads and the consent form). Reading and editing documents works offline; when offline, no ads are shown.</p>
+
+<h2>5. Data sharing and security</h2>
+<ul>
+<li>Data collected by Google AdMob is processed by Google under Google's policies. We do not sell your data.</li>
+<li>The ad SDK communicates with Google servers over HTTPS.</li>
+<li>We do not share your documents with anyone: they never leave your device.</li>
+<li>The app may write technical messages (for example an error type) to the Android system log. They stay on the device and are not sent to us.</li>
+</ul>
+
+<h2>6. Your rights and data deletion</h2>
+<ul>
+<li>Manage ad personalization and the advertising ID in Android Settings.</li>
+<li>Change your consent in the app menu ("Privacy settings") when that item is shown.</li>
+<li>Delete the app's local data: "Clear history" in the app, clearing data in Android Settings, or uninstalling the app. Your PDF files are not deleted by this.</li>
+<li>We do not store your personal data on our servers, so there is nothing to delete on our side. For data processed by Google AdMob you can make requests to Google under its policies (see section 3.1).</li>
+<li>For questions or requests about your data, write to <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a>.</li>
+</ul>
+
+<h2>7. Children</h2>
+<p>The app is intended for a general audience and is not directed at children under 13 (under 16 in the EEA). We do not knowingly collect personal data from children.</p>
+
+<h2>8. Changes</h2>
+<p>We may update this policy. The "Last updated" date shows the latest change.</p>
+
+<h2>9. Contact</h2>
+<p><a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a></p>
+<p><a href="#uk">Українська версія</a></p>
+</section>
+</main>
+</body>
+</html>
