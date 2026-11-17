@@ -258,32 +258,11 @@
             android:textColor="?attr/colorOnSurfaceVariant" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEmptyOpen"
-            android:layout_width="wrap_content"
-            android:layout_height="52dp"
-            android:layout_marginTop="24dp"
-            android:minWidth="220dp"
-            android:text="@string/action_open_pdf"
-            app:cornerRadius="14dp"
-            app:icon="@drawable/ic_open_pdf" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEmptyScan"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="wrap_content"
-            android:layout_height="52dp"
-            android:layout_marginTop="10dp"
-            android:minWidth="220dp"
-            android:text="@string/scan_empty_action"
-            app:cornerRadius="14dp"
-            app:icon="@drawable/ic_camera_scan" />
-
-        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEmptyCreate"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="52dp"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="24dp"
             android:minWidth="220dp"
             android:text="@string/action_create_pdf"
             app:cornerRadius="14dp"

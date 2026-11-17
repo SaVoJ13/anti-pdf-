@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="onboarding_icon_box">64dp</dimen>
+    <dimen name="onboarding_icon_size">32dp</dimen>
+    <dimen name="onboarding_title_gap">12dp</dimen>
+</resources>

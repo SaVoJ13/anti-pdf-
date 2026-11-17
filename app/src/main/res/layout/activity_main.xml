@@ -68,7 +68,16 @@
 
     </LinearLayout>
 
-    <!-- Блок швидких головних дій: «Створити PDF», «Сканувати» та «Відкрити PDF» -->
+    <!-- Затемнення під розкритими діями; дотик згортає розкриття (М9) -->
+    <View
+        android:id="@+id/fabScrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/scrim_overlay"
+        android:contentDescription="@string/action_hide_more_actions"
+        android:visibility="gone" />
+
+    <!-- М9: одна головна дія «Відкрити PDF» (ExtendedFAB) + кнопка «+», що розкриває «Створити PDF» і «Сканувати» -->
     <LinearLayout
         android:id="@+id/fabCluster"
         android:layout_width="wrap_content"
@@ -76,43 +85,76 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="92dp"
-        android:gravity="end|center_vertical"
-        android:orientation="horizontal">
+        android:gravity="end"
+        android:orientation="vertical">
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabCreatePdf"
+        <LinearLayout
+            android:id="@+id/fabActions"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:contentDescription="@string/action_create_pdf"
-            app:backgroundTint="?attr/colorSurfaceContainerHighest"
-            app:elevation="3dp"
-            app:fabSize="normal"
-            app:srcCompat="@drawable/ic_note_add"
-            app:tint="?attr/colorPrimary" />
+            android:layout_marginBottom="12dp"
+            android:gravity="end"
+            android:orientation="vertical"
+            android:visibility="gone">
 
-        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-            android:id="@+id/fabScanPdf"
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                android:id="@+id/fabCreatePdf"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="0dp"
+                android:text="@string/action_create_pdf"
+                android:textColor="?attr/colorOnPrimaryContainer"
+                app:backgroundTint="?attr/colorPrimaryContainer"
+                app:elevation="3dp"
+                app:icon="@drawable/ic_note_add"
+                app:iconTint="?attr/colorOnPrimaryContainer" />
+
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                android:id="@+id/fabScanPdf"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginTop="12dp"
+                android:text="@string/action_scan_short"
+                android:textColor="?attr/colorOnPrimaryContainer"
+                app:backgroundTint="?attr/colorPrimaryContainer"
+                app:elevation="3dp"
+                app:icon="@drawable/ic_camera_scan"
+                app:iconTint="?attr/colorOnPrimaryContainer" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:text="@string/action_scan_short"
-            android:textColor="?attr/colorOnPrimaryContainer"
-            app:backgroundTint="?attr/colorPrimaryContainer"
-            app:elevation="3dp"
-            app:icon="@drawable/ic_camera_scan"
-            app:iconTint="?attr/colorOnPrimaryContainer" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-            android:id="@+id/fabOpenPdf"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/action_open_pdf"
-            android:textColor="?attr/colorOnPrimary"
-            app:backgroundTint="?attr/colorPrimary"
-            app:elevation="4dp"
-            app:icon="@drawable/ic_open_pdf"
-            app:iconTint="?attr/colorOnPrimary" />
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                android:id="@+id/fabOpenPdf"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/action_open_pdf"
+                android:textColor="?attr/colorOnPrimary"
+                app:backgroundTint="?attr/colorPrimary"
+                app:elevation="4dp"
+                app:icon="@drawable/ic_open_pdf"
+                app:iconTint="?attr/colorOnPrimary" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabMore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:contentDescription="@string/action_more_actions"
+                app:backgroundTint="?attr/colorPrimaryContainer"
+                app:elevation="3dp"
+                app:fabCustomSize="48dp"
+                app:maxImageSize="24dp"
+                app:srcCompat="@drawable/ic_add"
+                app:tint="?attr/colorOnPrimaryContainer" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

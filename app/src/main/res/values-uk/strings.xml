@@ -29,7 +29,7 @@
 
     <!-- Empty State -->
     <string name="empty_recents_title">Немає останніх документів</string>
-    <string name="empty_recents_desc">Відкрийте будь-який PDF-файл за допомогою кнопки нижче для читання.</string>
+    <string name="empty_recents_desc">Натисніть «Відкрити PDF» нижче, щоб почати читання. Кнопка «+» поруч відкриває ще дії: створити PDF або сканувати документ.</string>
     <string name="empty_search_title">Документів не знайдено</string>
     <string name="empty_search_desc">Спробуйте змінити пошуковий запит.</string>
 
@@ -400,4 +400,17 @@
     <string name="page_numbers_example_1">Сторінка 1 з 10</string>
     <string name="page_numbers_example_2">1 / 10</string>
     <string name="page_numbers_example_3">1</string>
+    <string name="action_more_actions">Ще дії</string>
+    <string name="action_hide_more_actions">Сховати дії</string>
+    <string name="action_filter_sort">Фільтр і порядок</string>
+    <string name="onboarding_skip">Пропустити</string>
+    <string name="onboarding_next">Далі</string>
+    <string name="onboarding_start">Почати</string>
+    <string name="onboarding_page_indicator">Екран %1$d з %2$d</string>
+    <string name="onboarding_1_title">Відкривайте й читайте PDF</string>
+    <string name="onboarding_1_body">Натисніть «Відкрити PDF» і виберіть файл на пристрої. Останні файли з’являються в бібліотеці, тож можна продовжити читання з того місця, де зупинилися.</string>
+    <string name="onboarding_2_title">Редагуйте: текст, підпис, малювання, форми</string>
+    <string name="onboarding_2_body">У документі натисніть «Редагувати», щоб додати текст, підпис чи малюнок і заповнити поля форм. Злиття, розділення, сканування та інші інструменти є на вкладці «Інструменти».</string>
+    <string name="onboarding_3_title">Ваші файли лишаються на пристрої</string>
+    <string name="onboarding_3_body">Документи відкриваються й редагуються на вашому пристрої. Облікового запису чи входу немає. У застосунку показується реклама Google AdMob, яка може збирати дані пристрою; подробиці є в пункті «Політика приватності» меню ⋮.</string>
 </resources>

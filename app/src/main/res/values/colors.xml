@@ -64,4 +64,6 @@
     <!-- Generic Helpers (Indigo Accent) -->
     <color name="pdf_badge_color">#3949AB</color>
     <color name="favorite_gold">#F59E0B</color>
+    <!-- Затемнення під розкритими діями головного екрана -->
+    <color name="scrim_overlay">#66000000</color>
 </resources>
