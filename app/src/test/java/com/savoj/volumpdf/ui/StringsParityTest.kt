@@ -121,7 +121,7 @@ class StringsParityTest {
 
     @Test
     fun `a11y and unified-name strings exist in all four languages and no hardcoded english page hint remains`() {
-        val keys = listOf("action_back", "a11y_page_jump", "a11y_zoom", "action_tools", "tools_sheet_title", "err_pages_range")
+        val keys = listOf("action_back", "a11y_page_jump", "a11y_zoom", "action_tools", "tools_sheet_title", "err_pages_range", "reader_edit_fab_desc")
         (locales + ("en" to base)).forEach { (lang, map) ->
             keys.forEach { assertTrue("$it відсутній у $lang", map.containsKey(it)) }
         }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Верхня панель читача мінімальна: тема читання, «+», (у режимі «Редагувати»: «Зберегти», «Готово») і меню ⋮.
-     Усе інше (пошук, обране, поділитися, інструменти, сторінки, форми, відомості) — у меню ⋮. -->
+<!-- Верхня панель читача мінімальна (М5): стрілка, назва, меню ⋮. У режимі «Редагувати»: «Зберегти», «Готово», «+», ⋮.
+     Тема читання — лише тут, у меню ⋮ (М3). Пошук у читанні — лупа в пігулці сторінки (М2); у меню ⋮ він є лише
+     в режимі «Редагувати», де пігулки немає. «Редагувати» — плаваюча кнопка (М1). «+» у читанні — в «Сторінки й файл». -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
@@ -18,27 +19,23 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/action_reading_theme"
-        android:icon="@drawable/ic_night_mode"
-        android:title="@string/place_menu_reading_mode"
-        app:showAsAction="always" />
-
-    <item
         android:id="@+id/action_add"
         android:icon="@drawable/ic_add"
         android:title="@string/action_add"
+        android:visible="false"
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/action_reading_theme_overflow"
+        android:id="@+id/action_reading_theme"
+        android:icon="@drawable/ic_night_mode"
         android:title="@string/place_menu_reading_mode"
-        android:visible="false"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_search"
         android:icon="@drawable/ic_search"
         android:title="@string/action_search"
+        android:visible="false"
         app:showAsAction="never" />
 
     <item
@@ -64,12 +61,6 @@
         android:id="@+id/action_share"
         android:icon="@drawable/ic_share"
         android:title="@string/action_share"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_place"
-        android:icon="@drawable/ic_edit"
-        android:title="@string/action_place"
         app:showAsAction="never" />
 
     <item
