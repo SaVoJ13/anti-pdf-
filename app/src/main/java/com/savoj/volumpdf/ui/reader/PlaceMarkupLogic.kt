@@ -101,6 +101,9 @@ object PlaceMarkupLogic {
     /** Мінімальна допустима ширина рядка тексту при перенесенні або зміні розміру вікна (pt). */
     const val MIN_TEXT_LINE_WIDTH_PT = 40f
 
+    /** Поле біля правого краю (і мінімум ліворуч) для переносу тексту; те саме, що в [maxTextLineWidthPt]. */
+    const val TEXT_SIDE_MARGIN_PT = 36f
+
     fun defaultSize(tool: PlaceTool): Float = when (tool) {
         PlaceTool.TEXT -> DEFAULT_TEXT_SIZE_PT
         PlaceTool.INK -> DEFAULT_INK_WIDTH_PT
@@ -201,6 +204,30 @@ object PlaceMarkupLogic {
         val rightMargin = if (xPt <= pageWidth / 2f) maxOf(xPt, 36f) else 36f
         val rawWidth = pageWidth - xPt - rightMargin
         return rawWidth.coerceAtLeast(60f)
+    }
+
+    /**
+     * Опорна X для тексту, що перепереноситься (після «Змінити текст» або зміни розміру): якщо найдовше слово
+     * не влазить у залишок сторінки ([maxTextLineWidthPt]), рамку зсуває ліворуч рівно настільки, щоб слово
+     * вмістилося ціле (інакше воно розбивається по літерах). Потрібна ширина обмежена корисною шириною сторінки
+     * (сторінка мінус два поля по 36 pt), X не менший за ліве поле. Без [page] або без слів повертає [xPt].
+     */
+    fun fitAnchorXForText(
+        rawText: String,
+        xPt: Float,
+        page: PageSizePt?,
+        measureWidthPt: (String) -> Float
+    ): Float {
+        if (page == null) return xPt
+        val longest = rawText.split(Regex("\\s+")).filter { it.isNotEmpty() }.maxOfOrNull(measureWidthPt) ?: return xPt
+        val usable = (page.widthPt - 2f * TEXT_SIDE_MARGIN_PT).coerceAtLeast(MIN_TEXT_LINE_WIDTH_PT)
+        val needed = longest.coerceIn(MIN_TEXT_LINE_WIDTH_PT, usable)
+        if (maxTextLineWidthPt(xPt, page) >= needed) return xPt
+        // Ширина рядка = W − 2x у лівій половині (симетричні поля) і W − x − 36 у правій ([maxTextLineWidthPt]).
+        val half = page.widthPt / 2f
+        val xRight = page.widthPt - TEXT_SIDE_MARGIN_PT - needed
+        return if (xPt > half && xRight > half) xRight
+        else ((page.widthPt - needed) / 2f).coerceAtLeast(TEXT_SIDE_MARGIN_PT)
     }
 
     /**

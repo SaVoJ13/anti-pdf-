@@ -931,13 +931,17 @@ class ReaderActivity : AppCompatActivity() {
                     val targetX = if (userMovedBox && resolvedAnchor != null) resolvedAnchor.x else sel.x
                     val targetY = if (userMovedBox && resolvedAnchor != null) resolvedAnchor.y else sel.y
                     val page = viewerFragment?.bridge?.pageSizePt(targetPageIdx)
+                    // Рамка біля правого краю: зсуваємо ліворуч, щоб найдовше слово не розбивалось по літерах.
+                    val fittedX = PlaceMarkupLogic.fitAnchorXForText(
+                        raw, targetX, page, measureWidthPt = { line -> measureTextPt(line, newSize) }
+                    )
                     val wrapped = PlaceMarkupLogic.wrapText(
-                        raw, targetX, newSize, page,
+                        raw, fittedX, newSize, page,
                         measureWidthPt = { line -> measureTextPt(line, newSize) }
                     )
                     viewModel.edit { s ->
-                        val s0 = if (userMovedBox && resolvedAnchor != null) {
-                            PlaceEditor.move(s, sel.id, targetPageIdx, targetX, targetY, page)
+                        val s0 = if ((userMovedBox && resolvedAnchor != null) || fittedX != sel.x) {
+                            PlaceEditor.move(s, sel.id, targetPageIdx, fittedX, targetY, page)
                         } else s
                         val s1 = PlaceEditor.setSize(s0, sel.id, newSize)
                         val s2 = PlaceEditor.setColor(s1, sel.id, newColor)
@@ -958,12 +962,17 @@ class ReaderActivity : AppCompatActivity() {
             val page = viewerFragment?.bridge?.pageSizePt(sel.pageIndex)
             when (sel.tool) {
                 PlaceTool.TEXT -> {
+                    val rawForWrap = sel.rawText ?: PlaceMarkupLogic.unwrapText(sel.text)
+                    val fittedX = PlaceMarkupLogic.fitAnchorXForText(
+                        rawForWrap, sel.x, page, measureWidthPt = { line -> measureTextPt(line, value) }
+                    )
                     val wrapped = PlaceMarkupLogic.wrapText(
-                        sel.rawText ?: PlaceMarkupLogic.unwrapText(sel.text), sel.x, value, page,
+                        rawForWrap, fittedX, value, page,
                         measureWidthPt = { line -> measureTextPt(line, value) }
                     )
                     viewModel.edit { s ->
-                        val s1 = PlaceEditor.setSize(s, sel.id, value)
+                        val s0 = if (fittedX != sel.x) PlaceEditor.move(s, sel.id, fittedX, sel.y, page) else s
+                        val s1 = PlaceEditor.setSize(s0, sel.id, value)
                         PlaceEditor.setText(s1, sel.id, wrapped, sel.rawText)
                     }
                 }

@@ -168,6 +168,57 @@ class PlaceMarkupLogicTest {
         assertEquals(159.28f, w400, 0.01f)
     }
 
+    // --- рамка тексту біля правого краю (QA PR #8, спостереження: «ALPH / A / BETA») -------------
+
+    private fun estimate(size: Float): (String) -> Float = { s -> PlaceMarkupLogic.estimateTextWidthPt(s, size) }
+
+    @Test
+    fun `regression - big word near right edge is not split by letters after fit`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val size = 102f
+        val measure = estimate(size)
+        val x = 297f // рамка заходить за правий край: «ALPHA» ≈ 331 pt, лишається ≈ 262 pt
+        // Без зсуву слово ріжеться по літерах (стара поведінка).
+        val old = PlaceMarkupLogic.wrapText("ALPHA\nBETA", x, size, page, measure)
+        assertTrue(old.lines().size > 2)
+
+        val fitted = PlaceMarkupLogic.fitAnchorXForText("ALPHA\nBETA", x, page, measure)
+        assertTrue(fitted < x)
+        val wrapped = PlaceMarkupLogic.wrapText("ALPHA\nBETA", fitted, size, page, measure)
+        assertEquals("ALPHA\nBETA", wrapped)
+    }
+
+    @Test
+    fun `fitAnchorX keeps x when longest word already fits`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val x = PlaceMarkupLogic.fitAnchorXForText("hello world", 100f, page, estimate(14f))
+        assertEquals(100f, x, 0f)
+    }
+
+    @Test
+    fun `fitAnchorX shifts left only as much as needed for the longest word`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val measure = estimate(40f)
+        val word = "WIDEWORD"
+        val need = measure(word)
+        val x = PlaceMarkupLogic.fitAnchorXForText("a $word b", 500f, page, measure)
+        assertEquals(page.widthPt - 36f - need, x, 0.01f)
+    }
+
+    @Test
+    fun `fitAnchorX caps needed width to usable page width and never goes negative`() {
+        val page = PageSizePt(595.28f, 841.89f)
+        val huge = "W".repeat(200)
+        val x = PlaceMarkupLogic.fitAnchorXForText(huge, 400f, page, estimate(14f))
+        assertEquals(36f, x, 0.01f)
+    }
+
+    @Test
+    fun `fitAnchorX does nothing without page or with empty text`() {
+        assertEquals(300f, PlaceMarkupLogic.fitAnchorXForText("ALPHA", 300f, null, estimate(14f)), 0f)
+        assertEquals(300f, PlaceMarkupLogic.fitAnchorXForText("  \n ", 300f, PageSizePt(595.28f, 841.89f), estimate(14f)), 0f)
+    }
+
     @Test
     fun `wrapText keeps short text on single line`() {
         val page = PageSizePt(595.28f, 841.89f)
