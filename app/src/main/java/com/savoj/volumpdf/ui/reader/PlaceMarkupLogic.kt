@@ -255,12 +255,11 @@ object PlaceMarkupLogic {
         val width = maxWidthPt.coerceAtLeast(MIN_TEXT_LINE_WIDTH_PT)
         val measure: (String) -> Float = measureWidthPt ?: { str -> estimateTextWidthPt(str, fontSizePt) }
 
-        val unwrapped = unwrapText(rawText)
-        val paragraphs = unwrapped.split(Regex("\n{2,}"))
-        val wrappedParagraphs = paragraphs.map { paragraph ->
-            wrapParagraph(paragraph, width, measure)
+        // Переноси рядків, введені користувачем (Enter), зберігаються як є; кожен рядок переноситься окремо за шириною.
+        // Раніше перенесений текст без rawText викликач спершу відновлює через [unwrapText].
+        return rawText.replace("\r", "").split('\n').joinToString("\n") { line ->
+            wrapParagraph(line, width, measure)
         }
-        return wrappedParagraphs.joinToString("\n\n")
     }
 
     /**
