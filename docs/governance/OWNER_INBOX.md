@@ -89,7 +89,7 @@ Google Play Console ($25), реальні одиниці AdMob, приватиз
 Аналіз і джерела: `docs/release/AGE_13PLUS_ANALYSIS_2026-11-17.md`. У коді реклами тепер `maxAdContentRating = PG`; `tagForChildDirectedTreatment` і `tagForUnderAgeOfConsent` не ставляться (застосунок не для дітей до 13, вік користувача невідомий).
 Кроки в Play Console (Policy and programs, App content):
 1. **Target audience and content, Target age:** відзначити лише **13-15, 16-17, 18 and over**. НЕ відзначати «5 and under», «6-8», «9-12» (інакше застосується Families Policy і сертифіковані рекламні SDK).
-2. **Appeal to children** (чи може застосунок привабити дітей): **No**. Не завантажувати мультяшну графіку, ігрові елементи, молодих персонажів в іконці/скриншотах/feature graphic.
+2. **Привабливість для дітей:** якщо Console має таке питання, відповідь **No** (точну назву поля **НЕ ПІДТВЕРДЖЕНО**: Google на сторінці Target audience згадує лише «marketing elements» у листингу). Не завантажувати мультяшну графіку, ігрові елементи, молодих персонажів в іконці/скриншотах/feature graphic.
 3. **Ads:** Contains ads = **Yes**.
 4. **Content rating (IARC):** категорія Utility/Productivity (довідник/утиліта). На питання про насильство, сексуальний вміст, мову, наркотики, азарт, користувацький вміст, обмін локацією, покупки, соцвзаємодію: **No**. Очікуваний рейтинг «Everyone» (підтвердиться після анкети). Контактна пошта: appvsdeveloper@gmail.com.
 5. **Data safety:** за `docs/store/DATA_SAFETY.md` (дані збирає рекламний SDK: Approximate location, Device or other IDs, App interactions, Crash logs, Diagnostics; шифрування: Yes; видалення: через налаштування Android/пошту). НЕ відзначати «app is designed for children / Families».
