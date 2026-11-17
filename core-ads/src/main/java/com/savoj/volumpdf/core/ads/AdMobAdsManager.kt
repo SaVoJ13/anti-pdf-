@@ -13,6 +13,7 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.ump.ConsentInformation
@@ -93,6 +94,7 @@ class AdMobAdsManager(
     fun initializeMobileAds(appContext: Context) {
         if (isMobileAdsInitialized.compareAndSet(false, true)) {
             try {
+                MobileAds.setRequestConfiguration(buildRequestConfiguration())
                 MobileAds.initialize(appContext) {
                     preloadInterstitial(appContext)
                 }
@@ -251,6 +253,22 @@ class AdMobAdsManager(
 
         // Обмеження частоти між показами повноекранної реклами: 5 хвилин
         const val DEFAULT_COOLDOWN_MS = 5 * 60 * 1000L
+
+        /**
+         * Максимальний віковий рейтинг реклами. Цільова аудиторія в Google Play: 13+ (рішення Власника 2026-11-17),
+         * тому показуємо лише рекламу рівня G/PG. Застосунок не для дітей до 13, тож
+         * tagForChildDirectedTreatment НЕ ставимо (UNSPECIFIED), а tagForUnderAgeOfConsent лишаємо UNSPECIFIED:
+         * вік користувача застосунку невідомий, а тег вимкнув би персоналізацію для всіх у ЄЕЗ.
+         * Докладно: docs/release/AGE_13PLUS_ANALYSIS_2026-11-17.md.
+         */
+        const val MAX_AD_CONTENT_RATING = RequestConfiguration.MAX_AD_CONTENT_RATING_PG
+
+        fun buildRequestConfiguration(): RequestConfiguration =
+            RequestConfiguration.Builder()
+                .setMaxAdContentRating(MAX_AD_CONTENT_RATING)
+                .setTagForChildDirectedTreatment(RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED)
+                .setTagForUnderAgeOfConsent(RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED)
+                .build()
 
         @Volatile
         private var instance: AdMobAdsManager? = null
