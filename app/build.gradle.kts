@@ -15,9 +15,9 @@ val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPas
     .all { !keystoreProps.getProperty(it).isNullOrBlank() } &&
     rootProject.file(keystoreProps.getProperty("storeFile", "")).isFile
 
-// URL політики приватності: ПЛЕЙСХОЛДЕР, поки власник не розмістив її. Перевизначення: -PprivacyPolicyUrl=...
+// URL політики приватності (GitHub Pages з docs/privacy/). Перевизначення: -PprivacyPolicyUrl=...
 val privacyPolicyUrl: String = (project.findProperty("privacyPolicyUrl") as String?)
-    ?: "https://example.com/anti-pdf/privacy-policy"
+    ?: "https://savoj13.github.io/anti-pdf-/privacy/"
 
 android {
     namespace = "com.savoj.volumpdf"
