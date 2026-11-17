@@ -8,6 +8,7 @@
 - **Факти (XML Gradle, злитий `main`, JDK 21):** `:app` 353/0/0, `:core-pdf` 107/0/1 (symlink, Windows), `:core-ads` 6/0/0; `lintDebug` `:app` і `:core-ads` без помилок; `app-release.aab` 15 317 563 байти, непідписаний, R8 увімкнено; `.so` у пакеті немає, вимога 16 КБ не стосується.
 - **К-1 (критичний, знайдено QA, виправлено):** `VolumPdfApp.onCreate` у ізольованому процесі `androidx.pdf.service.PdfDocumentServiceImpl` читав `SharedPreferences` (заборонено в ізольованому процесі), сервіс падав, читач висів на спінері. Виправлення: `Process.isIsolated()` + ліниві prefs; чеклист `docs/qa/CHECKLIST_app_process_changes.md`.
 - **Звіти:** `docs/qa/` (FULL_CHECK, QA_* по гілках, QA2 після завершення), `docs/design/UI_REVIEW_2026-11-16.md`, `docs/release/PUBLICATION_READINESS_2026-11-16.md` (вердикт «НЕ ГОТОВО», блокери здебільшого за власником, `OWNER_INBOX.md` п. 10–11), `docs/product/COMPETITIVE_AND_INNOVATION_2026-11-16.md`.
+- **Політика приватності (2026-11-17):** опублікована на GitHub Pages, `https://savoj13.github.io/anti-pdf-/privacy/` (HTTP 200), PR #3, `QA Verified` на `fd726cf`; `OWNER_INBOX.md` п. 13.
 - **Відкладено для власника:** М1/М9/М12 (перебудова розкладки), онбординг; v1.1+: двопанельна розкладка, виділення/нотатки (найбільша прогалина ядра), бібліотека підписів.
 - **НЕ ПЕРЕВІРЕНО:** haptics і TalkBack на пристрої, справжній split-screen, Android 9–11, підписаний справжнім ключем реліз; див. `QA2_main_2026-11-17.md`, коли буде.
 
