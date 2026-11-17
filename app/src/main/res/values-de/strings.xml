@@ -29,7 +29,7 @@
 
     <!-- Empty State -->
     <string name="empty_recents_title">Keine aktuellen Dokumente</string>
-    <string name="empty_recents_desc">Öffnen Sie eine PDF-Datei über die Schaltfläche unten zum Lesen.</string>
+    <string name="empty_recents_desc">Tippen Sie unten auf „PDF öffnen“, um mit dem Lesen zu beginnen. Die Schaltfläche „+“ daneben öffnet weitere Aktionen: PDF erstellen oder Dokument scannen.</string>
     <string name="empty_search_title">Keine Dokumente gefunden</string>
     <string name="empty_search_desc">Versuchen Sie einen anderen Suchbegriff.</string>
 
@@ -388,4 +388,17 @@
     <string name="page_numbers_example_1">Seite 1 von 10</string>
     <string name="page_numbers_example_2">1 / 10</string>
     <string name="page_numbers_example_3">1</string>
+    <string name="action_more_actions">Weitere Aktionen</string>
+    <string name="action_hide_more_actions">Aktionen ausblenden</string>
+    <string name="action_filter_sort">Filter und Reihenfolge</string>
+    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_next">Weiter</string>
+    <string name="onboarding_start">Los geht’s</string>
+    <string name="onboarding_page_indicator">Seite %1$d von %2$d</string>
+    <string name="onboarding_1_title">PDF-Dateien öffnen und lesen</string>
+    <string name="onboarding_1_body">Tippen Sie auf „PDF öffnen“ und wählen Sie eine Datei auf Ihrem Gerät. Zuletzt geöffnete Dateien erscheinen in der Bibliothek, sodass Sie dort weiterlesen können, wo Sie aufgehört haben.</string>
+    <string name="onboarding_2_title">Bearbeiten: Text, Signatur, Zeichnung, Formulare</string>
+    <string name="onboarding_2_body">Tippen Sie in einem Dokument auf „Bearbeiten“, um Text, eine Signatur oder eine Zeichnung hinzuzufügen und Formularfelder auszufüllen. Zusammenführen, Teilen, Scannen und weitere Werkzeuge finden Sie im Tab „Werkzeuge“.</string>
+    <string name="onboarding_3_title">Ihre Dateien bleiben auf Ihrem Gerät</string>
+    <string name="onboarding_3_body">Dokumente werden auf Ihrem Gerät geöffnet und bearbeitet. Es gibt kein Konto und keine Anmeldung. Die App zeigt Werbung von Google AdMob, die Gerätedaten erfassen kann; Einzelheiten stehen unter „Datenschutzerklärung“ im ⋮-Menü.</string>
 </resources>

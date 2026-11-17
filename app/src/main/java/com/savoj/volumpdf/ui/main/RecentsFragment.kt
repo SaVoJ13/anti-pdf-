@@ -17,7 +17,6 @@ import com.savoj.volumpdf.data.db.RecentDocument
 import com.savoj.volumpdf.databinding.FragmentRecentsBinding
 import com.savoj.volumpdf.ui.reader.ReaderActivity
 import com.savoj.volumpdf.ui.reader.ReadingProgressLogic
-import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
 import com.savoj.volumpdf.util.PdfThumbnailLoader
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.launch
@@ -45,12 +44,6 @@ class RecentsFragment : Fragment() {
         setupRecyclerView()
         setupObservers()
 
-        binding.btnEmptyOpen.setOnClickListener {
-            (activity as? MainActivity)?.launchSafOpenDocument()
-        }
-        binding.btnEmptyScan.setOnClickListener {
-            ScanDocumentActivity.start(requireContext())
-        }
         binding.btnEmptyCreate.setOnClickListener {
             (activity as? MainActivity)?.createNewBlankDocumentAndOpen()
         }
@@ -114,18 +107,16 @@ class RecentsFragment : Fragment() {
                         binding.ivEmptyIcon.setImageResource(R.drawable.ic_search)
                         binding.tvEmptyTitle.setText(R.string.empty_search_title)
                         binding.tvEmptyDesc.setText(R.string.empty_search_desc)
-                        binding.btnEmptyOpen.visibility = View.GONE
-                        binding.btnEmptyScan.visibility = View.GONE
-                        binding.btnEmptyCreate.visibility = View.GONE
-                        binding.btnClearSearch.visibility = View.VISIBLE
+                        val buttons = HomeLogic.emptyStateButtons(hasSearch = true)
+                        binding.btnEmptyCreate.visibility = if (buttons.create) View.VISIBLE else View.GONE
+                        binding.btnClearSearch.visibility = if (buttons.clearSearch) View.VISIBLE else View.GONE
                     } else {
                         binding.ivEmptyIcon.setImageResource(R.drawable.ic_empty_recents)
                         binding.tvEmptyTitle.setText(R.string.empty_recents_title)
                         binding.tvEmptyDesc.setText(R.string.empty_recents_desc)
-                        binding.btnEmptyOpen.visibility = View.VISIBLE
-                        binding.btnEmptyScan.visibility = View.VISIBLE
-                        binding.btnEmptyCreate.visibility = View.VISIBLE
-                        binding.btnClearSearch.visibility = View.GONE
+                        val buttons = HomeLogic.emptyStateButtons(hasSearch = false)
+                        binding.btnEmptyCreate.visibility = if (buttons.create) View.VISIBLE else View.GONE
+                        binding.btnClearSearch.visibility = if (buttons.clearSearch) View.VISIBLE else View.GONE
                     }
                 }
             }

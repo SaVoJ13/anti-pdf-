@@ -29,7 +29,7 @@
 
     <!-- Empty State -->
     <string name="empty_recents_title">No recent documents</string>
-    <string name="empty_recents_desc">Open a PDF file using the button below to start reading.</string>
+    <string name="empty_recents_desc">Tap “Open PDF” below to start reading. The + button next to it opens more actions: create a PDF or scan a document.</string>
     <string name="empty_search_title">No matching files found</string>
     <string name="empty_search_desc">Try searching with a different file name.</string>
 
@@ -388,4 +388,17 @@
     <string name="page_numbers_example_1">Page 1 of 10</string>
     <string name="page_numbers_example_2">1 / 10</string>
     <string name="page_numbers_example_3">1</string>
+    <string name="action_more_actions">More actions</string>
+    <string name="action_hide_more_actions">Hide actions</string>
+    <string name="action_filter_sort">Filter and order</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_start">Get started</string>
+    <string name="onboarding_page_indicator">Page %1$d of %2$d</string>
+    <string name="onboarding_1_title">Open and read PDF files</string>
+    <string name="onboarding_1_body">Tap “Open PDF” and choose a file on your device. Recent files appear in the library, so you can continue reading where you left off.</string>
+    <string name="onboarding_2_title">Edit: text, signature, drawing, forms</string>
+    <string name="onboarding_2_body">In a document, tap “Edit” to add text, a signature or a drawing, and to fill in form fields. Merge, split, scan and other tools are on the Tools tab.</string>
+    <string name="onboarding_3_title">Your files stay on your device</string>
+    <string name="onboarding_3_body">Documents are opened and edited on your device. There is no account or sign-in. The app shows ads from Google AdMob, which may collect device data; details are in “Privacy policy” in the ⋮ menu.</string>
 </resources>

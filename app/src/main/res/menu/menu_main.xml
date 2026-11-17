@@ -9,33 +9,31 @@
         app:showAsAction="always|collapseActionView"
         app:actionViewClass="androidx.appcompat.widget.SearchView" />
 
+    <!-- М11: «Обране» і «Сортування» в одному пункті. Сканер із тулбара прибрано (М10): він є в розкритті головної кнопки. -->
     <item
-        android:id="@+id/action_scan"
-        android:icon="@drawable/ic_camera_scan"
-        android:title="@string/tool_scan_title"
-        app:showAsAction="ifRoom" />
-
-    <item
-        android:id="@+id/action_filter_favorites"
-        android:icon="@drawable/ic_star_outline"
-        android:title="@string/filter_favorites"
-        app:showAsAction="ifRoom" />
-
-    <item
-        android:id="@+id/action_sort"
+        android:id="@+id/action_filter_sort"
         android:icon="@drawable/ic_sort"
-        android:title="@string/action_sort"
+        android:title="@string/action_filter_sort"
         app:showAsAction="ifRoom">
         <menu>
-            <item
-                android:id="@+id/sort_by_date"
-                android:title="@string/sort_date_desc" />
-            <item
-                android:id="@+id/sort_by_name"
-                android:title="@string/sort_name_asc" />
-            <item
-                android:id="@+id/sort_by_size"
-                android:title="@string/sort_size_desc" />
+            <group android:checkableBehavior="all">
+                <item
+                    android:id="@+id/action_filter_favorites"
+                    android:checkable="true"
+                    android:title="@string/filter_favorites" />
+            </group>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/sort_by_date"
+                    android:checked="true"
+                    android:title="@string/sort_date_desc" />
+                <item
+                    android:id="@+id/sort_by_name"
+                    android:title="@string/sort_name_asc" />
+                <item
+                    android:id="@+id/sort_by_size"
+                    android:title="@string/sort_size_desc" />
+            </group>
         </menu>
     </item>
 

@@ -29,7 +29,7 @@
 
     <!-- Empty State -->
     <string name="empty_recents_title">Нет недавних документов</string>
-    <string name="empty_recents_desc">Откройте любой PDF-файл с помощью кнопки ниже для чтения.</string>
+    <string name="empty_recents_desc">Нажмите «Открыть PDF» ниже, чтобы начать чтение. Кнопка «+» рядом открывает другие действия: создать PDF или отсканировать документ.</string>
     <string name="empty_search_title">Документы не найдены</string>
     <string name="empty_search_desc">Попробуйте изменить поисковый запрос.</string>
 
@@ -400,4 +400,17 @@
     <string name="page_numbers_example_1">Страница 1 из 10</string>
     <string name="page_numbers_example_2">1 / 10</string>
     <string name="page_numbers_example_3">1</string>
+    <string name="action_more_actions">Ещё действия</string>
+    <string name="action_hide_more_actions">Скрыть действия</string>
+    <string name="action_filter_sort">Фильтр и порядок</string>
+    <string name="onboarding_skip">Пропустить</string>
+    <string name="onboarding_next">Далее</string>
+    <string name="onboarding_start">Начать</string>
+    <string name="onboarding_page_indicator">Экран %1$d из %2$d</string>
+    <string name="onboarding_1_title">Открывайте и читайте PDF</string>
+    <string name="onboarding_1_body">Нажмите «Открыть PDF» и выберите файл на устройстве. Недавние файлы появляются в библиотеке, поэтому можно продолжить чтение с того места, где вы остановились.</string>
+    <string name="onboarding_2_title">Редактируйте: текст, подпись, рисунок, формы</string>
+    <string name="onboarding_2_body">В документе нажмите «Редактировать», чтобы добавить текст, подпись или рисунок и заполнить поля форм. Объединение, разделение, сканирование и другие инструменты находятся на вкладке «Инструменты».</string>
+    <string name="onboarding_3_title">Ваши файлы остаются на устройстве</string>
+    <string name="onboarding_3_body">Документы открываются и редактируются на вашем устройстве. Учётной записи и входа нет. В приложении показывается реклама Google AdMob, которая может собирать данные устройства; подробности в пункте «Политика конфиденциальности» меню ⋮.</string>
 </resources>

@@ -6,7 +6,11 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -26,6 +30,9 @@ import com.savoj.volumpdf.ui.common.AppearancePreferences
 import com.savoj.volumpdf.ui.common.LicensesDialogHelper
 import com.savoj.volumpdf.ui.common.SystemEdges
 import com.savoj.volumpdf.ui.common.WindowInsetsHelper
+import com.savoj.volumpdf.ui.onboarding.OnboardingActivity
+import com.savoj.volumpdf.ui.onboarding.OnboardingLogic
+import com.savoj.volumpdf.ui.onboarding.OnboardingPreferences
 import com.savoj.volumpdf.ui.reader.ReaderActivity
 import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
 import kotlinx.coroutines.launch
@@ -46,6 +53,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Онбординг першого запуску; після нього (або пропуску) запускається згода UMP і реклама. */
+    private val onboardingLauncher: ActivityResultLauncher<Intent> = registerForActivityResult(
+        StartActivityForResult()
+    ) {
+        onboardingPending = false
+        startAds()
+    }
+
+    /** true, поки онбординг на екрані: повторно його не запускаємо (зміна конфігурації, відновлення процесу). */
+    private var onboardingPending = false
+    private var adsStarted = false
+    private var speedDialExpanded = false
+
+    private val speedDialBackCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            setSpeedDialExpanded(false, animate = true)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -58,27 +84,52 @@ class MainActivity : AppCompatActivity() {
 
         setupViewPagerAndBottomNav()
         setupActionButtons()
-        setupAds()
+        onBackPressedDispatcher.addCallback(this, speedDialBackCallback)
+
+        onboardingPending = savedInstanceState?.getBoolean(KEY_ONBOARDING_PENDING) ?: false
+        if (savedInstanceState != null) {
+            setSpeedDialExpanded(savedInstanceState.getBoolean(KEY_SPEED_DIAL_EXPANDED), animate = false)
+        }
+        setupAdsLayoutListeners()
+        // Порядок: спершу онбординг (лише при першому запуску з іконки), потім згода UMP і реклама.
+        // Прапорець читається тут, в основному процесі (не в Application.onCreate).
+        val documentIntent = OnboardingLogic.isDocumentIntent(intent?.action, intent?.data != null)
+        if (!onboardingPending && OnboardingLogic.shouldShow(OnboardingPreferences(this).shown, documentIntent)
+            && savedInstanceState == null
+        ) {
+            onboardingPending = true
+            onboardingLauncher.launch(Intent(this, OnboardingActivity::class.java))
+        } else if (!onboardingPending) {
+            startAds()
+        }
 
         handleIntent(intent)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_ONBOARDING_PENDING, onboardingPending)
+        outState.putBoolean(KEY_SPEED_DIAL_EXPANDED, speedDialExpanded)
+    }
+
     private var bottomInsetPx = 0
+    private var rightInsetPx = 0
 
     /** Edge-to-edge: тулбар під рядком стану, вміст і FAB над нижньою навігацією та системною панеллю. */
     private fun applyWindowInsets() {
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val e = SystemEdges.from(insets)
             bottomInsetPx = e.bottom
+            rightInsetPx = e.right
             binding.mainContent.setPadding(e.left, 0, e.right, e.bottom)
             WindowInsetsHelper.applyAppBarTopInset(binding.appBarLayout, e.top)
-            updateFabClusterMargin(e.right)
+            updateFabClusterMargin()
             androidx.core.view.WindowInsetsCompat.CONSUMED
         }
         androidx.core.view.ViewCompat.requestApplyInsets(binding.root)
     }
 
-    private fun updateFabClusterMargin(rightInset: Int = 0) {
+    private fun updateFabClusterMargin() {
         val params = binding.fabCluster.layoutParams as? CoordinatorLayout.LayoutParams ?: return
         val navHeight = if (binding.bottomNavigation.height > 0) {
             binding.bottomNavigation.height
@@ -95,17 +146,21 @@ class MainActivity : AppCompatActivity() {
         if (params.bottomMargin != targetBottom) {
             params.bottomMargin = targetBottom
         }
-        if (rightInset > 0) {
-            params.rightMargin = basePadding + rightInset
-        }
+        // Правий відступ завжди перераховується (поворот: бічна панель навігації з'являється й зникає).
+        params.marginEnd = basePadding + rightInsetPx
+        params.rightMargin = basePadding + rightInsetPx
         binding.fabCluster.layoutParams = params
     }
 
-    private fun setupAds() {
+    private fun startAds() {
+        if (adsStarted) return
+        adsStarted = true
         adsManager.requestConsentAndInit(this) {
             adsManager.bindAdaptiveBanner(this, binding.bannerContainer)
         }
+    }
 
+    private fun setupAdsLayoutListeners() {
         binding.bannerContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             updateFabClusterMargin()
         }
@@ -203,20 +258,94 @@ class MainActivity : AppCompatActivity() {
                 if (binding.bottomNavigation.selectedItemId != targetNavId) {
                     binding.bottomNavigation.selectedItemId = targetNavId
                 }
-                binding.fabCluster.visibility = if (position == 0) View.VISIBLE else View.GONE
+                binding.fabCluster.visibility = if (HomeLogic.fabVisibleOnPage(position)) View.VISIBLE else View.GONE
+                if (!HomeLogic.fabVisibleOnPage(position)) setSpeedDialExpanded(false, animate = false)
             }
         })
     }
 
     private fun setupActionButtons() {
-        binding.fabCreatePdf.setOnClickListener {
-            createNewBlankDocumentAndOpen()
-        }
         binding.fabOpenPdf.setOnClickListener {
+            setSpeedDialExpanded(false, animate = false)
             launchSafOpenDocument()
         }
+        binding.fabMore.setOnClickListener {
+            setSpeedDialExpanded(!speedDialExpanded, animate = true)
+        }
+        binding.fabScrim.setOnClickListener {
+            setSpeedDialExpanded(false, animate = true)
+        }
+        binding.fabCreatePdf.setOnClickListener {
+            setSpeedDialExpanded(false, animate = false)
+            createNewBlankDocumentAndOpen()
+        }
         binding.fabScanPdf.setOnClickListener {
+            setSpeedDialExpanded(false, animate = false)
             ScanDocumentActivity.start(this)
+        }
+        applySpeedDialOrientation()
+    }
+
+    // Низька висота (ландшафт): дії розкриття в ряд, щоб не налазити на тулбар. Activity не перестворюється при повороті.
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applySpeedDialOrientation()
+    }
+
+    private fun applySpeedDialOrientation() {
+        val horizontal = HomeLogic.speedDialHorizontal(resources.configuration.screenHeightDp)
+        binding.fabActions.orientation = if (horizontal) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+        val gap = (12 * resources.displayMetrics.density).toInt()
+        (binding.fabScanPdf.layoutParams as? LinearLayout.LayoutParams)?.apply {
+            marginStart = if (horizontal) gap else 0
+            topMargin = if (horizontal) 0 else gap
+            binding.fabScanPdf.layoutParams = this
+        }
+    }
+
+    /** М9: розкриття/згортання додаткових дій («Створити PDF», «Сканувати») з короткою анімацією (150 мс). */
+    private fun setSpeedDialExpanded(expanded: Boolean, animate: Boolean) {
+        if (expanded == speedDialExpanded && binding.fabActions.visibility == (if (expanded) View.VISIBLE else View.GONE)) return
+        speedDialExpanded = expanded
+        speedDialBackCallback.isEnabled = expanded
+        val actions = binding.fabActions
+        val scrim = binding.fabScrim
+        val more = binding.fabMore
+        // Значок «+» міняється на «×» (без повороту: поворот викривляє форму кнопки).
+        more.setImageResource(if (expanded) R.drawable.ic_close else R.drawable.ic_add)
+        more.contentDescription = getString(
+            if (expanded) R.string.action_hide_more_actions else R.string.action_more_actions
+        )
+        val offset = 24 * resources.displayMetrics.density
+        val duration = 150L
+        if (expanded) {
+            actions.visibility = View.VISIBLE
+            scrim.visibility = View.VISIBLE
+            if (animate) {
+                actions.alpha = 0f
+                actions.translationY = offset
+                actions.animate().alpha(1f).translationY(0f).setDuration(duration).start()
+                scrim.alpha = 0f
+                scrim.animate().alpha(1f).setDuration(duration).start()
+            } else {
+                actions.alpha = 1f
+                actions.translationY = 0f
+                scrim.alpha = 1f
+            }
+        } else if (animate) {
+            actions.animate().cancel()
+            scrim.animate().cancel()
+            actions.animate().alpha(0f).translationY(offset).setDuration(duration).withEndAction {
+                if (!speedDialExpanded) actions.visibility = View.GONE
+            }.start()
+            scrim.animate().alpha(0f).setDuration(duration).withEndAction {
+                if (!speedDialExpanded) scrim.visibility = View.GONE
+            }.start()
+        } else {
+            actions.animate().cancel()
+            scrim.animate().cancel()
+            actions.visibility = View.GONE
+            scrim.visibility = View.GONE
         }
     }
 
@@ -247,6 +376,13 @@ class MainActivity : AppCompatActivity() {
         val hasDocs = viewModel.recentDocuments.value.isNotEmpty()
         menu.findItem(R.id.action_clear_history)?.isEnabled = hasDocs
         menu.findItem(R.id.action_privacy_settings)?.isVisible = adsManager.isPrivacyOptionsRequired()
+        // М11: стан «Фільтр і порядок» відновлюється з ViewModel (меню перебудовується при recreate).
+        menu.findItem(R.id.action_filter_favorites)?.isChecked = viewModel.favoritesOnly.value
+        when (viewModel.sortOrder.value) {
+            SortOrder.DATE_DESC -> menu.findItem(R.id.sort_by_date)?.isChecked = true
+            SortOrder.NAME_ASC -> menu.findItem(R.id.sort_by_name)?.isChecked = true
+            SortOrder.SIZE_DESC -> menu.findItem(R.id.sort_by_size)?.isChecked = true
+        }
         menu.findItem(R.id.action_dynamic_colors)?.apply {
             // Material You існує лише на Android 12+; на старших пункт не показуємо.
             isVisible = com.google.android.material.color.DynamicColors.isDynamicColorAvailable()
@@ -257,28 +393,22 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_scan -> {
-                ScanDocumentActivity.start(this)
-                true
-            }
             R.id.action_filter_favorites -> {
-                val isFiltered = viewModel.toggleFavoritesFilter()
-                if (isFiltered) {
-                    item.setIcon(R.drawable.ic_star_filled)
-                } else {
-                    item.setIcon(R.drawable.ic_star_outline)
-                }
+                item.isChecked = viewModel.toggleFavoritesFilter()
                 true
             }
             R.id.sort_by_date -> {
+                item.isChecked = true
                 viewModel.setSortOrder(SortOrder.DATE_DESC)
                 true
             }
             R.id.sort_by_name -> {
+                item.isChecked = true
                 viewModel.setSortOrder(SortOrder.NAME_ASC)
                 true
             }
             R.id.sort_by_size -> {
+                item.isChecked = true
                 viewModel.setSortOrder(SortOrder.SIZE_DESC)
                 true
             }
@@ -318,6 +448,11 @@ class MainActivity : AppCompatActivity() {
         } catch (_: Exception) {
             Toast.makeText(this, R.string.privacy_policy_open_failed, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private companion object {
+        const val KEY_ONBOARDING_PENDING = "onboarding_pending"
+        const val KEY_SPEED_DIAL_EXPANDED = "speed_dial_expanded"
     }
 
     fun showClearHistoryConfirmationDialog() {
