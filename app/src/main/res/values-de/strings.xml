@@ -361,6 +361,7 @@
     <string name="action_back">Zurück</string>
     <string name="a11y_page_jump">Seite %1$d von %2$d. Zu Seite springen</string>
     <string name="a11y_zoom">Zoom %1$d %%. Zoom ändern</string>
+    <string name="reader_edit_fab_desc">PDF bearbeiten. Text, Unterschrift, Zeichnung oder Bild hinzufügen. Suche, Lesemodus, Seiten und Datei: in der Seitenanzeige und im Menü</string>
     <plurals name="pages_count">
         <item quantity="one">%d Seite</item>
         <item quantity="other">%d Seiten</item>

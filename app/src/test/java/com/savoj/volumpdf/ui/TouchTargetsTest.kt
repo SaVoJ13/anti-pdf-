@@ -56,6 +56,13 @@ class TouchTargetsTest {
     }
 
     @Test
+    fun `reader edit fab is a standard 56dp target`() {
+        // М1: FloatingActionButton fabSize=normal = 56 dp (wrap_content), не нижче 48 dp
+        val e = find("activity_reader", "fabReaderEdit")
+        assertEquals("normal", e.getAttributeNS("http://schemas.android.com/apk/res-auto", "fabSize"))
+    }
+
+    @Test
     fun `recents row and clear button are at least 48dp`() {
         assertTarget("item_recent_document", "ivFavorite")
         assertTarget("item_recent_document", "ivMoreMenu")

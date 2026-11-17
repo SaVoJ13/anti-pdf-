@@ -205,6 +205,23 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- М1: єдина плаваюча кнопка читача «Редагувати» (власна іконка-олівець). Праворуч, НАД пігулкою сторінки
+             (12 dp + 48 dp пігулка + 12 dp), щоб не перекривати її за жодного шрифту й ширини; у режимі «Редагувати» зникає. -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabReaderEdit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="72dp"
+            android:contentDescription="@string/reader_edit_fab_desc"
+            android:tooltipText="@string/action_place"
+            app:backgroundTint="?attr/colorPrimary"
+            app:elevation="6dp"
+            app:fabSize="normal"
+            app:srcCompat="@drawable/ic_fab_edit"
+            app:tint="?attr/colorOnPrimary" />
+
         <!-- Панель дій виділеного об'єкта: видалити / змінити; колір і розмір — на нижній панелі -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/selectionBarCard"
@@ -837,15 +854,13 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-    <!-- Нижня панель швидких дій (Bottom Action Bar) під великий палець -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomActionBar"
+    <!-- М1: нижньої панелі більше немає. Порожній відступ висотою в системну навігацію/клавіатуру (див. applyWindowInsets),
+         щоб сторінка й панель «Зберегти / Відкинути» не заходили під жести. -->
+    <View
+        android:id="@+id/readerBottomInset"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:background="?attr/colorSurface"
-        app:elevation="8dp"
-        app:paddingBottomSystemWindowInsets="false"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/menu_reader_bottom" />
+        android:importantForAccessibility="no" />
 
 </LinearLayout>

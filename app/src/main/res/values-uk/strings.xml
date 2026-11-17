@@ -361,6 +361,7 @@
     <string name="action_back">Назад</string>
     <string name="a11y_page_jump">Сторінка %1$d з %2$d. Перейти до сторінки</string>
     <string name="a11y_zoom">Масштаб %1$d%%. Змінити масштаб</string>
+    <string name="reader_edit_fab_desc">Редагувати PDF. Додати текст, підпис, малюнок або зображення. Пошук, тема читання, сторінки й файл: у пігулці сторінки та в меню</string>
     <plurals name="pages_count">
         <item quantity="one">%d сторінка</item>
         <item quantity="few">%d сторінки</item>

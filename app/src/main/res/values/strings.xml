@@ -361,6 +361,7 @@
     <string name="action_back">Back</string>
     <string name="a11y_page_jump">Page %1$d of %2$d. Go to page</string>
     <string name="a11y_zoom">Zoom %1$d%%. Change zoom</string>
+    <string name="reader_edit_fab_desc">Edit PDF. Add text, a signature, a drawing or an image. Search, reading theme, pages and file tools are in the page pill and the menu</string>
     <plurals name="pages_count">
         <item quantity="one">%d page</item>
         <item quantity="other">%d pages</item>

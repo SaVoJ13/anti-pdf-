@@ -24,6 +24,7 @@ import android.view.WindowManager
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -144,7 +145,7 @@ class ReaderActivity : AppCompatActivity() {
         applyReadingTheme(readingPreferences.theme)
 
         setupViewerFragment(uri, savedInstanceState)
-        setupBottomActionBar()
+        setupReaderChrome()
         setupBackNavigation()
         setupPlaceMode()
         observeViewModel()
@@ -235,37 +236,9 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupBottomActionBar() {
-        binding.bottomActionBar.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.action_forms -> {
-                    openFillFormDialog()
-                    false
-                }
-                R.id.action_place -> {
-                    enterPlaceMode()
-                    false
-                }
-                R.id.action_search -> {
-                    toggleSearch()
-                    false
-                }
-                R.id.action_reading_theme -> {
-                    showReadingThemeDialog()
-                    false
-                }
-                R.id.action_tools -> {
-                    showToolsBottomSheet()
-                    false
-                }
-                R.id.action_organize_pages -> {
-                    val uri = documentUri ?: return@setOnItemSelectedListener false
-                    com.savoj.volumpdf.ui.organizer.PageOrganizerActivity.start(this, uri)
-                    false
-                }
-                else -> false
-            }
-        }
+    private fun setupReaderChrome() {
+        // М1: єдина плаваюча кнопка «Редагувати» (нижньої панелі більше немає).
+        binding.fabReaderEdit.setOnClickListener { enterPlaceMode() }
 
         // TalkBack оголошує зміну сторінки (ввічливо, без переривання поточної мови).
         ViewCompat.setAccessibilityLiveRegion(binding.btnHudPage, ViewCompat.ACCESSIBILITY_LIVE_REGION_POLITE)
@@ -286,9 +259,20 @@ class ReaderActivity : AppCompatActivity() {
         val bridge = viewerFragment?.bridge ?: return
         val next = !bridge.isTextSearchActive
         bridge.isTextSearchActive = next
-        if (!viewModel.placeModeActive && !openFailed) {
-            binding.cardReaderHud.visibility = if (next) View.GONE else View.VISIBLE
-        }
+        applyReaderChromeVisibility()
+    }
+
+    /**
+     * Пігулка сторінки й кнопка «Редагувати» видимі лише в чистому читанні ([ReaderChromeLogic.showEditFab]);
+     * нижній відступ під системну навігацію — коли немає ні режиму «Редагувати» (там своя панель), ні помилки відкриття.
+     */
+    private fun applyReaderChromeVisibility() {
+        val searchActive = viewerFragment?.bridge?.isTextSearchActive == true
+        val show = ReaderChromeLogic.showEditFab(viewModel.placeModeActive, openFailed, searchActive)
+        binding.cardReaderHud.visibility = if (show) View.VISIBLE else View.GONE
+        binding.fabReaderEdit.visibility = if (show) View.VISIBLE else View.GONE
+        binding.readerBottomInset.visibility =
+            if (!viewModel.placeModeActive && !openFailed) View.VISIBLE else View.GONE
     }
 
     private fun updateReaderHud(currentPageZeroBased: Int, zoom: Float) {
@@ -366,16 +350,6 @@ class ReaderActivity : AppCompatActivity() {
     private fun updateFormsActionButton(count: Int) {
         formFieldCount = count
         invalidateOptionsMenu()
-        val formsItem = binding.bottomActionBar.menu.findItem(R.id.action_forms) ?: return
-        if (count > 0) {
-            formsItem.isVisible = true
-            val badge = binding.bottomActionBar.getOrCreateBadge(R.id.action_forms)
-            badge.number = count
-            badge.isVisible = true
-        } else {
-            formsItem.isVisible = false
-            binding.bottomActionBar.removeBadge(R.id.action_forms)
-        }
     }
 
     /**
@@ -498,8 +472,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.openErrorFileName.text = documentTitle?.takeIf { it.isNotBlank() } ?: getString(R.string.reader_title_unknown)
         binding.openErrorMessage.text = ErrorMessages.forOpenFailure(cause).resolve(this)
         binding.openErrorPanel.visibility = View.VISIBLE
-        binding.cardReaderHud.visibility = View.GONE
-        binding.bottomActionBar.visibility = View.GONE
+        applyReaderChromeVisibility()
         binding.markupOverlay.visibility = View.GONE
         invalidateOptionsMenu()
     }
@@ -509,10 +482,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.pdfViewerContainer.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
         binding.openErrorPanel.visibility = View.GONE
         binding.markupOverlay.visibility = View.VISIBLE
-        if (!viewModel.placeModeActive) {
-            binding.cardReaderHud.visibility = View.VISIBLE
-            binding.bottomActionBar.visibility = View.VISIBLE
-        }
+        applyReaderChromeVisibility()
         invalidateOptionsMenu()
     }
 
@@ -618,7 +588,7 @@ class ReaderActivity : AppCompatActivity() {
                 val bridge = viewerFragment?.bridge
                 if (bridge != null && bridge.isTextSearchActive) {
                     bridge.isTextSearchActive = false
-                    if (!viewModel.placeModeActive && !openFailed) binding.cardReaderHud.visibility = View.VISIBLE
+                    applyReaderChromeVisibility()
                     return
                 }
                 // QA2 Д6: спершу закриваємо картку параметрів інструмента, а не веземо до «Незбережені зміни».
@@ -977,8 +947,7 @@ class ReaderActivity : AppCompatActivity() {
         viewerFragment?.bridge?.isTextSearchActive = false
         Thread { safeUnsupported("a") }.start() // прогрів кешу шрифту: перша перевірка тексту без затримки
         binding.placeToolBar.visibility = View.VISIBLE
-        binding.cardReaderHud.visibility = View.GONE
-        binding.bottomActionBar.visibility = View.GONE
+        applyReaderChromeVisibility()
         binding.unsavedBar.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(true) { point -> onPageTapped(point) }
         binding.markupOverlay.editingEnabled = !savingPlace
@@ -995,10 +964,7 @@ class ReaderActivity : AppCompatActivity() {
         viewerFragment?.bridge?.setPlaceMode(false)
         placeBar.closeCard(animate = false)
         binding.placeToolBar.visibility = View.GONE
-        if (!openFailed) {
-            binding.cardReaderHud.visibility = View.VISIBLE
-            binding.bottomActionBar.visibility = View.VISIBLE
-        }
+        applyReaderChromeVisibility()
         renderUnsavedUi()
         invalidateOptionsMenu()
     }
@@ -2774,7 +2740,7 @@ class ReaderActivity : AppCompatActivity() {
             lastEdges = e
             binding.root.setPadding(e.left, 0, e.right, 0)
             WindowInsetsHelper.applyToolbarTopInset(binding.toolbar, e.top)
-            binding.bottomActionBar.setPadding(0, 0, 0, e.bottom)
+            binding.readerBottomInset.updateLayoutParams<ViewGroup.LayoutParams> { height = e.bottom }
             // Нижній рядок інструментів лежить над системною навігацією (жести й три кнопки).
             binding.placeToolBar.setPadding(0, 0, 0, e.bottom)
             updatePlacePanelWidth()
@@ -2922,18 +2888,24 @@ class ReaderActivity : AppCompatActivity() {
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         val place = viewModel.placeModeActive
-        menu.findItem(R.id.action_place_save)?.isVisible = place && viewModel.hasUnsaved.value
-        menu.findItem(R.id.action_place_done)?.isVisible = place
-        // Режим читання: окремою іконкою; у режимі «Редагувати» місце потрібне для «Зберегти»/«Готово» — тоді в меню ⋮.
-        menu.findItem(R.id.action_reading_theme)?.isVisible = !place
-        menu.findItem(R.id.action_reading_theme_overflow)?.isVisible = place
-        menu.findItem(R.id.action_place)?.isVisible = !place
-        menu.findItem(R.id.action_forms)?.isVisible = formFieldCount > 0
-        menu.findItem(R.id.action_save_copy)?.isVisible = readOnlyDocument && !place
-        if (openFailed) {
-            // Документ не відкрито: жодних дій над ним (пошук, обране, поділитися, інструменти, редагування).
-            for (i in 0 until menu.size()) menu.getItem(i).isVisible = false
-        }
+        val state = ReaderChromeLogic.menuState(
+            placeMode = place,
+            hasUnsaved = viewModel.hasUnsaved.value,
+            formFieldCount = formFieldCount,
+            readOnlyDocument = readOnlyDocument,
+            openFailed = openFailed,
+        )
+        menu.findItem(R.id.action_place_save)?.isVisible = state.placeSave
+        menu.findItem(R.id.action_place_done)?.isVisible = state.placeDone
+        menu.findItem(R.id.action_add)?.isVisible = state.add
+        menu.findItem(R.id.action_reading_theme)?.isVisible = state.readingTheme
+        menu.findItem(R.id.action_search)?.isVisible = state.searchInOverflow
+        menu.findItem(R.id.action_forms)?.isVisible = state.forms
+        menu.findItem(R.id.action_save_copy)?.isVisible = state.saveCopy
+        for (id in intArrayOf(
+            R.id.action_toggle_favorite, R.id.action_share, R.id.action_tools,
+            R.id.action_organize_pages, R.id.action_details,
+        )) menu.findItem(id)?.isVisible = state.documentActions
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -3018,10 +2990,6 @@ class ReaderActivity : AppCompatActivity() {
                 openFillFormDialog()
                 true
             }
-            R.id.action_reading_theme_overflow -> {
-                showReadingThemeDialog()
-                true
-            }
             R.id.action_save_copy -> {
                 launchSaveCopy()
                 true
@@ -3029,10 +2997,6 @@ class ReaderActivity : AppCompatActivity() {
             android.R.id.home -> {
                 // M2: «вгору» — той самий вихід, що й «Назад»: за незбережених змін (об'єкти чи форми) діалог.
                 exitReaderThen { finish() }
-                true
-            }
-            R.id.action_place -> {
-                enterPlaceMode()
                 true
             }
             R.id.action_search -> {
