@@ -95,9 +95,8 @@ class RecentsOpenTrackerTest {
     }
 
     @Test
-    fun `read only no permission not found no space and too big keep a new record`() = runTest {
+    fun `permission exception not found no space and too big keep a new record`() = runTest {
         val causes = listOf(
-            SecurityException("has no access to content://x"),
             PdfPermissionException("no permission"),
             FileNotFoundException("/x: ENOENT"),
             IOException("write failed: ENOSPC (No space left on device)"),
@@ -110,6 +109,31 @@ class RecentsOpenTrackerTest {
             assertFalse(cause.toString(), RecentsOpenTracker.dropIfFirstOpenFailed(repo, u.toString(), asNew, cause))
             assertEquals(cause.toString(), 1, repo.docs.size)
         }
+    }
+
+    @Test
+    fun `no access on first open removes the new record (QA2 D5)`() = runTest {
+        val causes = listOf(
+            SecurityException("has no access to file:///x"),
+            IOException("open failed: EACCES (Permission denied)")
+        )
+        for (cause in causes) {
+            val repo = FakeRepo()
+            val u = uri("file:///sdcard/text.pdf")
+            val asNew = selectThenReaderInit(repo, u)
+            assertTrue(cause.toString(), RecentsOpenTracker.dropIfFirstOpenFailed(repo, u.toString(), asNew, cause))
+            assertNull(repo.docs["file:///sdcard/text.pdf"])
+        }
+    }
+
+    @Test
+    fun `no access on reopen keeps an old record`() = runTest {
+        val repo = FakeRepo()
+        val u = uri("content://pdf/old")
+        RecentsOpenTracker.record(repo, context, u)
+        val asNew = selectThenReaderInit(repo, u)
+        assertFalse(RecentsOpenTracker.dropIfFirstOpenFailed(repo, u.toString(), asNew, SecurityException("has no access")))
+        assertNotNull(repo.docs["content://pdf/old"])
     }
 
     @Test

@@ -328,19 +328,19 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true"
-                        android:text="@string/page_numbers_format_1" />
+                        android:text="@string/page_numbers_example_1" />
 
                     <RadioButton
                         android:id="@+id/rbFormat2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/page_numbers_format_2" />
+                        android:text="@string/page_numbers_example_2" />
 
                     <RadioButton
                         android:id="@+id/rbFormat3"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/page_numbers_format_3" />
+                        android:text="@string/page_numbers_example_3" />
 
                 </RadioGroup>
 

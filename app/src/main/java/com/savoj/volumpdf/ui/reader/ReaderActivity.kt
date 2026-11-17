@@ -621,6 +621,11 @@ class ReaderActivity : AppCompatActivity() {
                     if (!viewModel.placeModeActive && !openFailed) binding.cardReaderHud.visibility = View.VISIBLE
                     return
                 }
+                // QA2 Д6: спершу закриваємо картку параметрів інструмента, а не веземо до «Незбережені зміни».
+                if (::placeBar.isInitialized && placeBar.isCardOpen) {
+                    placeBar.closeCard()
+                    return
+                }
                 if (viewModel.placeModeActive) {
                     leavePlaceThen { }
                 } else if (viewModel.hasUnsaved.value) {

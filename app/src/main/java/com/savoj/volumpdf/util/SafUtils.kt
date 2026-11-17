@@ -159,6 +159,13 @@ object SafUtils {
         return null
     }
 
+    /**
+     * Прибирає порожній (0 байтів) файл, який щойно створив системний діалог «Зберегти як…» для цієї дії, коли дія
+     * не вдалась (QA2 Д1). Файл із вмістом і файл невідомого розміру не чіпає. true, якщо видалено.
+     */
+    fun deleteIfEmptyQuietly(context: Context, uri: Uri): Boolean =
+        queryFileSizeOrNull(context, uri) == 0L && deleteDocumentQuietly(context, uri)
+
     /** Видаляє документ SAF; true, якщо видалено. Помилки не кидає (best effort). */
     fun deleteDocumentQuietly(context: Context, uri: Uri): Boolean = try {
         when (uri.scheme) {

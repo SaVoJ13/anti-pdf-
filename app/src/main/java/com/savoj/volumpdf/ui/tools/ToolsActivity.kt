@@ -76,6 +76,9 @@ class ToolsActivity : AppCompatActivity() {
         }
     }
 
+    /** Файл, який системний діалог створив для поточної дії; якщо дія зірветься, а файл порожній, його прибираємо. */
+    private var lastOutputUri: Uri? = null
+
     private val createDocumentLauncher = registerForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf")
     ) { outputUri: Uri? ->
@@ -289,6 +292,7 @@ class ToolsActivity : AppCompatActivity() {
                     showError(getString(R.string.error_invalid_page_range))
                     return
                 }
+                if (!pageRangeOk(input, required = true)) return
                 getString(R.string.filename_split)
             }
             ToolType.ROTATE -> {
@@ -296,6 +300,7 @@ class ToolsActivity : AppCompatActivity() {
                     showError(getString(R.string.error_select_source_file))
                     return
                 }
+                if (!pageRangeOk(binding.etRotatePages.text?.toString(), required = false)) return
                 getString(R.string.filename_rotated)
             }
             ToolType.DELETE_PAGES -> {
@@ -308,6 +313,7 @@ class ToolsActivity : AppCompatActivity() {
                     showError(getString(R.string.error_invalid_page_range))
                     return
                 }
+                if (!pageRangeOk(input, required = true)) return
                 getString(R.string.filename_deleted)
             }
             ToolType.IMAGES_TO_PDF -> {
@@ -327,6 +333,7 @@ class ToolsActivity : AppCompatActivity() {
                     showError(getString(R.string.error_empty_watermark))
                     return
                 }
+                if (!pageRangeOk(binding.etWatermarkPages.text?.toString(), required = false)) return
                 getString(R.string.filename_watermarked)
             }
             ToolType.PAGE_NUMBERS -> {
@@ -334,6 +341,7 @@ class ToolsActivity : AppCompatActivity() {
                     showError(getString(R.string.error_select_source_file))
                     return
                 }
+                if (!pageRangeOk(binding.etPageNumbersPages.text?.toString(), required = false)) return
                 getString(R.string.filename_numbered)
             }
             ToolType.COMPRESS -> {
@@ -362,7 +370,15 @@ class ToolsActivity : AppCompatActivity() {
         createDocumentLauncher.launch(defaultName)
     }
 
+    /** QA2 Д1: діапазон перевіряємо до системного діалогу збереження, щоб не лишати порожній файл. */
+    private fun pageRangeOk(input: String?, required: Boolean): Boolean {
+        val problem = viewModel.pageRangeProblem(input, required) ?: return true
+        showError(problem.resolve(this))
+        return false
+    }
+
     private fun startOperation(outputUri: Uri) {
+        lastOutputUri = outputUri
         when (toolType) {
             ToolType.MERGE -> viewModel.executeMerge(this, outputUri)
             ToolType.SPLIT -> {
@@ -425,9 +441,9 @@ class ToolsActivity : AppCompatActivity() {
                         binding.tvSelectedSummary.visibility = View.VISIBLE
                         val count = files.size
                         if (toolType == ToolType.IMAGES_TO_PDF) {
-                            binding.tvSelectedSummary.text = getString(R.string.selected_images_count, count)
+                            binding.tvSelectedSummary.text = resources.getQuantityString(R.plurals.selected_images_count, count, count)
                         } else if (toolType == ToolType.MERGE) {
-                            binding.tvSelectedSummary.text = getString(R.string.selected_files_count, count)
+                            binding.tvSelectedSummary.text = resources.getQuantityString(R.plurals.selected_files_count, count, count)
                         } else {
                             val single = files.first()
                             val totalPages = viewModel.sourceDocumentPages
@@ -480,6 +496,8 @@ class ToolsActivity : AppCompatActivity() {
                             binding.containerProgress.visibility = View.GONE
                             binding.btnProcessAndSave.isEnabled = true
                             binding.btnSelectFiles.isEnabled = true
+                            lastOutputUri?.let { SafUtils.deleteIfEmptyQuietly(this@ToolsActivity, it) }
+                            lastOutputUri = null
                             showError(state.message.resolve(this@ToolsActivity))
                         }
                     }
