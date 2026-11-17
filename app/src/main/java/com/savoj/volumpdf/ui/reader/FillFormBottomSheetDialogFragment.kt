@@ -99,7 +99,7 @@ class FillFormBottomSheetDialogFragment : BottomSheetDialogFragment() {
 
     private fun display(fields: List<com.savoj.volumpdf.core.pdf.model.FormField>, values: Map<String, Any>) {
         shownFields = fields
-        binding.formSheetSubtitle.text = getString(R.string.forms_sheet_subtitle, fields.size)
+        binding.formSheetSubtitle.text = resources.getQuantityString(R.plurals.forms_sheet_subtitle, fields.size, fields.size)
         adapter.submitList(fields, values)
     }
 

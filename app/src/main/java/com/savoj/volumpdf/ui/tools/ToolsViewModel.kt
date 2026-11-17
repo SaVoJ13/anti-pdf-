@@ -56,6 +56,10 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Повідомлення про неправильний діапазон сторінок (до вибору місця збереження) або `null`, якщо все гаразд. */
+    fun pageRangeProblem(input: String?, required: Boolean): UserMessage? =
+        PageRangeParser.validationError(input, sourceDocumentPages, required)?.let { ErrorMessages.pageRange(it) }
+
     fun addFiles(files: List<SelectedFileItem>) {
         _selectedFiles.value = _selectedFiles.value + files
     }

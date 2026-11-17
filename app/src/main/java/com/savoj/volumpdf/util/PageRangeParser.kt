@@ -3,6 +3,20 @@ package com.savoj.volumpdf.util
 object PageRangeParser {
 
     /**
+     * Перевірка діапазону ДО системного діалогу збереження (QA2 Д1): `null` — рядок прийнятний, інакше причина.
+     * Порожній рядок для необов'язкового поля ([required] = false) прийнятний («усі сторінки»).
+     */
+    fun validationError(input: String?, totalPages: Int, required: Boolean): PageRangeException? {
+        if (input.isNullOrBlank() && !required) return null
+        return try {
+            parsePageIndices(input.orEmpty(), totalPages)
+            null
+        } catch (e: PageRangeException) {
+            e
+        }
+    }
+
+    /**
      * Парсить рядок номерів сторінок (1-based, наприклад: "1-3, 5, 8-10")
      * у список унікальних 0-based індексів сторінок у порядку зростання.
      *

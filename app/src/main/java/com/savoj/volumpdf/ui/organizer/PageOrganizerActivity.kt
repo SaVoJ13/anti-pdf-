@@ -171,7 +171,7 @@ class PageOrganizerActivity : AppCompatActivity() {
                 launch {
                     viewModel.items.collect { items ->
                         organizerAdapter.submitList(items)
-                        binding.toolbar.subtitle = getString(R.string.organize_pages_count, items.size)
+                        binding.toolbar.subtitle = resources.getQuantityString(R.plurals.organize_pages_count, items.size, items.size)
                         binding.btnSave.isEnabled = items.isNotEmpty()
                     }
                 }

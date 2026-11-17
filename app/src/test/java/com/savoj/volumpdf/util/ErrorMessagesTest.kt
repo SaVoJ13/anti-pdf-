@@ -115,11 +115,13 @@ class ErrorMessagesTest {
     }
 
     @Test
-    fun `failed first open drops the recents entry only for corrupt or empty files`() {
+    fun `failed first open drops the recents entry for corrupt, empty or inaccessible files`() {
         assertTrue(ErrorMessages.shouldDropFromRecents(IOException("Cannot read PDF header")))
         assertTrue(ErrorMessages.shouldDropFromRecents(IllegalStateException("odd")))
+        // QA2 Д5: без доступу на відкриття запис мертвий (файл жодного разу не відкрився)
+        assertTrue(ErrorMessages.shouldDropFromRecents(SecurityException("has no access to content://x")))
+        assertTrue(ErrorMessages.shouldDropFromRecents(IOException("open failed: EACCES (Permission denied)")))
         // файл може бути справним: запис лишаємо
-        assertFalse(ErrorMessages.shouldDropFromRecents(SecurityException("has no access to content://x")))
         assertFalse(ErrorMessages.shouldDropFromRecents(PdfPermissionException("no permission")))
         assertFalse(ErrorMessages.shouldDropFromRecents(FileNotFoundException("/x: ENOENT")))
         assertFalse(ErrorMessages.shouldDropFromRecents(IOException("write failed: ENOSPC (No space left on device)")))

@@ -53,7 +53,7 @@ class RecentsAdapter(
             val pagesStr = ReadingProgressLogic.formatPagesSubtitle(
                 pageCount = doc.pageCount,
                 lastPageRead = doc.lastPageRead,
-                formatCount = { count -> context.getString(R.string.document_pages_count, count) },
+                formatCount = { count -> context.resources.getQuantityString(R.plurals.document_pages_count, count, count) },
                 formatProgress = { current, total -> context.getString(R.string.document_page_progress, current, total) }
             )
             if (pagesStr.isNotBlank()) {

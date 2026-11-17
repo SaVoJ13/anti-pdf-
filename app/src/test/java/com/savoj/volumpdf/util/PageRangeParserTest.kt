@@ -69,4 +69,22 @@ class PageRangeParserTest {
             PageRangeParser.parsePageIndices("1-2-3")
         }
     }
+
+    @Test
+    fun validationError_outOfRange_isReportedBeforeSaving() {
+        val e = PageRangeParser.validationError("99", 5, required = true)
+        assertEquals(PageRangeException.Reason.OUT_OF_RANGE, e?.reason)
+        assertEquals(99, e?.page)
+        assertEquals(5, e?.totalPages)
+        assertEquals(PageRangeException.Reason.OUT_OF_RANGE, PageRangeParser.validationError("2-3,6", 5, required = false)?.reason)
+    }
+
+    @Test
+    fun validationError_validOrOptionalBlank_isNull() {
+        assertEquals(null, PageRangeParser.validationError("2-3,5", 5, required = true))
+        assertEquals(null, PageRangeParser.validationError("", 5, required = false))
+        assertEquals(null, PageRangeParser.validationError(null, 5, required = false))
+        assertEquals(PageRangeException.Reason.EMPTY, PageRangeParser.validationError(" ", 5, required = true)?.reason)
+        assertEquals(PageRangeException.Reason.BAD_FORMAT, PageRangeParser.validationError("x", 5, required = false)?.reason)
+    }
 }
