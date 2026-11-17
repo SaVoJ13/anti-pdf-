@@ -222,128 +222,89 @@
             app:srcCompat="@drawable/ic_fab_edit"
             app:tint="?attr/colorOnPrimary" />
 
-        <!-- Панель дій виділеного об'єкта: видалити / змінити; колір і розмір — на нижній панелі -->
+        <!-- Компактна панель дій виділеного об'єкта: лише іконки, розташовується біля об'єкта (див. SelectionPill) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/selectionBarCard"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="top|center_horizontal"
-            android:layout_margin="12dp"
+            android:layout_gravity="top|start"
             android:visibility="gone"
             app:cardBackgroundColor="?attr/colorSurfaceContainerHighest"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="8dp"
+            app:cardCornerRadius="26dp"
+            app:cardElevation="6dp"
             app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="8dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="2dp">
 
-                <HorizontalScrollView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:scrollbars="none">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelDelete"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:text="@string/place_delete"
-                            app:icon="@drawable/ic_delete" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelEdit"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:text="@string/place_edit_text"
-                            app:icon="@drawable/ic_edit" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelRotateLeft"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:contentDescription="@string/action_rotate_counterclockwise"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:text="@string/action_rotate_left_short"
-                            android:visibility="gone"
-                            app:icon="@drawable/ic_rotate_left" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelRotateRight"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:contentDescription="@string/action_rotate_clockwise"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:text="@string/action_rotate_right_short"
-                            android:visibility="gone"
-                            app:icon="@drawable/ic_rotate_right" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelFitPage"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:contentDescription="@string/action_fit_page"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:text="@string/action_fit_page"
-                            android:visibility="gone"
-                            app:icon="@drawable/ic_fit_page" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelMovePage"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:text="@string/place_move_to_page"
-                            app:icon="@drawable/ic_move_to_page" />
-                    </LinearLayout>
-                </HorizontalScrollView>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:maxWidth="320dp"
-                    android:text="@string/place_selected_hint"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
+                <ImageButton
+                    android:id="@+id/btnSelDelete"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/place_delete"
+                    android:scaleType="center"
+                    android:src="@drawable/ic_delete"
+                    app:tint="?attr/colorOnSurface"
+                    android:tooltipText="@string/place_delete" />
+                <ImageButton
+                    android:id="@+id/btnSelEdit"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/place_edit_text"
+                    android:scaleType="center"
+                    android:src="@drawable/ic_edit"
+                    app:tint="?attr/colorOnSurface"
+                    android:tooltipText="@string/place_edit_text" />
+                <ImageButton
+                    android:id="@+id/btnSelRotateLeft"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_rotate_counterclockwise"
+                    android:scaleType="center"
+                    android:src="@drawable/ic_rotate_left"
+                    app:tint="?attr/colorOnSurface"
+                    android:tooltipText="@string/action_rotate_counterclockwise"
+                    android:visibility="gone" />
+                <ImageButton
+                    android:id="@+id/btnSelRotateRight"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_rotate_clockwise"
+                    android:scaleType="center"
+                    android:src="@drawable/ic_rotate_right"
+                    app:tint="?attr/colorOnSurface"
+                    android:tooltipText="@string/action_rotate_clockwise"
+                    android:visibility="gone" />
+                <ImageButton
+                    android:id="@+id/btnSelFitPage"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_fit_page"
+                    android:scaleType="center"
+                    android:src="@drawable/ic_fit_page"
+                    app:tint="?attr/colorOnSurface"
+                    android:tooltipText="@string/action_fit_page"
+                    android:visibility="gone" />
+                <ImageButton
+                    android:id="@+id/btnSelMovePage"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/place_move_to_page"
+                    android:scaleType="center"
+                    android:src="@drawable/ic_move_to_page"
+                    app:tint="?attr/colorOnSurface"
+                    android:tooltipText="@string/place_move_to_page" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

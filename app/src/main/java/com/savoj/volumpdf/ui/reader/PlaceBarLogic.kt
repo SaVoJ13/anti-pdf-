@@ -345,3 +345,35 @@ object InkStraighten {
         return if (maxDev <= limit) floatArrayOf(ax, ay, bx, by) else xy
     }
 }
+
+/**
+ * Розташування компактної панелі дій біля виділеного об'єкта (чиста логіка, піксели в системі координат контейнера).
+ * Пріоритет: над об'єктом; якщо зверху немає місця, під ним; якщо не вміщується ні там, ні там (високий об'єкт),
+ * панель притискається до краю видимої зони. По горизонталі центрується на об'єкті й не виходить за краї.
+ */
+object SelectionPill {
+    data class Frame(val left: Float, val top: Float, val right: Float, val bottom: Float)
+    data class Placement(val x: Float, val y: Float, val above: Boolean, val visible: Boolean)
+
+    /** Скільки відсотків висоти контейнера може займати панель. Гарантія для розмітки (≈10% екрана). */
+    const val MAX_HEIGHT_FRACTION: Float = 0.10f
+
+    fun place(
+        frame: Frame, pillW: Float, pillH: Float, containerW: Float, containerH: Float, gap: Float, margin: Float
+    ): Placement {
+        val visible = frame.bottom > 0f && frame.top < containerH && frame.right > 0f && frame.left < containerW
+        val maxX = (containerW - pillW - margin).coerceAtLeast(margin)
+        val x = ((frame.left + frame.right) / 2f - pillW / 2f).coerceIn(margin, maxX)
+        val maxY = (containerH - pillH - margin).coerceAtLeast(margin)
+        val aboveTop = frame.top - gap - pillH
+        val belowTop = frame.bottom + gap
+        return when {
+            aboveTop >= margin -> Placement(x, aboveTop.coerceAtMost(maxY), true, visible)
+            belowTop <= maxY -> Placement(x, belowTop, false, visible)
+            else -> Placement(x, aboveTop.coerceIn(margin, maxY), true, visible)
+        }
+    }
+
+    /** Чи залишається панель у межах ліміту висоти. */
+    fun fitsHeight(pillH: Float, containerH: Float): Boolean = containerH > 0f && pillH <= containerH * MAX_HEIGHT_FRACTION
+}

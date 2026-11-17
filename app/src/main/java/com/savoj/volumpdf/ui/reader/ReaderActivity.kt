@@ -58,6 +58,7 @@ import com.savoj.volumpdf.util.ErrorMessages
 import com.savoj.volumpdf.util.hapticReject
 import com.savoj.volumpdf.util.hapticTick
 import com.savoj.volumpdf.util.hapticConfirm
+import androidx.appcompat.widget.TooltipCompat
 import com.savoj.volumpdf.util.ImageRotationHelper
 import com.savoj.volumpdf.util.ReadOnlyCheck
 import com.savoj.volumpdf.util.SafUtils
@@ -798,6 +799,8 @@ class ReaderActivity : AppCompatActivity() {
         binding.btnSelRotateLeft.setOnClickListener { rotateSelectedImage(-90) }
         binding.btnSelRotateRight.setOnClickListener { rotateSelectedImage(90) }
         binding.btnSelFitPage.setOnClickListener { fitSelectedImageToPage() }
+        binding.markupOverlay.selectionFrameListener =
+            MarkupOverlayView.SelectionFrameListener { has, l, t, r, b, busy -> onSelectionFrame(has, l, t, r, b, busy) }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -824,6 +827,49 @@ class ReaderActivity : AppCompatActivity() {
         invalidateOptionsMenu() // «Зберегти» у верхній панелі показується лише за незбережених змін
     }
 
+    // --- компактна панель дій біля виділеного об'єкта (SelectionPill) ---
+    private var pillFrame: SelectionPill.Frame? = null
+    private var pillBusy = false
+    private var pillWanted = false
+
+    private fun onSelectionFrame(has: Boolean, l: Float, t: Float, r: Float, b: Float, busy: Boolean) {
+        pillFrame = if (has) SelectionPill.Frame(l, t, r, b) else null
+        pillBusy = busy
+        positionSelectionPill()
+    }
+
+    /** Ставить панель над/під виділеним об'єктом; під час перетягування й зміни розміру ховає, після відпускання повертає. */
+    private fun positionSelectionPill() {
+        val card = binding.selectionBarCard
+        val frame = pillFrame
+        if (!pillWanted || frame == null) {
+            if (card.visibility != View.GONE) card.visibility = View.GONE
+            return
+        }
+        if (card.visibility == View.GONE) card.visibility = View.INVISIBLE // щоб панель отримала розмір
+        val w = card.width.toFloat()
+        val h = card.height.toFloat()
+        val overlay = binding.markupOverlay
+        if (w <= 0f || h <= 0f || overlay.width <= 0) return
+        val p = SelectionPill.place(frame, w, h, overlay.width.toFloat(), overlay.height.toFloat(), dp(8).toFloat(), dp(8).toFloat())
+        card.translationX = p.x
+        card.translationY = p.y
+        val show = !pillBusy && p.visible
+        val target = if (show) View.VISIBLE else View.INVISIBLE
+        if (card.visibility != target) card.visibility = target
+    }
+
+    /** Підказка про виділений об'єкт: один раз після встановлення, прапорець лише локально. */
+    private fun maybeShowSelectionHint() {
+        try {
+            val prefs = getSharedPreferences("reader_hints", MODE_PRIVATE)
+            if (prefs.getBoolean("selection_hint_shown", false)) return
+            prefs.edit().putBoolean("selection_hint_shown", true).apply()
+            showMessage(getString(R.string.place_selected_hint), long = true)
+        } catch (_: Exception) {
+        }
+    }
+
     /** Малює стан редактора: оверлей, кнопки «Зберегти»/«Скасувати», панель дій виділеного, параметри за типом цілі. */
     private fun renderEditor(state: PlaceEditorState) {
         binding.markupOverlay.items = state.items
@@ -836,8 +882,9 @@ class ReaderActivity : AppCompatActivity() {
         binding.markupOverlay.inkColor = viewModel.newInkColor()
         binding.markupOverlay.inkWidthPt = viewModel.placeSize(PlaceTool.INK)
 
-        binding.selectionBarCard.visibility =
-            if (sel != null && viewModel.placeModeActive) View.VISIBLE else View.GONE
+        pillWanted = sel != null && viewModel.placeModeActive
+        positionSelectionPill()
+        if (pillWanted) maybeShowSelectionHint()
         if (sel != null) {
             val editLabel = when (sel.tool) {
                 PlaceTool.TEXT -> R.string.place_edit_text
@@ -846,7 +893,11 @@ class ReaderActivity : AppCompatActivity() {
                 else -> null
             }
             binding.btnSelEdit.visibility = if (editLabel == null) View.GONE else View.VISIBLE
-            if (editLabel != null) binding.btnSelEdit.setText(editLabel)
+            if (editLabel != null) {
+                val label = getString(editLabel)
+                binding.btnSelEdit.contentDescription = label
+                TooltipCompat.setTooltipText(binding.btnSelEdit, label)
+            }
             binding.btnSelMovePage.visibility = View.VISIBLE
         }
 
@@ -908,7 +959,7 @@ class ReaderActivity : AppCompatActivity() {
             when (sel.tool) {
                 PlaceTool.TEXT -> {
                     val wrapped = PlaceMarkupLogic.wrapText(
-                        sel.rawText ?: sel.text, sel.x, value, page,
+                        sel.rawText ?: PlaceMarkupLogic.unwrapText(sel.text), sel.x, value, page,
                         measureWidthPt = { line -> measureTextPt(line, value) }
                     )
                     viewModel.edit { s ->
@@ -982,6 +1033,7 @@ class ReaderActivity : AppCompatActivity() {
         viewModel.placeModeActive = false
         binding.markupOverlay.editingEnabled = false
         viewModel.clearPending() // виділення й історія скасування не переживають вихід із режиму
+        pillWanted = false
         binding.selectionBarCard.visibility = View.GONE
         viewerFragment?.bridge?.setPlaceMode(false)
         placeBar.closeCard(animate = false)

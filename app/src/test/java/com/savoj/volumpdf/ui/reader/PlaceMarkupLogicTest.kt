@@ -256,7 +256,9 @@ class PlaceMarkupLogicTest {
         assertTrue("Вузьке вікно повинно створити щонайменше 3 рядки, отримано: ${narrowLines.size}", narrowLines.size >= 3)
 
         // Розширюємо вікно: рядки перетікають у меншу кількість рядків
-        val wide = PlaceMarkupLogic.wrapTextToWidth(narrow, maxWidthPt = 400f, fontSizePt = 14f)
+        // Контракт після виправлення спостереження QA (б): wrapTextToWidth зберігає переноси користувача, тому раніше
+        // перенесений текст викликач відновлює через unwrapText (як MarkupOverlayView при зміні ширини рамки).
+        val wide = PlaceMarkupLogic.wrapTextToWidth(PlaceMarkupLogic.unwrapText(narrow), maxWidthPt = 400f, fontSizePt = 14f)
         val wideLines = wide.split('\n')
         assertTrue("Широке вікно повинно зменшити кількість рядків (отримано ${wideLines.size} проти ${narrowLines.size})", wideLines.size < narrowLines.size)
     }
