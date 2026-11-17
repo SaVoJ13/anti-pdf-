@@ -2,6 +2,7 @@ package com.savoj.volumpdf.core.ads
 
 import android.app.Activity
 import android.content.Context
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.ump.ConsentInformation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -103,5 +104,20 @@ class AdMobAdsManagerTest {
     fun privacyOptionsNotRequiredWhenConsentInfoUnavailable() {
         val manager = AdMobAdsManager(mockContext, consentInfoProvider = { null })
         assertFalse(manager.isPrivacyOptionsRequired())
+    }
+
+    @Test
+    fun requestConfigurationIsFor13PlusAudience() {
+        val config = AdMobAdsManager.buildRequestConfiguration()
+        assertEquals(RequestConfiguration.MAX_AD_CONTENT_RATING_PG, config.maxAdContentRating)
+        // Застосунок не для дітей до 13: child-directed не ставимо
+        assertEquals(
+            RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED,
+            config.tagForChildDirectedTreatment
+        )
+        assertEquals(
+            RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED,
+            config.tagForUnderAgeOfConsent
+        )
     }
 }

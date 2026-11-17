@@ -78,7 +78,7 @@ The app's own manifest requests only the `INTERNET` permission. Internet is used
 ---
 
 ## 7. Children
-The app is intended for general audiences and is not directed at children under 13 (under 16 in the EEA). We do not knowingly collect personal data from children.
+The app is intended for users aged 13 and over and is not directed at children under 13. We do not knowingly collect personal data from children under 13. In the European Economic Area (EEA) the age from which a person can give consent to data processing on their own differs by country (from 13 to 16). If you are below that age in your country, do not agree in the ads consent form without the permission of a parent or guardian; you can withdraw or change your choice in the menu "Privacy settings". Ad content is limited by age rating (no higher than PG).
 
 ---
 
