@@ -15,6 +15,9 @@ object ReaderChromeLogic {
     fun showEditFab(placeMode: Boolean, openFailed: Boolean, searchActive: Boolean): Boolean =
         !placeMode && !openFailed && !searchActive
 
+    /** Стан пошуку змінився відносно того, з яким останній раз рахували видимість: треба перерахувати. */
+    fun needsChromeRefresh(lastApplied: Boolean, current: Boolean): Boolean = lastApplied != current
+
     /** Видимість пунктів верхньої панелі й меню ⋮. */
     data class MenuState(
         val placeSave: Boolean,

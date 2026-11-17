@@ -239,6 +239,7 @@ class ReaderActivity : AppCompatActivity() {
     private fun setupReaderChrome() {
         // М1: єдина плаваюча кнопка «Редагувати» (нижньої панелі більше немає).
         binding.fabReaderEdit.setOnClickListener { enterPlaceMode() }
+        startSearchStateSync()
 
         // TalkBack оголошує зміну сторінки (ввічливо, без переривання поточної мови).
         ViewCompat.setAccessibilityLiveRegion(binding.btnHudPage, ViewCompat.ACCESSIBILITY_LIVE_REGION_POLITE)
@@ -255,6 +256,26 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
+    /** Останній стан пошуку, з яким рахувалась видимість кнопки й пігулки. */
+    private var lastSearchActive = false
+
+    /**
+     * Панель пошуку androidx.pdf має власну кнопку «Закрити» і хрестик: сповіщення про зміну стану вона не дає.
+     * Тому, поки екран видимий, стан пошуку звіряється з останнім застосованим (стан бібліотеки — єдине джерело правди)
+     * і видимість перераховується при будь-якій зміні, з будь-якого шляху закриття чи відкриття.
+     */
+    private fun startSearchStateSync() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    val current = viewerFragment?.bridge?.isTextSearchActive == true
+                    if (ReaderChromeLogic.needsChromeRefresh(lastSearchActive, current)) applyReaderChromeVisibility()
+                    delay(SEARCH_SYNC_MS)
+                }
+            }
+        }
+    }
+
     private fun toggleSearch() {
         val bridge = viewerFragment?.bridge ?: return
         val next = !bridge.isTextSearchActive
@@ -268,6 +289,7 @@ class ReaderActivity : AppCompatActivity() {
      */
     private fun applyReaderChromeVisibility() {
         val searchActive = viewerFragment?.bridge?.isTextSearchActive == true
+        lastSearchActive = searchActive
         val show = ReaderChromeLogic.showEditFab(viewModel.placeModeActive, openFailed, searchActive)
         binding.cardReaderHud.visibility = if (show) View.VISIBLE else View.GONE
         binding.fabReaderEdit.visibility = if (show) View.VISIBLE else View.GONE
@@ -3110,6 +3132,7 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val SEARCH_SYNC_MS = 200L
         const val EXTRA_DOCUMENT_TITLE = "extra_document_title"
 
         /** Boolean: документа не було в «Останніх» до цього відкриття (визначає той, хто відкриває читач, до запису). */

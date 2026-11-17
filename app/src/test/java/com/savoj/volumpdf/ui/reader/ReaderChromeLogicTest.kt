@@ -113,4 +113,27 @@ class ReaderChromeLogicTest {
             assertTrue("шторка має $it", text.contains("action = ReaderToolAction.$it"))
         }
     }
+
+    @Test
+    fun `closing search from any source brings the fab and pill back`() {
+        // відкрито пошук: ховаються; закрито (кнопка «Закрити» панелі, Back, хрестик): повертаються
+        var applied = false
+        fun step(current: Boolean): Boolean {
+            val refresh = ReaderChromeLogic.needsChromeRefresh(applied, current)
+            if (refresh) applied = current
+            return refresh
+        }
+        assertFalse("нічого не змінилось", step(false))
+        assertTrue("пошук відкрито", step(true))
+        assertFalse(ReaderChromeLogic.showEditFab(placeMode = false, openFailed = false, searchActive = applied))
+        assertFalse("стан стабільний", step(true))
+        assertTrue("пошук закрито власною кнопкою панелі", step(false))
+        assertTrue(ReaderChromeLogic.showEditFab(placeMode = false, openFailed = false, searchActive = applied))
+    }
+
+    @Test
+    fun `search state never revives the fab in place mode or after open failure`() {
+        assertFalse(ReaderChromeLogic.showEditFab(placeMode = true, openFailed = false, searchActive = false))
+        assertFalse(ReaderChromeLogic.showEditFab(placeMode = false, openFailed = true, searchActive = false))
+    }
 }
