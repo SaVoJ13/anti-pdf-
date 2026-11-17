@@ -48,9 +48,10 @@ section{scroll-margin-top:1rem}
 <ul>
 <li>Файли відкриваються й зберігаються лише через системний вибір файлів Android (Storage Access Framework). Застосунок не просить широкого доступу до сховища. Застосунок також може відкривати PDF, які ви надсилаєте йому з іншого застосунку («Відкрити за допомогою»).</li>
 <li>Список «Останні» зберігається в локальній базі даних на пристрої: адреса файлу (URI), назва, розмір, кількість сторінок, остання прочитана сторінка, час останнього відкриття та позначка «обране». Він нікуди не надсилається. Його можна очистити в застосунку («Очистити історію») або в налаштуваннях Android (Застосунки, Anti PDF, Сховище, Очистити дані).</li>
+<li>Застосунок також тримає на пристрої у власному закритому сховищі: нові документи, які ви створюєте (<code>documents</code>), скани (<code>scanned</code>), незбережені правки (<code>pending</code>, зокрема додані вами текст і підписи; видаляються автоматично через 7 днів) і тимчасові файли в кеші. «Очистити історію» прибирає лише список «Останні» й не видаляє їх; їх видаляє очищення даних застосунку в налаштуваннях Android або видалення застосунку.</li>
 <li>Налаштування вигляду та читання (наприклад, тема) зберігаються локально на пристрої.</li>
 <li>Для перегляду результату застосунок може створювати тимчасову копію PDF у власному кеші; вона не залишає пристрій.</li>
-<li>Сканер документів використовує Google ML Kit Document Scanner, що надається через сервіси Google Play. За інформацією Google, сканування та обробка зображень виконуються на пристрої; готові сторінки передаються застосунку, який зберігає їх туди, куди ви вкажете. Ми не отримуємо і не зберігаємо ваші скани.</li>
+<li>Сканер документів використовує Google ML Kit Document Scanner, що надається через сервіси Google Play. За інформацією Google, сканування та обробка зображень виконуються на пристрої; готові сторінки передаються застосунку, який зберігає скан як PDF у власному закритому сховищі на пристрої (і додає його до списку «Останні»). Копію можна зберегти чи надіслати куди завгодно. Ми не отримуємо і не зберігаємо ваші скани.</li>
 </ul>
 
 <h2>3. Реклама (Google AdMob) і згода (Google UMP)</h2>
@@ -87,7 +88,7 @@ section{scroll-margin-top:1rem}
 <ul>
 <li>Керуйте персоналізацією реклами та рекламним ідентифікатором у налаштуваннях Android.</li>
 <li>Змінюйте згоду в меню застосунку («Налаштування конфіденційності»), коли цей пункт показано.</li>
-<li>Видаліть локальні дані застосунку: «Очистити історію» в застосунку, очищення даних у налаштуваннях Android або видалення застосунку. Ваші PDF-файли при цьому не видаляються.</li>
+<li>Видаліть локальні дані застосунку: «Очистити історію» в застосунку прибирає лише список «Останні»; очищення даних у налаштуваннях Android або видалення застосунку також видаляє нові документи, скани, незбережені правки й тимчасові файли, які тримає застосунок (PDF-файли, збережені вами в інших місцях, не видаляються).</li>
 <li>Ми не зберігаємо ваших персональних даних на своїх серверах, тому нічого видаляти на нашому боці. Дані, які обробляє Google AdMob, ви можете запитувати в Google за його політикою (див. розділ 3.1).</li>
 <li>З питань і запитів щодо даних пишіть: <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a>.</li>
 </ul>
@@ -120,9 +121,10 @@ section{scroll-margin-top:1rem}
 <ul>
 <li>Files are opened and saved only through Android's system file picker (Storage Access Framework). The app does not request broad storage access. The app can also open PDFs that you send to it from another app ("Open with").</li>
 <li>The "Recent" list is kept in a local database on your device: file address (URI), name, size, page count, last read page, last opened time and a favorite flag. It is never sent anywhere. You can clear it in the app ("Clear history") or in Android Settings (Apps, Anti PDF, Storage, Clear data).</li>
+<li>The app also keeps on your device, in its own private storage: new documents you create (<code>documents</code>), scans (<code>scanned</code>), unsaved edits (<code>pending</code>, including any text and signatures you added, deleted automatically after 7 days) and temporary files in the cache. "Clear history" removes only the "Recent" list and does not delete these; they are removed by clearing the app data in Android Settings or by uninstalling the app.</li>
 <li>Appearance and reading settings (for example the theme) are stored locally on your device.</li>
 <li>To show a result, the app may create a temporary copy of the PDF in its own cache; it never leaves the device.</li>
-<li>The document scanner uses the Google ML Kit Document Scanner, provided through Google Play services. Per Google, scanning and image processing run on the device; the scanned pages are handed to the app, which saves them where you choose. We do not receive or store your scans.</li>
+<li>The document scanner uses the Google ML Kit Document Scanner, provided through Google Play services. Per Google, scanning and image processing run on the device; the scanned pages are handed to the app, which saves the scan as a PDF in its own private storage on your device (and adds it to the "Recent" list). You can save or share a copy anywhere you choose. We do not receive or store your scans.</li>
 </ul>
 
 <h2>3. Advertising (Google AdMob) and consent (Google UMP)</h2>
@@ -159,7 +161,7 @@ section{scroll-margin-top:1rem}
 <ul>
 <li>Manage ad personalization and the advertising ID in Android Settings.</li>
 <li>Change your consent in the app menu ("Privacy settings") when that item is shown.</li>
-<li>Delete the app's local data: "Clear history" in the app, clearing data in Android Settings, or uninstalling the app. Your PDF files are not deleted by this.</li>
+<li>Delete the app's local data: "Clear history" in the app removes the "Recent" list only; clearing data in Android Settings or uninstalling the app also removes new documents, scans, unsaved edits and temporary files kept by the app (PDF files you saved elsewhere are not deleted).</li>
 <li>We do not store your personal data on our servers, so there is nothing to delete on our side. For data processed by Google AdMob you can make requests to Google under its policies (see section 3.1).</li>
 <li>For questions or requests about your data, write to <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a>.</li>
 </ul>

@@ -24,10 +24,11 @@ Anti PDF ("we", "the app") is a PDF reader and editor. In short:
 
 - Files are opened and saved only through Android's system file picker (Storage Access Framework). The app does not request broad storage permissions.
 - The app keeps a local list of recently opened files in a local database on your device: file address (URI), name, size, page count, last read page, last opened time and favorite flag. It is never sent to a server. You can clear it in the app menu ("Clear history") or in Android Settings (Apps, Anti PDF, Storage, Clear data).
+- The app also keeps on your device, in its own private storage: new documents you create (`documents`), scans (`scanned`), unsaved edits (`pending`, including any text and signatures you added, deleted automatically after 7 days) and temporary files in the cache. "Clear history" removes only the "Recent" list and does not delete these; they are removed by clearing the app data in Android Settings or by uninstalling the app.
 - Appearance and reading settings (for example the theme) are stored locally on your device.
 - To show a result, the app may create a temporary copy of the PDF in its own cache; it never leaves the device.
 - Files are also opened when you send a PDF to the app from another app ("Open with").
-- Document scanner: scanning uses the Google ML Kit Document Scanner, provided through Google Play services. Per Google, scanning and image processing run on the device; the scanned pages are given to the app, and the app saves them where you choose. We do not receive or store your scans on any server.
+- Document scanner: scanning uses the Google ML Kit Document Scanner, provided through Google Play services. Per Google, scanning and image processing run on the device; the scanned pages are given to the app, which saves the scan as a PDF in its own private storage on your device (and adds it to the "Recent" list). You can save or share a copy anywhere you choose. We do not receive or store your scans on any server.
 
 ---
 
@@ -70,7 +71,7 @@ The app's own manifest requests only the `INTERNET` permission. Internet is used
 ## 6. Your Rights
 - Manage ad personalization and the advertising ID in Android Settings.
 - Change your consent in the app menu ("Privacy settings") when shown.
-- Delete local app data: "Clear history" in the app, clearing storage in Android Settings, or uninstalling the app (your PDF files are not deleted).
+- Delete local app data: "Clear history" in the app removes the "Recent" list only; clearing data in Android Settings or uninstalling the app also removes new documents, scans, unsaved edits and temporary files kept by the app (PDF files you saved elsewhere are not deleted).
 - We store no personal data on our servers, so there is nothing to delete on our side; requests about data processed by Google AdMob go to Google.
 - For questions or requests about your data, contact `appvsdeveloper@gmail.com`.
 

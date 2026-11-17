@@ -10,8 +10,8 @@
 **Що змінено:** `docs/privacy/index.html`, `docs/.nojekyll`, `docs/store/PRIVACY_POLICY.md` (дата 2026-11-17, контакт, уточнення), `docs/store/DATA_SAFETY.md`, `docs/store/STORE_LISTING.md`, `app/build.gradle.kts`, `docs/governance/DECISIONS.md`.
 **Рішення:** `DECISIONS.md`, 2026-11-17 (контакт і Pages). **Що передати далі:** QA: відкрити сторінку локально/після ввімкнення Pages (Settings, Pages, Source: main, /docs), перевірити сторінку у світлій і темній темі на телефоні, звірити текст із кодом; Керівник вмикає Pages. **Відкриті питання:** вікова категорія в Play Console (політика каже «не для дітей до 13/16», у `PUBLICATION_READINESS` рекомендовано 18+ або 13+; рішення за Власником); у збірці досі тестові ідентифікатори AdMob (перед релізом замінити, і текст політики не міняється); `OWNER_INBOX.md` п. 4 історичний (там ще згадується плейсхолдер).
 Числа (XML, JDK 21): `:app` 353/0/0, `:core-pdf` 107/0/1, `:core-ads` 6/0/0; `assembleDebug` і `:app:lintDebug` без помилок. `PrivacyMenuTest` зелений, `BuildConfig.PRIVACY_POLICY_URL` = https://savoj13.github.io/anti-pdf-/privacy/.
-## 2026-11-17 — Керівник проєкту (Claude Code): завершення першого прогону
 
+## 2026-11-17 — Керівник проєкту (Claude Code): завершення першого прогону
 
 **Простими словами**
 - Усі п'ять гілок покращень злито в `main` після перевірки незалежними QA на телефоні; фінальний пакет дрібних виправлень (діапазон сторінок, множини, «Назад» у картці пера) теж.
