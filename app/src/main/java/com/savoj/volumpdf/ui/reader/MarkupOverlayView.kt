@@ -116,6 +116,13 @@ class MarkupOverlayView @JvmOverloads constructor(
 
     var editListener: EditListener? = null
 
+    /** Рамка виділеного об'єкта в пікселях цього в'ю (щокадру); [busy] — іде перетягування/зміна розміру/щипок. */
+    fun interface SelectionFrameListener {
+        fun onFrame(has: Boolean, left: Float, top: Float, right: Float, bottom: Float, busy: Boolean)
+    }
+
+    var selectionFrameListener: SelectionFrameListener? = null
+
     private val viewportListener: (Viewport) -> Unit = { invalidate() }
 
     private val density = resources.displayMetrics.density
@@ -999,6 +1006,7 @@ class MarkupOverlayView @JvmOverloads constructor(
         }
 
         val sel = selectedId?.let { id -> list.firstOrNull { it.id == id } }
+        if (sel == null) selectionFrameListener?.onFrame(false, 0f, 0f, 0f, 0f, false)
         if (sel != null) {
             val activeSel = if ((isResizing && sel.id == resizeId) || (isPinching && sel.id == (dragId ?: selectedId))) {
                 var cur = sel
@@ -1013,6 +1021,10 @@ class MarkupOverlayView @JvmOverloads constructor(
                 val r = PlaceBounds.boundsPx(activeSel, o.first, o.second, zoom, lineWidthPx(activeSel.sizePt, zoom))
                 val pad = 4f * density
                 rectF.set(r.left - pad, r.top - pad, r.right + pad, r.bottom + pad)
+                selectionFrameListener?.onFrame(
+                    true, rectF.left, rectF.top, rectF.right, rectF.bottom,
+                    (gestureActive && moved) || isResizing || isPinching
+                )
                 canvas.drawRoundRect(rectF, 4f * density, 4f * density, frameHaloPaint)
                 canvas.drawRoundRect(rectF, 4f * density, 4f * density, framePaint)
 
