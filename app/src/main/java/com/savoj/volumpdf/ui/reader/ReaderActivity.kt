@@ -2444,11 +2444,9 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
-        if (viewModel.hasUnsaved.value) {
-            savePending { doAppend() }
-        } else {
-            doAppend()
-        }
+        // Не вшиваємо незбережене в PDF: сторінки додаються в кінець, індекси наявних об'єктів не змінюються,
+        // тож усе додане лишається редагованим до явного «Зберегти».
+        doAppend()
     }
 
     private fun addNewBlankPage(onComplete: ((Boolean) -> Unit)? = null) {
@@ -2481,11 +2479,8 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
-        if (viewModel.hasUnsaved.value) {
-            savePending { doAdd() }
-        } else {
-            doAdd()
-        }
+        // Не вшиваємо незбережене в PDF (див. appendSelectedFiles): сторінка йде в кінець, об'єкти лишаються редагованими.
+        doAdd()
     }
 
     private fun showToolsBottomSheet() {
