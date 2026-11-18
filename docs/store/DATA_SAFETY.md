@@ -3,14 +3,14 @@
 > Чернетка для Власника, форму в Play Console заповнює Власник. Нічого не подано. Звірено з кодом 2026-11-16; звірку зі сторінками Google повторено **2026-11-18**.
 >
 > **Версії SDK і дата звірки (2026-11-18):**
-> - AdMob: `play-services-ads:23.6.0` (з `core-ads/build.gradle.kts`). Актуальна сторінка Google https://developers.google.com/admob/android/privacy/play-data-disclosure описує Google Mobile Ads SDK **25.5.0**; сторінка охоплює лише поточну версію. У сирому HTML сторінки є «Last updated 2026-11-17 UTC» (у видимому тексті дати не видно). Службовий опис сторінки (meta description) згадує SDK 23.6.0, а видимий текст 25.5.0, тож звірка саме для 23.6.0 непевна. Різниці в категоріях даних між 23.6.0 і 25.5.0 з сторінки встановити не можна: НЕ ПЕРЕВІРЕНО. Звірку повторити після оновлення SDK.
+> - AdMob: `play-services-ads:23.6.0` (з `core-ads/build.gradle.kts`). Актуальна сторінка Google https://developers.google.com/admob/android/privacy/play-data-disclosure описує Google Mobile Ads SDK **25.5.0**; сторінка охоплює лише поточну версію. На сторінці зазначено Last updated 2026-11-17 UTC; у службовому блоці сторінки згадується SDK 23.6.0, у тексті 25.5.0; звірку для 23.6.0 слід повторити після оновлення SDK. Різниці в категоріях даних між 23.6.0 і 25.5.0 з сторінки встановити не можна: НЕ ПЕРЕВІРЕНО.
 > - ML Kit Document Scanner: `play-services-mlkit-document-scanner:16.0.0-beta1` (з `app/build.gradle.kts`). Сторінка Google https://developers.google.com/ml-kit/android-data-disclosure (редакція 14 травня 2025) охоплює лише останні версії SDK і Document Scanner окремо не згадує; віднесення сканера до функцій, що працюють через Google Play services (там ідентифікатори: пристрою та встановлення), є висновком, не прямим текстом сторінки.
 > - Google UMP: `user-messaging-platform:3.1.0` (власних даних для Data safety не додає).
 
 **Application:** Anti PDF
 **Package:** `com.savoj.volumpdf.anti`
 **Min / target SDK:** 28 / 36
-**SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:23.6.0`), Google UMP (`com.google.android.ump:user-messaging-platform:3.1.0`), Google ML Kit Document Scanner (`com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1`, працює через Google Play services; збирає технічну діагностику, скани не надсилає).
+**SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:23.6.0`), Google UMP (`com.google.android.ump:user-messaging-platform:3.1.0`), Google ML Kit Document Scanner (`com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1`, працює через Google Play services; збирає технічну діагностику; застосунок скани не передає).
 **Інші SDK:** PdfBox-Android, androidx.pdf, Room (усе локально).
 **Резервне копіювання:** `allowBackup="false"` (рішення Власника 2026-11-14); `dataExtractionRules` / `fullBackupContent` не задано, бо автокопіювання вимкнено.
 **Дозволи у власному маніфесті:** лише `INTERNET`. Склеєний маніфест релізу перевірено, дивись `docs/project_log.md` (запис release-prep).
@@ -32,7 +32,7 @@
 ## 2. Типи даних
 
 ### 2.1 Файли й документи, фото
-- **Не збираються і не передаються.** PDF, зображення та результати сканера обробляються локально. Сканер (Google ML Kit Document Scanner) працює на пристрої через Google Play services; застосунок не завантажує скани. Технічну діагностику сканера збирає ML Kit (дивись 2.3 і 2.5); самі скани й документи не надсилаються.
+- **Не збираються і не передаються.** PDF, зображення та результати сканера обробляються локально. Сканер (Google ML Kit Document Scanner) працює через Google Play services. Застосунок не завантажує скани й не передає їх на власні сервери. Прямого підтвердження «обробка лише на пристрої» від Google немає: НЕ ПЕРЕВІРЕНО. Технічну діагностику сканера збирає ML Kit (дивись 2.3 і 2.5); самі скани й документи не надсилаються.
 
 ### 2.2 Location
 - **Approximate location:** збирається AdMob (з IP). Передається. **Обов'язково (Required)**. Цілі: Advertising or marketing; Fraud prevention, security and compliance.

@@ -1,3 +1,21 @@
+## 2026-11-18 (ще пізніше) — Монетизація і Google Play: зауваження QA D4 і D5, гілка `fix/stage1-compliance-docs`
+
+**Простими словами**
+- QA прийняла D1–D3 і знайшла ще два низькі зауваження. Виправлено лише їх, окремим комітом.
+- Примітку про дату на сторінці AdMob переписано нейтрально, без припущень про тип службового блоку (у записі вище я назвав його «meta description», це не підтверджено).
+- Твердження «обробка зображень на пристрої» (його немає в Google) замінено тим, що доводить код: застосунок отримує готові сторінки, зберігає їх у закритому сховищі й не передає на свої сервери.
+
+**Перевірка коду перед правками (команди з кореня worktree, результат):**
+- `grep -rnE "HttpURLConnection|OkHttp|okhttp3|Retrofit|java.net.URL|URLConnection|Socket(|ktor|WebView|Volley|DownloadManager|HttpClient" --include=*.kt --include=*.java app core-pdf core-ads` → єдиний збіг: `core-pdf/.../PdfIo.kt:167` `java.net.URLDecoder.decode(rawId, "UTF-8")` (розбір рядка, не мережа).
+- `grep -rnE "okhttp|retrofit|ktor|volley|firebase|crashlytics|analytics" --include=*.kts --include=*.toml .` → порожньо.
+- `grep -rn "uses-permission" --include=AndroidManifest.xml app core-ads core-pdf` → лише `android.permission.INTERNET` (`app/src/main/AndroidManifest.xml:4`).
+- `grep -rnE "https?://" --include=*.kt app/src/main core-pdf/src/main core-ads/src/main` → лише тексти ліцензій у `LicensesDialogHelper.kt`.
+- Код сканера: `ScanDocumentActivity.kt` бере `GmsDocumentScanningResult` і копіює результат у `filesDir/scanned` (`DocumentScannerLogic.kt:40-46`, `ScanDocumentActivity.kt:159`), потім відкриває `ReaderActivity`. Мережевих викликів зі сканами немає.
+**Висновок:** застосунок не передає скани на власні сервери. Нічого іншого в коді не знайдено.
+
+**Що змінено:** D4: примітка в `docs/store/DATA_SAFETY.md` (рядок 6) → «На сторінці зазначено Last updated 2026-11-17 UTC; у службовому блоці сторінки згадується SDK 23.6.0, у тексті 25.5.0; звірку для 23.6.0 слід повторити після оновлення SDK». D5: розділ 2 політики (`docs/privacy/index.html` uk+en, `docs/store/PRIVACY_POLICY.md`) без «обробка на пристрої», з посиланням на перелік ML Kit (розд. 2.1); `DATA_SAFETY.md` рядок 35 («не завантажує скани й не передає на власні сервери… НЕ ПЕРЕВІРЕНО») і рядок 13 («застосунок скани не передає»).
+**НЕ ПЕРЕВІРЕНО:** що ML Kit обробляє зображення лише на пристрої (прямого підтвердження Google немає); що ML Kit не надсилає вмісту зображень (спираємось на перелік зі сторінки Google); різниця AdMob 23.6.0 проти 25.5.0.
+
 ## 2026-11-18 (пізніше) — Монетизація і Google Play: три низькі зауваження QA (D1–D3), гілка `fix/stage1-compliance-docs`
 
 **Простими словами**
