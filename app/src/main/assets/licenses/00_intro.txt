@@ -1,0 +1,17 @@
+Anti PDF is built using open-source software.
+
+This screen contains the licence texts and notices that are not published in the package metadata of the libraries: Apache License 2.0 (full text), Bouncy Castle, Apache PDFBox notices (PdfBox-Android), the Liberation Sans and Roboto fonts and the SIL Open Font License 1.1 (full text).
+
+The licences of the other libraries (AndroidX, Material Components, Kotlin, Google Play services SDKs such as Google Mobile Ads, User Messaging Platform and ML Kit Document Scanner, and their dependencies) are listed under "Library licenses" (button below).
+
+The licence texts are shown in English, as published by their authors.
+
+Components that are licensed under Apache License, Version 2.0 (full text below):
+  - androidx.pdf:pdf-viewer-fragment (Google LLC / The Android Open Source Project)
+    https://developer.android.com/jetpack/androidx/releases/pdf
+  - PdfBox-Android (Tom Roush; based on Apache PDFBox, The Apache Software Foundation)
+    https://github.com/TomRoush/PdfBox-Android
+  - AndroidX, Material Components for Android, Room (Google LLC / The Android Open Source Project)
+    https://developer.android.com/jetpack
+  - Kotlin and kotlinx.coroutines (JetBrains s.r.o.)
+    https://github.com/Kotlin/kotlinx.coroutines

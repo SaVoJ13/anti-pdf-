@@ -1,0 +1,19 @@
+============================================================
+Liberation Sans (LiberationSans-Regular.ttf, version 2.1.5)
+============================================================
+File inside PdfBox-Android (assets/com/tom_roush/pdfbox/resources/ttf/LiberationSans-Regular.ttf).
+Bundled by PdfBox-Android as a substitute font for fonts that a PDF does not embed.
+URL: https://github.com/liberationfonts/liberation-fonts
+Licence: SIL Open Font License, Version 1.1 (full text below).
+Source of the notice: LICENSE of https://github.com/liberationfonts/liberation-fonts, tag 2.1.5 (retrieved 2026-11-18).
+
+Digitized data copyright (c) 2010 Google Corporation
+	with Reserved Font Arimo, Tinos and Cousine.
+Copyright (c) 2012 Red Hat, Inc.
+	with Reserved Font Name Liberation.
+
+This Font Software is licensed under the SIL Open Font License,
+Version 1.1.
+
+This license is copied below, and is also available with a FAQ at:
+http://scripts.sil.org/OFL

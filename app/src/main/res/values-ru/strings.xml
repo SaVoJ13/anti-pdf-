@@ -248,6 +248,8 @@
     <string name="action_licenses">Лицензии открытого ПО</string>
     <string name="action_dynamic_colors">Цвета из обоев</string>
     <string name="dialog_licenses_title">Лицензии открытого ПО</string>
+    <string name="licenses_libraries_button">Лицензии библиотек</string>
+    <string name="licenses_load_failed">Не удалось загрузить лицензии</string>
     <string name="action_create_pdf">Создать PDF</string>
     <string name="tool_create_blank_title">Создать PDF</string>
     <string name="tool_create_blank_desc">Создать новый пустой документ для заметок и текста</string>
