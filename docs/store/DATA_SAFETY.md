@@ -3,7 +3,7 @@
 > Чернетка для Власника, форму в Play Console заповнює Власник. Нічого не подано. Звірено з кодом 2026-11-16; звірку зі сторінками Google повторено **2026-11-18**.
 >
 > **Версії SDK і дата звірки (2026-11-18):**
-> - AdMob: `play-services-ads:23.6.0` (з `core-ads/build.gradle.kts`). Актуальна сторінка Google https://developers.google.com/admob/android/privacy/play-data-disclosure описує Google Mobile Ads SDK **25.5.0**; сторінка охоплює лише поточну версію, дати редакції на ній немає. Різниці в категоріях даних між 23.6.0 і 25.5.0 з сторінки встановити не можна: НЕ ПЕРЕВІРЕНО. Якщо версію SDK оновлять, звірку повторити.
+> - AdMob: `play-services-ads:23.6.0` (з `core-ads/build.gradle.kts`). Актуальна сторінка Google https://developers.google.com/admob/android/privacy/play-data-disclosure описує Google Mobile Ads SDK **25.5.0**; сторінка охоплює лише поточну версію. У сирому HTML сторінки є «Last updated 2026-11-17 UTC» (у видимому тексті дати не видно). Службовий опис сторінки (meta description) згадує SDK 23.6.0, а видимий текст 25.5.0, тож звірка саме для 23.6.0 непевна. Різниці в категоріях даних між 23.6.0 і 25.5.0 з сторінки встановити не можна: НЕ ПЕРЕВІРЕНО. Звірку повторити після оновлення SDK.
 > - ML Kit Document Scanner: `play-services-mlkit-document-scanner:16.0.0-beta1` (з `app/build.gradle.kts`). Сторінка Google https://developers.google.com/ml-kit/android-data-disclosure (редакція 14 травня 2025) охоплює лише останні версії SDK і Document Scanner окремо не згадує; віднесення сканера до функцій, що працюють через Google Play services (там ідентифікатори: пристрою та встановлення), є висновком, не прямим текстом сторінки.
 > - Google UMP: `user-messaging-platform:3.1.0` (власних даних для Data safety не додає).
 
