@@ -1,3 +1,12 @@
+## 2026-11-18 (після злиття PR #10) — Монетизація і Google Play: D6 і залишкові НЕ ПЕРЕВІРЕНО
+
+**Простими словами**
+- PR #10 злито в `main` (merge-коміт `f8b0331`, коміти гілки збережено). Власник прийняв вердикт QA як «QA Verified» на `dcf95de`.
+- QA лишила одне низьке зауваження D6, воно не блокує: у коді є другий вхід сканера, і його теж треба було перевірити на мережеві виклики.
+
+**D6:** другий вхід сканера в `app/src/main/java/com/savoj/volumpdf/ui/reader/ReaderActivity.kt` (приблизно рядки 2259-2283: `scanDocumentForReaderLauncher`, `scanFallbackForReaderLauncher`, `startScanForReader`) теж без мережевих викликів. Він бере `GmsDocumentScanningResult`, передає `imageUri`/`pdf.uri` у `handleScanResultForReader`; `grep` по `HttpURLConnection|okhttp|URLConnection|java.net.URL|Socket(|WebView` у `ReaderActivity.kt` порожній.
+**НЕ ПЕРЕВІРЕНО:** твердження, що скани не надсилаються Google/ML Kit, спирається лише на перелік даних зі сторінки Google (https://developers.google.com/ml-kit/android-data-disclosure); прямого підтвердження «обробка лише на пристрої» немає, мережевий трафік сканера не вимірювався. Також: різниця AdMob 23.6.0 проти 25.5.0; сторінка політики не переглянута візуально в браузері після публікації.
+
 ## 2026-11-18 (ще пізніше) — Монетизація і Google Play: зауваження QA D4 і D5, гілка `fix/stage1-compliance-docs`
 
 **Простими словами**
