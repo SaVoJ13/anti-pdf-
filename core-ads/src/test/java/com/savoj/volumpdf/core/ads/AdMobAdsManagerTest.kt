@@ -107,6 +107,7 @@ class AdMobAdsManagerTest {
     }
 
     @Test
+    @Suppress("DEPRECATION")
     fun requestConfigurationIsFor13PlusAudience() {
         val config = AdMobAdsManager.buildRequestConfiguration()
         assertEquals(RequestConfiguration.MAX_AD_CONTENT_RATING_PG, config.maxAdContentRating)
