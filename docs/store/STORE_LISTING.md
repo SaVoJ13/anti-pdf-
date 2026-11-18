@@ -5,7 +5,7 @@
 **Application ID:** `com.savoj.volumpdf.anti`
 **Назва в застосунку і в Play:** `Anti PDF`
 **Category:** Productivity / Tools
-**Supported Languages:** Ukrainian (`uk`), English (`en`), German (`de`), Russian (`ru`)
+**Supported Languages:** Ukrainian (`uk`), English (`en`), German (`de`), Russian (`ru`), Spanish (`es`)
 **Pricing:** Free, with ads (Google AdMob). Реклама показується не під час читання й не при відкритті файлу.
 **Ads declaration у Play Console:** "Contains ads" = Yes.
 **Target audience (рішення Власника 2026-11-17):** 13+ (групи 13-15, 16-17, 18+; групи «до 13» НЕ вибирати). Аналіз: `docs/release/AGE_13PLUS_ANALYSIS_2026-11-17.md`. Листинг, іконка й скриншоти не повинні виглядати дитячими (мультяшна графіка, ігрові елементи, молоді персонажі).
@@ -24,6 +24,7 @@
 - **uk:** `Читання та редагування PDF: підпис, сканер, водяні знаки, стиснення.`
 - **de:** `PDF lesen und bearbeiten: signieren, scannen, Wasserzeichen, komprimieren.`
 - **ru:** `Чтение и редактирование PDF: подпись, сканер, водяные знаки, сжатие.`
+- **es:** `Lector y editor de PDF: firma, escáner, marcas de agua, compresión.` *(67 символів)*
 
 ---
 
@@ -140,6 +141,48 @@
 - Политика конфиденциальности доступна в меню: «Политика конфиденциальности».
 - Приложение не просит широкого доступа к хранилищу: файлы открываются через системный выбор.
 - Большинство функций работает офлайн. Для рекламы нужен интернет.
+
+### 3.5 Spanish (`es`)
+
+**Anti PDF** es un lector y editor de PDF para documentos de uso diario. Los archivos se abren con el selector de archivos del sistema Android y se procesan en tu dispositivo. La aplicación no sube tus documentos a ningún servidor y no necesita una cuenta.
+
+**Lectura**
+- Desplazamiento fluido, zoom con los dedos y tema nocturno.
+- Selección de texto y búsqueda en el documento (en Android 12 o superior, donde lo admite el visor del sistema).
+- PDF protegidos con contraseña.
+- La aplicación recuerda dónde dejaste de leer.
+
+**Edición**
+- Añade texto, resaltados, dibujos e imágenes sobre las páginas y guárdalos en el PDF.
+- Dibuja tu firma una vez y colócala en tus documentos.
+- Marcas de agua (COPIA, BORRADOR, CONFIDENCIAL o un texto propio) y números de página.
+
+**Herramientas**
+- Combina, divide, gira, elimina y reordena páginas.
+- Imágenes a PDF.
+- Comprime el PDF para que pese menos (equilibrado o máximo).
+- Escáner de documentos: el escáner con la cámara detecta los bordes de la página, endereza la imagen y guarda un PDF limpio.
+
+**Anuncios y privacidad**
+- La aplicación es gratuita y contiene anuncios (Google AdMob). No se muestran anuncios mientras lees un documento ni al abrir un archivo.
+- En las regiones donde se exige consentimiento (EEE, Reino Unido) se muestra un formulario de consentimiento de Google (UMP). Puedes cambiar tu elección en cualquier momento en el menú: «Ajustes de privacidad».
+- La política de privacidad está disponible en el menú: «Política de privacidad».
+- La aplicación no pide acceso amplio al almacenamiento: los archivos se abren con el selector del sistema.
+- La mayoría de las funciones se pueden usar sin conexión. Los anuncios necesitan internet.
+
+---
+
+## 3a. Release notes / What's new (max 500 characters per language)
+
+> Чернетка для першого випуску 1.0.0. Лише текст у документі: у Play Console нічого не вносилось.
+
+- **en:** First release of Anti PDF: read and edit PDF files, add text, a signature, drawings and images, fill in forms, merge, split, compress, scan documents. The app is now available in English, Ukrainian, German, Russian and Spanish; you can pick the language in Android settings for this app. *(287 символів)*
+- **uk:** Перший випуск Anti PDF: читання й редагування PDF, текст, підпис, малюнки й зображення, заповнення форм, об'єднання, розділення, стиснення, сканування документів. Застосунок доступний українською, англійською, німецькою, російською та іспанською; мову можна обрати в налаштуваннях Android для цього застосунку. *(310 символів)*
+- **de:** Erste Version von Anti PDF: PDF-Dateien lesen und bearbeiten, Text, Unterschrift, Zeichnungen und Bilder hinzufügen, Formulare ausfüllen, zusammenführen, teilen, komprimieren und Dokumente scannen. Die App gibt es auf Englisch, Ukrainisch, Deutsch, Russisch und Spanisch; die Sprache lässt sich in den Android-Einstellungen für diese App wählen. *(345 символів)*
+- **ru:** Первый выпуск Anti PDF: чтение и редактирование PDF, текст, подпись, рисунки и изображения, заполнение форм, объединение, разделение, сжатие, сканирование документов. Приложение доступно на английском, украинском, немецком, русском и испанском; язык можно выбрать в настройках Android для этого приложения. *(306 символів)*
+- **es:** Primera versión de Anti PDF: lee y edita archivos PDF, añade texto, firma, dibujos e imágenes, rellena formularios, combina, divide, comprime y escanea documentos. La aplicación está disponible en inglés, ucraniano, alemán, ruso y español; puedes elegir el idioma en los ajustes de Android para esta aplicación. *(311 символів)*
+
+---
 
 ---
 
