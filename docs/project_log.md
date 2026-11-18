@@ -11,9 +11,15 @@
 
 **Перевірки (числа з XML Gradle / виводу, JDK 21)**
 - `:app:assembleDebug`, `:app:bundleRelease` успішні. AAB 15 458 109 байт; у ньому є `LiberationSans-Regular.ttf` (410 712 байт) і 6 файлів `assets/licenses/`.
-- Тести: `:app` 414 тестів, 0 збоїв, 0 помилок, 0 пропущено (з них `LicensesDialogHelperTest` 7); `:core-pdf` 214 записів, 0/0, 2 пропущено; `:core-ads` 7, 0/0/0. lint `:app` і `:core-ads` (debug): 0 помилок.
+- Тести: `:app` 414 тестів, 0 збоїв, 0 помилок, 0 пропущено (з них `LicensesDialogHelperTest` 7); `:core-pdf` 107 записів, 0 збоїв, 0 помилок, 1 пропущено (виправлено за QA L3: початкове 214/2 було подвоєно підрахунком каталогів debug і release); `:core-ads` 7, 0/0/0. lint `:app` і `:core-ads` (debug): 0 помилок.
 - Звірка залежностей: `./gradlew :app:dependencies --configuration releaseRuntimeClasspath` дав 123 унікальні артефакти. Розбіжності з THIRD_PARTY виправлено: Bouncy Castle фактично **1.72** (у завданні 1.73), material 1.13.0, recyclerview 1.4.0, viewpager2 1.1.0-beta02. Склеєний маніфест релізу: 9 `uses-permission`, як і на `main`.
 - Телефон (S24 Ultra, `phone.lock` узято й видалено, font_scale 1.0 / accelerometer_rotation 1 / user_rotation 0 до й після): debug: діалог відкрився, 25 швидких свайпів до кінця Apache-тексту без зависань; кнопка «Ліцензії бібліотек» відкриває екран Google (у debug лише заглушка «Debug License Info»). Release (підписаний ТІЛЬКИ debug-ключем локально, не ключем власника): список бібліотек відображається й гортається. Тестову збірку з телефона видалено.
+
+**Бекглог після QA (`QA Verified` на `6475ff0`, не блокує)**
+- **L7:** екрани Google `OssLicenses*` малюються під статус-баром; `windowOptOutEdgeToEdgeEnforcement` на targetSdk 36 не діє, потрібне власне рішення (власна тема/екран або відступи).
+- **L8:** гілка помилки читання ліцензій (`licenses_load_failed`) без тесту.
+- Іспанські `plurals` без форми `many` (перевірити потребу).
+- Не прокручено на пристрої діалог на de/ru/es; слабкий пристрій не перевірявся.
 
 **НЕ ПЕРЕВІРЕНО / не вдалося**
 - Деталі окремого пункту в екрані Google (текст ліцензії бібліотеки) на телефоні не відкрито: тап не спрацював, повторно не пробував. Повний прогін release на слабкому пристрої не робився (лише S24 Ultra).

@@ -11,7 +11,7 @@
 **Package:** `com.savoj.volumpdf.anti`
 **Min / target SDK:** 28 / 36
 **SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:23.6.0`), Google UMP (`com.google.android.ump:user-messaging-platform:3.1.0`), Google ML Kit Document Scanner (`com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1`, працює через Google Play services; збирає технічну діагностику; застосунок скани не передає).
-**Інші SDK:** PdfBox-Android, androidx.pdf, Room (усе локально).
+**Інші SDK:** PdfBox-Android, androidx.pdf, Room (усе локально); `com.google.android.gms:play-services-oss-licenses:17.1.0` (лише показ ліцензій на екрані, мережевого збору даних не додає).
 **Резервне копіювання:** `allowBackup="false"` (рішення Власника 2026-11-14); `dataExtractionRules` / `fullBackupContent` не задано, бо автокопіювання вимкнено.
 **Дозволи у власному маніфесті:** лише `INTERNET`. Склеєний маніфест релізу перевірено, дивись `docs/project_log.md` (запис release-prep).
 
