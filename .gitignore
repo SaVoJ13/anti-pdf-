@@ -28,3 +28,6 @@ Thumbs.db
 # Spike experiment (one-off)
 spike/
 
+
+# AdMob: бойові ID лише локально (див. admob.properties.example)
+admob.properties

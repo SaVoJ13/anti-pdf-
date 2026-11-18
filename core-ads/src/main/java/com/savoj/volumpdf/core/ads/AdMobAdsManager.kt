@@ -135,7 +135,7 @@ class AdMobAdsManager(
         container.removeAllViews()
 
         val adView = AdView(activity).apply {
-            adUnitId = TEST_BANNER_AD_UNIT_ID
+            adUnitId = BuildConfig.ADMOB_BANNER_AD_UNIT_ID
         }
 
         // Обчислюємо адаптивний розмір банера
@@ -212,7 +212,7 @@ class AdMobAdsManager(
         try {
             InterstitialAd.load(
                 appContext,
-                TEST_INTERSTITIAL_AD_UNIT_ID,
+                BuildConfig.ADMOB_INTERSTITIAL_AD_UNIT_ID,
                 adRequest,
                 object : InterstitialAdLoadCallback() {
                     override fun onAdLoaded(interstitialAd: InterstitialAd) {
