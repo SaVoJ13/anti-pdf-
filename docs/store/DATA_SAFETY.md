@@ -1,12 +1,17 @@
 # Google Play Data Safety: відповіді для Anti PDF (чернетка)
 
-> Чернетка для Власника, форму в Play Console заповнює Власник. Нічого не подано. Звірено з кодом 2026-11-16. Список даних AdMob може змінитися: перед поданням звір з актуальною сторінкою Google "Google Mobile Ads SDK data disclosure" (https://developers.google.com/admob/android/privacy/play-data-disclosure) для версії SDK, що йде в релізі (зараз `play-services-ads:23.6.0`; на сторінці Google згадано 25.5.0, тобто можливі відмінності).
+> Чернетка для Власника, форму в Play Console заповнює Власник. Нічого не подано. Звірено з кодом 2026-11-16; звірку зі сторінками Google повторено **2026-11-18**.
+>
+> **Версії SDK і дата звірки (2026-11-18):**
+> - AdMob: `play-services-ads:23.6.0` (з `core-ads/build.gradle.kts`). Актуальна сторінка Google https://developers.google.com/admob/android/privacy/play-data-disclosure описує Google Mobile Ads SDK **25.5.0**; сторінка охоплює лише поточну версію, дати редакції на ній немає. Різниці в категоріях даних між 23.6.0 і 25.5.0 з сторінки встановити не можна: НЕ ПЕРЕВІРЕНО. Якщо версію SDK оновлять, звірку повторити.
+> - ML Kit Document Scanner: `play-services-mlkit-document-scanner:16.0.0-beta1` (з `app/build.gradle.kts`). Сторінка Google https://developers.google.com/ml-kit/android-data-disclosure (редакція 14 травня 2025) охоплює лише останні версії SDK і Document Scanner окремо не згадує; віднесення сканера до функцій, що працюють через Google Play services (там ідентифікатори: пристрою та встановлення), є висновком, не прямим текстом сторінки.
+> - Google UMP: `user-messaging-platform:3.1.0` (власних даних для Data safety не додає).
 
 **Application:** Anti PDF
 **Package:** `com.savoj.volumpdf.anti`
 **Min / target SDK:** 28 / 36
-**SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:23.6.0`), Google UMP (`com.google.android.ump:user-messaging-platform:3.1.0`).
-**Інші SDK:** Google ML Kit Document Scanner (`play-services-mlkit-document-scanner:16.0.0-beta1`, через Google Play services), PdfBox-Android, androidx.pdf, Room (усе локально).
+**SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:23.6.0`), Google UMP (`com.google.android.ump:user-messaging-platform:3.1.0`), Google ML Kit Document Scanner (`com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1`, працює через Google Play services; збирає технічну діагностику, скани не надсилає).
+**Інші SDK:** PdfBox-Android, androidx.pdf, Room (усе локально).
 **Резервне копіювання:** `allowBackup="false"` (рішення Власника 2026-11-14); `dataExtractionRules` / `fullBackupContent` не задано, бо автокопіювання вимкнено.
 **Дозволи у власному маніфесті:** лише `INTERNET`. Склеєний маніфест релізу перевірено, дивись `docs/project_log.md` (запис release-prep).
 
@@ -16,8 +21,8 @@
 
 | Питання | Відповідь | Пояснення |
 |---|---|---|
-| Збирає або передає застосунок обов'язкові типи даних? | **Так** | Збір виконує рекламний SDK (AdMob). Власного збору даних застосунок не робить. |
-| Усі дані шифруються під час передачі? | **Так** | Мережевий обмін SDK із серверами Google йде через HTTPS. |
+| Збирає або передає застосунок обов'язкові типи даних? | **Так** | Збір виконують два компоненти Google: рекламний SDK (AdMob) і ML Kit (сканер, технічна діагностика). Власного збору даних застосунок не робить. |
+| Усі дані шифруються під час передачі? | **Так** | Мережевий обмін AdMob і ML Kit із серверами Google шифрується (TLS/HTTPS). |
 | Чи можна запросити видалення даних? | **Так (через налаштування Android / Google)** | Користувач скидає/видаляє рекламний ID у налаштуваннях Android; локальні дані видаляються очищенням даних застосунку. Власних серверних даних користувача немає. Контакт: appvsdeveloper@gmail.com. |
 | Чи є політика приватності (URL)? | **Так** | https://savoj13.github.io/anti-pdf-/privacy/ (GitHub Pages з `docs/privacy/`; прописано в `BuildConfig.PRIVACY_POLICY_URL`). Сторінка стане доступною після ввімкнення Pages Керівником. |
 | Чи дотримано Families / дитячі правила? | Не застосовується | Цільова аудиторія: 13+ (13-15, 16-17, 18+), групи «до 13» не вибираються; застосунок не спрямований на дітей до 13. Реклама обмежена `maxAdContentRating = PG`. Аналіз і ризики: `docs/release/AGE_13PLUS_ANALYSIS_2026-11-17.md`. |
@@ -27,21 +32,26 @@
 ## 2. Типи даних
 
 ### 2.1 Файли й документи, фото
-- **Не збираються і не передаються.** PDF, зображення та результати сканера обробляються локально. Сканер (Google ML Kit Document Scanner) працює на пристрої через Google Play services; застосунок не отримує доступу до мережі для скану й не завантажує скани.
+- **Не збираються і не передаються.** PDF, зображення та результати сканера обробляються локально. Сканер (Google ML Kit Document Scanner) працює на пристрої через Google Play services; застосунок не завантажує скани. Технічну діагностику сканера збирає ML Kit (дивись 2.3 і 2.5); самі скани й документи не надсилаються.
 
 ### 2.2 Location
-- **Approximate location:** збирається AdMob (з IP). Передається. Необов'язково (залежить від згоди UMP). Цілі: Advertising or marketing; Fraud prevention, security and compliance.
+- **Approximate location:** збирається AdMob (з IP). Передається. **Обов'язково (Required)**. Цілі: Advertising or marketing; Fraud prevention, security and compliance.
 
 ### 2.3 Device or other IDs
-- **Device or other IDs** (рекламний ID, ідентифікатори пристрою/додатка SDK): збирається AdMob. Передається. Цілі: Advertising or marketing; Fraud prevention, security and compliance; Analytics.
+- **Device or other IDs** (рекламний ID, app set ID, ідентифікатори пристрою/додатка SDK): збирається AdMob. Передається. **Обов'язково (Required)**. Цілі: Advertising or marketing; Fraud prevention, security and compliance; Analytics.
+- **Device or other IDs** (ідентифікатор пристрою та ідентифікатори встановлення): збирає ML Kit (сканер). Збирається, **третім особам не передається**. **Обов'язково (Required)**. Шифрується під час передачі (HTTPS). Ціль: Analytics. Джерело: https://developers.google.com/ml-kit/android-data-disclosure
 
 ### 2.4 App activity
-- **App interactions** (покази й кліки реклами): збирає AdMob. Передається. Цілі: Advertising or marketing; Analytics; Fraud prevention, security and compliance.
+- **App interactions** (покази й кліки реклами): збирає AdMob. Передається. **Обов'язково (Required)**. Цілі: Advertising or marketing; Analytics; Fraud prevention, security and compliance.
 
 ### 2.5 App info and performance
-- **Crash logs** і **Diagnostics** рекламного SDK: збирає AdMob. Передається. Цілі: Analytics; Fraud prevention, security and compliance.
+- **Diagnostics** рекламного SDK (продуктивність і діагностика SDK): збирає AdMob. Передається. **Обов'язково (Required)**. Цілі: Analytics; Fraud prevention, security and compliance. Окремо **Crash logs не збираються** (відповідає вже заповненому в Play Console: лише Diagnostics).
+- **Diagnostics** і **Other app performance data** (затримка, розмір вхідних/вихідних даних, версія функції, тип події, коди помилок, налаштування API, інформація про пристрій і застосунок): збирає ML Kit (сканер). Збирається, **третім особам не передається**. **Обов'язково (Required)**. Шифрується під час передачі (HTTPS). Ціль: Analytics. Джерело: https://developers.google.com/ml-kit/android-data-disclosure
 
-### 2.6 Усе інше
+### 2.6 Принцип «Обов'язково»
+У Data safety «Optional» означає, що КОЖЕН користувач може відмовитися від збору. Форма UMP показується лише в ЄЕЗ, Великій Британії та Швейцарії; в інших регіонах збір автоматичний, а ML Kit відмовитися не дає. Тому всі типи даних AdMob і ML Kit позначені як Required.
+
+### 2.7 Усе інше
 Не збирається: Personal info (ім'я, email, телефон, адреса, User IDs), Financial info, Health and fitness, Messages, Photos and videos, Audio, Calendar, Contacts, Web browsing, Files and docs.
 
 ---
