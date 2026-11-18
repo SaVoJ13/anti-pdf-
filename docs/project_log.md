@@ -1,3 +1,43 @@
+## 2026-11-18 — Монетизація і Google Play: AdMob 25.5.0, поділ тестових і бойових ID, перевірка 16 KB (гілка `fix/stage1-ads-16kb`, від `main` `def755a`; чекає незалежного QA)
+
+**Простими словами**
+- Реклама AdMob оновлена з версії 23.6.0 до 25.5.0 (найновіша стабільна в Google Maven на сьогодні). Збірка, тести й перевірка коду зелені, на телефоні реклама тестова й показується, форма згоди (UMP) відкривається, пункт «Налаштування конфіденційності» на місці.
+- Нових дозволів застосунок не отримав: було 9, лишилось 9, ті самі. Є лише дрібні технічні рядки від Google (запит про видимість Google Play і службова активність), подробиці нижче.
+- Справжні й тестові рекламні коди тепер розділені: у debug завжди тестові; у release справжні беруться тільки з файла `admob.properties` на комп'ютері власника (у git його немає). Без файла release збирається з тестовими кодами й голосно про це попереджає. Для публічного випуску є прапор `-Pproduction=true`: без справжніх кодів збірка зупиняється.
+- Інструкція для власника простими словами: `docs/release/ADMOB_SETUP.md`. Створити застосунок і блоки в AdMob може лише власник.
+- Нативних бібліотек (`.so`) у release немає, тому вимога 16 КБ нічого не ламає (`docs/release/ELF_16KB_CHECK_2026-11-18.md`).
+- Форму Data safety в Play Console не чіпав: у документі виправлено одну розбіжність (для «Approximate location» додати мету Analytics), форму змінює координатор із власником.
+
+**Що зроблено (коміти)**
+- `6ce8e34` Частина 1: `play-services-ads` 25.5.0, `user-messaging-platform` 4.0.0 (його вимагає 25.x), `@Suppress("DEPRECATION")` на двох свідомо збережених deprecated-місцях, `THIRD_PARTY.md`, `DATA_SAFETY.md`, `DECISIONS.md`.
+- `a1399d0` Частина 2: `admob.properties.example`, `.gitignore`, блок «AdMob ID» у кореневому `build.gradle.kts`, `BuildConfig` у `:core-ads`, `manifestPlaceholders[admobAppId]` у `:app`, задача `verifyAdmob<Variant>Manifest`, тест `AdIdsConfigTest`, `ADMOB_SETUP.md`, `DECISIONS.md`.
+- Частина 3 (`ELF_16KB_CHECK_2026-11-18.md`) і цей запис: окремий коміт.
+
+**Частина 1: факти**
+- Джерела й дати: `DECISIONS.md` (2026-11-18). 25.5.0: minSdk 24 (у нас 28), compileSdk ≥ 35 (у нас 36), Kotlin ≥ 2.1.0 (у нас 2.2.20); змін Gradle/AGP не треба. Код компілюється без змін API; deprecated: `getCurrentOrientationAnchoredAdaptiveBannerAdSize` (заміна змінює висоту банера, окреме рішення UI) і теги віку (UNSPECIFIED = значення за замовчуванням).
+- Склеєний маніфест релізу проти `def755a`: `uses-permission` 9 → 9, ідентичний перелік (INTERNET, ACCESS_NETWORK_STATE, AD_ID, ACCESS_ADSERVICES_AD_ID/ATTRIBUTION/TOPICS, WAKE_LOCK, FOREGROUND_SERVICE, `…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`); ACCESS_FINE/COARSE_LOCATION немає. Нове не-дозвільне: `<queries><package android:name="com.android.vending"/>`, активність `com.google.android.play.core.hsdp.service.HsdpShimActivity` (бібліотека `com.google.android.play:hsdp:2.0.1`), meta-data `OPTIMIZE_AD_LOADING`, `OPTIMIZE_INITIALIZATION`; прибрано property `android.adservices.AD_SERVICES_CONFIG`. Чи прийнятно `queries` за політикою пакетної видимості Play: НЕ ПЕРЕВІРЕНО (питання координатору).
+- Залежності (`releaseRuntimeClasspath`): нові `hsdp` 2.0.1, `play-services-ads-api` 25.5.0 (замість `-ads-base`/`-ads-lite`), `datastore` і `datastore-core` 1.0.0; `webkit` 1.11.0-alpha02 → 1.12.1, `play-services-basement` 18.4.0 → 18.9.0. Унікальних group:artifact:version 124 → 126 (мій підрахунок). Ліцензії за POM (Android SDK License / Apache-2.0).
+- UMP і вік: `buildRequestConfiguration()` без змін (PG, теги UNSPECIFIED), тест `requestConfigurationIsFor13PlusAudience` зелений; на телефоні форма UMP показана двічі (при старті й через «Налаштування конфіденційності»).
+- AAB release: 16 320 218 байт (у `def755a` було 15 465 088), без підпису.
+
+**Частина 2: сценарії (запущено, результати з виводу Gradle)**
+- debug без файла: `AdMob: маніфест debug OK (тестовий Application ID)`, попередження немає.
+- `-Pproduction=true` без файла: `BUILD FAILED`, повідомлення про відсутній `admob.properties`.
+- release без файла: `BUILD SUCCESSFUL`, попередження «УВАГА (AdMob)», `маніфест release OK (тестовий Application ID)`.
+- файл із вигаданими форматними ID (не справжні, файл видалено після перевірки): release `-Pproduction=true` `BUILD SUCCESSFUL`, у release `BuildConfig` ці ID, `ADMOB_USING_TEST_IDS=false`; debug лишається тестовим.
+- неповний файл: `BUILD FAILED`; файл із тестовими ID + `-Pproduction=true`: `BUILD FAILED`.
+- Справжніх ID у репозиторії немає: пошук `ca-app-pub-<16 цифр>` дає лише тестового видавця 3940256099942544 і приклади-заглушки в інструкції; `admob.properties` у `.gitignore` (`git check-ignore`).
+- Обмеження: «release без файла» перевірено Gradle-сценаріями вручну й задачею `verifyAdmobReleaseManifest`; окремого автоматичного тесту на це немає (CI відсутній). Unit-тест `AdIdsConfigTest` покриває debug.
+
+**Частина 3**: `.so` в AAB 0, в APK 0, `zipalign -c -P 16` `Verification successful` (`ELF_16KB_CHECK_2026-11-18.md`).
+
+**Тести (XML Gradle, JDK 21; `:app:testDebugUnitTest :core-pdf:test :core-ads:testDebugUnitTest :app:lintDebug :core-ads:lintDebug :app:check` = `BUILD SUCCESSFUL`)**: `:app` 414 тестів, 0 збоїв, 0 помилок, 0 пропущено; `:core-pdf` 107, 0, 0, пропущено 1; `:core-ads` 9, 0, 0, 0 (було 7, додано 2); lint 0 помилок.
+
+**Телефон (RZCX326349A, debug, `pm clear` перед запуском)**: `phone.lock` взято й видалено; запуск без падіння; форма UMP показана (натиснуто «Consent»), потім банер «Тестове оголошення / This is a 320x50 test ad» (пізніше 468x60); у меню ⋮ є «Налаштування конфіденційності» і відкриває форму UMP. Перед кожним тапом знімок екрана. `screen_off_timeout` 30000, `font_scale` 1.0, `accelerometer_rotation` 1, `user_rotation` 0 до й після; збірку з телефона видалено (`adb uninstall` Success); знімки видалено. У logcat `FATAL`/`AndroidRuntime` немає; є попередження «Google Mobile Ads SDK will not integrate with Firebase» (Firebase у застосунку немає).
+- НЕ ПЕРЕВІРЕНО: interstitial на телефоні; release-збірка на телефоні; поведінка UMP саме в ЄЕЗ (форма показана на цьому пристрої, країну не змінював); ML Kit Document Scanner 16.0.0 (стабільна є, не оновлював).
+
+**Що передати далі**: незалежний QA (`QA Verified` до злиття); координатору: зміна Data safety (Approximate location + Analytics), питання про `queries` Google Play; власнику: створити застосунок і два блоки в AdMob, коли захоче (`ADMOB_SETUP.md`).
+
 ## 2026-11-18 (мердж) — Керівник проєкту: `fix/stage1-licenses` злито в `main`
 
 **Простими словами**
