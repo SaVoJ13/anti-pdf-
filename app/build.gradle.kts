@@ -77,6 +77,11 @@ android {
         }
     }
 
+    // Переклади: відсутній чи зайвий ключ у будь-якій мові ламає збірку (і debug lint, і реліз).
+    lint {
+        error += setOf("MissingTranslation", "ExtraTranslation")
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
