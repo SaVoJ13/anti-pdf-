@@ -3,6 +3,11 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-14 (`main` = `067bc41`, після злиття PR #1 `feature/qa-full-main-check`; раніше 2026-11-13: `Owner Approved` Етапу 4 `feature/qa-markup`; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-18: виправлення політики приватності й Data safety (гілка `fix/stage1-compliance-docs`, чекає QA)
+- Незалежна перевірка («Відділ контролю») знайшла, що політика заперечувала збір даних сканером. Виправлено в `docs/privacy/index.html` (uk+en), `docs/store/PRIVACY_POLICY.md`, `docs/store/DATA_SAFETY.md`, `docs/store/STORE_LISTING.md`. Код не змінено.
+- **Не злито:** потрібні «QA Verified» незалежного агента й зелений CI. **Дії власника:** опублікувати Pages, змінити відповіді Data safety у Play Console (список у звіті/`project_log.md`).
+- НЕ ПЕРЕВІРЕНО: різниця AdMob 23.6.0 проти 25.5.0 на сторінці Google; Document Scanner на сторінці ML Kit окремо не згадано.
+
 ## Оновлення 2026-11-17 (пізніше): PR #9 злито, RC1
 - **ЗЛИТО PR #9** (`fc5636d`, `fix/text-box-overhang`; `QA Verified` незалежного QA на `ac87ce0`, `docs/qa/QA_text-box-overhang_2026-11-17.md`; перед злиттям `main` влито в гілку, конфлікт лише в `OWNER_INBOX.md`, збірка й тести перезапущені). Спостереження (а) ЗАКРИТО. **Вигляд і редагування закриті.**
 - **Факти (XML Gradle, JDK 21):** `:app` 403/0/0/0; `:core-pdf` 214 записів 0/0/2 пропущено; `:core-ads` 14 записів 0/0/0; lint `:app` 0 помилок.
