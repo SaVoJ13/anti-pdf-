@@ -48,7 +48,7 @@
 - Merge, split, rotate, delete and reorder pages.
 - Images to PDF.
 - Compress PDF to a smaller size (balanced or maximum).
-- Document scanner: the camera scanner (Google ML Kit Document Scanner) finds the page edges, straightens the image and saves a clean PDF.
+- Document scanner: the camera scanner finds the page edges, straightens the image and saves a clean PDF.
 
 **Ads and privacy**
 - The app is free and contains ads (Google AdMob). There are no ads while you read a document or when you open a file.
@@ -76,7 +76,7 @@
 - Об'єднання, розділення, поворот, видалення й зміна порядку сторінок.
 - Зображення в PDF.
 - Стиснення PDF (збалансоване або максимальне).
-- Сканер документів: камерний сканер (Google ML Kit Document Scanner) знаходить краї сторінки, вирівнює зображення й зберігає чистий PDF.
+- Сканер документів: камерний сканер знаходить краї сторінки, вирівнює зображення й зберігає чистий PDF.
 
 **Реклама та приватність**
 - Застосунок безкоштовний і містить рекламу (Google AdMob). Реклами немає під час читання документа й при відкритті файлу.
@@ -104,7 +104,7 @@
 - Seiten zusammenführen, teilen, drehen, löschen und neu ordnen.
 - Bilder zu PDF.
 - PDF komprimieren (ausgewogen oder maximal).
-- Dokumentenscanner: Der Kamera-Scanner (Google ML Kit Document Scanner) erkennt die Seitenränder, begradigt das Bild und speichert ein sauberes PDF.
+- Dokumentenscanner: Der Kamera-Scanner erkennt die Seitenränder, begradigt das Bild und speichert ein sauberes PDF.
 
 **Werbung und Datenschutz**
 - Die App ist kostenlos und enthält Werbung (Google AdMob). Beim Lesen und beim Öffnen einer Datei wird keine Werbung gezeigt.
@@ -132,7 +132,7 @@
 - Объединение, разделение, поворот, удаление и перестановка страниц.
 - Изображения в PDF.
 - Сжатие PDF (сбалансированное или максимальное).
-- Сканер документов: камерный сканер (Google ML Kit Document Scanner) находит края страницы, выравнивает изображение и сохраняет чистый PDF.
+- Сканер документов: камерный сканер находит края страницы, выравнивает изображение и сохраняет чистый PDF.
 
 **Реклама и конфиденциальность**
 - Приложение бесплатное и содержит рекламу (Google AdMob). Рекламы нет во время чтения документа и при открытии файла.
