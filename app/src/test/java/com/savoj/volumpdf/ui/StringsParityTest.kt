@@ -151,6 +151,57 @@ class StringsParityTest {
         }
     }
 
+    private val allFolders = listOf("values", "values-uk", "values-de", "values-ru", "values-es")
+
+    /** Сума специфікаторів формату всіх елементів кожного plurals: склад аргументів має збігатися між мовами. */
+    @Test
+    fun `plural items use the same format argument types as the default language`() {
+        fun argTypes(folder: String): Map<String, Set<String>> {
+            val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(File(resDir, "$folder/strings.xml"))
+            val out = LinkedHashMap<String, Set<String>>()
+            val nodes = doc.getElementsByTagName("plurals")
+            for (i in 0 until nodes.length) {
+                val n = nodes.item(i)
+                val types = HashSet<String>()
+                val items = n.childNodes
+                for (j in 0 until items.length) {
+                    if (items.item(j).nodeName == "item") types += specs(items.item(j).textContent).map { it.substringAfter(':') }
+                }
+                out[n.attributes.getNamedItem("name").nodeValue] = types
+            }
+            return out
+        }
+        val en = argTypes("values")
+        allFolders.drop(1).forEach { folder ->
+            assertEquals("типи аргументів plurals у $folder", en, argTypes(folder))
+        }
+    }
+
+    private fun loadArrays(folder: String): Map<String, List<String>> {
+        val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(File(resDir, "$folder/strings.xml"))
+        val out = LinkedHashMap<String, List<String>>()
+        val nodes = doc.getElementsByTagName("string-array")
+        for (i in 0 until nodes.length) {
+            val n = nodes.item(i)
+            val items = n.childNodes
+            val values = (0 until items.length).map { items.item(it) }.filter { it.nodeName == "item" }.map { it.textContent }
+            assertTrue("порожній елемент string-array у $folder", values.all { it.isNotBlank() })
+            assertTrue("дубль string-array ${n.attributes.getNamedItem("name").nodeValue} у $folder",
+                out.put(n.attributes.getNamedItem("name").nodeValue, values) == null)
+        }
+        return out
+    }
+
+    @Test
+    fun `string arrays have the same names and item counts in every language`() {
+        val en = loadArrays("values")
+        allFolders.drop(1).forEach { folder ->
+            val map = loadArrays(folder)
+            assertEquals("імена string-array у $folder", en.keys, map.keys)
+            en.forEach { (name, items) -> assertEquals("кількість елементів $name у $folder", items.size, map.getValue(name).size) }
+        }
+    }
+
     @Test
     fun `plurals exist in all languages with the quantities each language needs`() {
         val en = loadPlurals("values")
