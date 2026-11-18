@@ -23,7 +23,7 @@
 
 **Результати (XML Gradle, JDK 21, `wt-l10n`)**
 - `:app:testDebugUnitTest`: 408 тестів, 0 збоїв, 0 помилок, 0 пропущено (`StringsParityTest` 12/0/0). `:app:assembleDebug`, `:app:lintDebug`, `:app:lintRelease`, `:core-pdf:test`, `:core-ads:testDebugUnitTest`: успішно, 0 помилок lint.
-- НЕ ЗБИРАВСЯ: `bundleRelease` (R8) у цьому записі; перед злиттям QA має запустити `:app:assembleRelease`.
+- `:app:assembleRelease` і `:app:bundleRelease` (R8) успішні: `app-release.aab` 15 349 083 байти, `app-release-unsigned.apk` 16 465 416 байт (ключа підпису в worktree немає, тому непідписано). `lintRelease`: 0 помилок.
 
 **Верстка (крок 4):** статичний огляд `res/layout`: усі підписи кнопок і діалогів переносяться; `maxLines=1` лише в пароля й у назві файла в списку (середнє скорочення), текст у 48-dp кнопках без фіксованої ширини. Обрізань за кодом не виявлено, розмітку не змінено. Українська (довші слова) і шрифт 1.3 вже проходили QA раніше. НЕ ПЕРЕВІРЕНО на пристрої для de/ru/es, шрифти 1.0 і 1.3.
 
