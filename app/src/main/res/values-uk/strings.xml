@@ -248,6 +248,8 @@
     <string name="action_licenses">Ліцензії відкритого коду</string>
     <string name="action_dynamic_colors">Кольори зі шпалер</string>
     <string name="dialog_licenses_title">Ліцензії відкритого коду</string>
+    <string name="licenses_libraries_button">Ліцензії бібліотек</string>
+    <string name="licenses_load_failed">Не вдалося завантажити ліцензії</string>
     <string name="action_create_pdf">Створити PDF</string>
     <string name="tool_create_blank_title">Створити PDF</string>
     <string name="tool_create_blank_desc">Створити новий порожній документ для нотаток і тексту</string>
