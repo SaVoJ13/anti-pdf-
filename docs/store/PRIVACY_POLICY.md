@@ -2,7 +2,7 @@
 
 > Джерело тексту публічної сторінки https://savoj13.github.io/anti-pdf-/privacy/ (файл `docs/privacy/index.html`, uk + en). Обидва файли мають змінюватися разом. Контакт: appvsdeveloper@gmail.com (публічна адреса, рішення Власника 2026-11-17).
 
-**Last Updated:** 2026-11-17
+**Last Updated:** 2026-11-18
 **Application:** Anti PDF
 **Package Name:** `com.savoj.volumpdf.anti`
 **Developer Contact:** `appvsdeveloper@gmail.com`
@@ -14,9 +14,10 @@
 Anti PDF ("we", "the app") is a PDF reader and editor. In short:
 1. **Your documents stay on your device.** Reading, editing, signing, watermarking, compressing, merging, splitting, rotating and scanning are performed locally. We do not upload your documents to our servers and we do not run servers for your files.
 2. **No account.** You do not create an account and do not give us your name, email or phone.
-3. **The app shows ads** from Google AdMob. To show them, Google's advertising software collects some data about your device (see section 3). This is the only data collection in the app.
-4. **No analytics or crash-reporting SDK of our own** (no Firebase Analytics, Crashlytics, Facebook SDK or similar).
-5. **No cloud backup.** The app disables Android automatic backup (`allowBackup=false`), so app data (recent files list) is not copied to Google Drive backups or device transfers.
+3. **The app shows ads** from Google AdMob. To show them, Google's advertising software collects some data about your device (see section 3).
+4. **Two Google components collect data:** AdMob (ads, section 3) and ML Kit (document scanner, technical diagnostics, section 2). We ourselves collect no data.
+5. **No analytics or crash-reporting SDK of our own** (no Firebase Analytics, Crashlytics, Facebook SDK or similar). The scanner's technical diagnostics are collected by Google ML Kit, not by us.
+6. **No cloud backup.** The app disables Android automatic backup (`allowBackup=false`), so app data (recent files list) is not copied to Google Drive backups or device transfers.
 
 ---
 
@@ -28,7 +29,10 @@ Anti PDF ("we", "the app") is a PDF reader and editor. In short:
 - Appearance and reading settings (for example the theme) are stored locally on your device.
 - To show a result, the app may create a temporary copy of the PDF in its own cache; it never leaves the device.
 - Files are also opened when you send a PDF to the app from another app ("Open with").
-- Document scanner: scanning uses the Google ML Kit Document Scanner, provided through Google Play services. Per Google, scanning and image processing run on the device; the scanned pages are given to the app, which saves the scan as a PDF in its own private storage on your device (and adds it to the "Recent" list). You can save or share a copy anywhere you choose. We do not receive or store your scans on any server.
+- Document scanner: scanning uses the Google ML Kit Document Scanner, provided through Google Play services. The app receives the finished pages from the scanner and saves the scan as a PDF in its own private storage on your device (and adds it to the "Recent" list). You can save or share a copy anywhere you choose. We do not receive or store your scans on any server. The data that ML Kit sends to Google is listed in section 2; image content is not in that list.
+
+### Data collected by Google ML Kit (scanner)
+According to Google's official information, ML Kit may collect for diagnostics and usage analytics: device information (manufacturer, model, OS version and build, available ML hardware accelerators); app information (package name, version); a device identifier and per-installation identifiers; performance metrics (for example latency); API configuration (for example image format and resolution); input and output size; feature version; event type (for example initialization, model download, detection, resource release) and error codes. The scanner runs through Google Play services, so these rules apply to it as well. The data is encrypted in transit (HTTPS) and ML Kit does not transfer it to third parties. Your scans and documents are not sent by this. Learn more: [Google ML Kit data disclosure (Android)](https://developers.google.com/ml-kit/android-data-disclosure).
 
 ---
 
@@ -56,12 +60,12 @@ You can reset or delete the advertising ID in Android Settings (Google, Ads). Th
 ---
 
 ## 4. Internet Use
-The app's own manifest requests only the `INTERNET` permission. Internet is used only by the advertising software (ads and consent form). Reading and editing documents works offline. When offline, no ad is shown and no empty ad space remains.
+The app's own manifest requests only the `INTERNET` permission. Internet is used by the advertising software (ads and consent form); the scanner's technical diagnostics are sent by Google ML Kit (section 2). Reading and editing documents works offline. When offline, no ad is shown and no empty ad space remains.
 
 ---
 
 ## 5. Data Sharing and Security
-- Data collected by Google AdMob is processed by Google under Google's policies. We do not sell your data.
+- Data collected by Google AdMob and Google ML Kit is processed by Google under Google's policies. We do not sell your data.
 - Data sent by the ad SDK is encrypted in transit (HTTPS).
 - We do not share your documents with anyone.
 - The app may write technical messages (for example an error type) to the Android system log; they stay on the device and are not sent to us.
