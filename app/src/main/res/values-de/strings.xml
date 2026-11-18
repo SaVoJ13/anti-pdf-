@@ -54,7 +54,7 @@
     <string name="details_uri">Pfad: %1$s</string>
 
     <!-- Reader -->
-    <string name="reader_title">PDF Reader</string>
+    <string name="reader_title">PDF-Reader</string>
     <string name="dialog_password_title">Geschütztes Dokument</string>
     <string name="dialog_password_desc">Diese PDF-Datei ist verschlüsselt. Geben Sie das Passwort ein.</string>
     <string name="password_hint">Passwort</string>
@@ -96,7 +96,7 @@
     <string name="error_empty_watermark">Bitte Wasserzeichen-Text eingeben</string>
 
     <string name="tool_compress_title">PDF komprimieren</string>
-    <string name="tool_compress_desc">Dateigröße optimieren und reduzieren für einfaches Teilen.</string>
+    <string name="tool_compress_desc">Dateigröße reduzieren, damit sich das Dokument leichter teilen lässt.</string>
     <string name="compress_level_label">Komprimierungsstufe:</string>
     <string name="compress_level_medium">Ausgewogen (Empfohlen)</string>
     <string name="compress_level_high">Maximale Komprimierung (Kleinste Datei)</string>
@@ -122,7 +122,7 @@
     <string name="tool_scan_title">Dokument scannen</string>
     <string name="tool_scan_desc">Kamera-Scanner: Automatische Randerkennung, Perspektivkorrektur, sauberes PDF ohne Wasserzeichen.</string>
     <string name="scan_error_unavailable">Google Dokument-Scanner ist auf diesem Gerät nicht verfügbar.</string>
-    <string name="scan_processing">Gescannter Dokument wird verarbeitet…</string>
+    <string name="scan_processing">Gescanntes Dokument wird verarbeitet…</string>
     <string name="filename_scanned">Scan_%1$s.pdf</string>
     <string name="scan_empty_action">Dokument scannen</string>
     <string name="compress_success_stats">Größe um %1$d%% reduziert (%2$s → %3$s)</string>
@@ -154,7 +154,7 @@
     <string name="error_select_min_two_files">Bitte mindestens 2 PDF-Dateien zum Zusammenführen wählen.</string>
     <string name="error_select_source_file">Bitte zuerst ein PDF-Quelldokument auswählen.</string>
     <string name="error_select_images">Bitte mindestens ein Bild auswählen.</string>
-    <string name="error_invalid_page_range">Ungültige Seitenzahlen eingegeben.</string>
+    <string name="error_invalid_page_range">Ungültige Seitenzahlen. Prüfen Sie die Gesamtzahl der Seiten.</string>
     <string name="error_cannot_delete_all_pages">Es können nicht alle Seiten gelöscht werden.</string>
 
     <!-- Default File Names -->
@@ -244,7 +244,7 @@
     <string name="save_no_changes">Keine Änderungen</string>
     <string name="save_empty_file_left">Eine leere Datei ist im gewählten Ordner geblieben</string>
     <string name="save_not_completed">Das Speichern wurde nicht abgeschlossen</string>
-    <string name="place_copy_saved_password_hint">Kopie gespeichert. Um sie anzusehen, geben Sie das Passwort im Viewer erneut ein</string>
+    <string name="place_copy_saved_password_hint">Kopie gespeichert. Um sie anzusehen, geben Sie das Passwort in der Ansicht erneut ein</string>
     <string name="action_licenses">Open-Source-Lizenzen</string>
     <string name="action_dynamic_colors">Farben vom Hintergrundbild</string>
     <string name="dialog_licenses_title">Open-Source-Lizenzen</string>
@@ -361,7 +361,7 @@
     <string name="action_back">Zurück</string>
     <string name="a11y_page_jump">Seite %1$d von %2$d. Zu Seite springen</string>
     <string name="a11y_zoom">Zoom %1$d %%. Zoom ändern</string>
-    <string name="reader_edit_fab_desc">PDF bearbeiten. Text, Unterschrift, Zeichnung oder Bild hinzufügen. Suche, Lesemodus, Seiten und Datei: in der Seitenanzeige und im Menü</string>
+    <string name="reader_edit_fab_desc">PDF bearbeiten. Text, Unterschrift, Zeichnung oder Bild hinzufügen. Suche, Lesethema, Seiten und Datei: in der Seitenanzeige und im Menü</string>
     <plurals name="pages_count">
         <item quantity="one">%d Seite</item>
         <item quantity="other">%d Seiten</item>
@@ -398,8 +398,8 @@
     <string name="onboarding_page_indicator">Seite %1$d von %2$d</string>
     <string name="onboarding_1_title">PDF-Dateien öffnen und lesen</string>
     <string name="onboarding_1_body">Tippen Sie auf „PDF öffnen“ und wählen Sie eine Datei auf Ihrem Gerät. Zuletzt geöffnete Dateien erscheinen in der Bibliothek, sodass Sie dort weiterlesen können, wo Sie aufgehört haben.</string>
-    <string name="onboarding_2_title">Bearbeiten: Text, Signatur, Zeichnung, Formulare</string>
-    <string name="onboarding_2_body">Tippen Sie in einem Dokument auf „Bearbeiten“, um Text, eine Signatur oder eine Zeichnung hinzuzufügen und Formularfelder auszufüllen. Zusammenführen, Teilen, Scannen und weitere Werkzeuge finden Sie im Tab „Werkzeuge“.</string>
+    <string name="onboarding_2_title">Bearbeiten: Text, Unterschrift, Zeichnung, Formulare</string>
+    <string name="onboarding_2_body">Tippen Sie in einem Dokument auf „Bearbeiten“, um Text, eine Unterschrift oder eine Zeichnung hinzuzufügen und Formularfelder auszufüllen. Zusammenführen, Teilen, Scannen und weitere Werkzeuge finden Sie im Tab „Werkzeuge“.</string>
     <string name="onboarding_3_title">Ihre Dateien bleiben auf Ihrem Gerät</string>
     <string name="onboarding_3_body">Dokumente werden auf Ihrem Gerät geöffnet und bearbeitet. Es gibt kein Konto und keine Anmeldung. Die App zeigt Werbung von Google AdMob, die Gerätedaten erfassen kann; Einzelheiten stehen unter „Datenschutzerklärung“ im ⋮-Menü.</string>
 </resources>

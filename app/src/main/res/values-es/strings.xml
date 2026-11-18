@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Anti PDF</string>
+    <string name="app_full_name">Anti PDF: Lector y herramientas</string>
+
+    <!-- Navigation & Tabs -->
+    <string name="tab_recents">Documentos recientes</string>
+    <string name="tab_library">Biblioteca</string>
+    <string name="tab_tools">Herramientas</string>
+    <string name="action_open_pdf">Abrir PDF</string>
+    <string name="action_scan_short">Escanear</string>
+    <string name="continue_reading_title">Seguir leyendo</string>
+    <string name="action_continue_reading">Continuar</string>
+    <string name="section_recent_documents">Recientes</string>
+    <string name="action_clear_search">Borrar búsqueda</string>
+    <string name="dialog_jump_to_page_title">Ir a la página</string>
+    <string name="dialog_jump_to_page_hint">Página (1–%1$d)</string>
+    <string name="action_go">Ir</string>
+    <string name="place_tool_hand_short">Mano</string>
+    <string name="tools_hub_subtitle">Toca cualquier herramienta para elegir enseguida tu PDF y empezar.</string>
+    <string name="action_search">Buscar</string>
+    <string name="search_hint">Buscar documentos…</string>
+    <string name="action_sort">Ordenar por</string>
+    <string name="sort_date_desc">Abiertos recientemente</string>
+    <string name="sort_name_asc">Nombre (A–Z)</string>
+    <string name="sort_size_desc">Tamaño (de mayor a menor)</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_favorites">Favoritos</string>
+
+    <!-- Empty State -->
+    <string name="empty_recents_title">No hay documentos recientes</string>
+    <string name="empty_recents_desc">Toca «Abrir PDF» abajo para empezar a leer. El botón + de al lado abre más acciones: crear un PDF o escanear un documento.</string>
+    <string name="empty_search_title">No se encontró ningún archivo</string>
+    <string name="empty_search_desc">Prueba con otro nombre de archivo.</string>
+
+    <!-- Document Card & Item Actions -->
+    <string name="document_page_progress">Página %1$d de %2$d</string>
+    <string name="action_favorite">Favorito</string>
+    <string name="action_unfavorite">Quitar de favoritos</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_delete_history">Quitar de recientes</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_details">Detalles</string>
+    <string name="action_reading_theme">Tema de lectura</string>
+    <string name="reading_theme_title">Tema de lectura de las páginas</string>
+    <string name="reading_theme_day">Día (claro)</string>
+    <string name="reading_theme_night">Noche (oscuro)</string>
+    <string name="reading_theme_sepia">Sepia (cálido)</string>
+    <string name="dialog_details_title">Información del documento</string>
+    <string name="details_title">Título: %1$s</string>
+    <string name="details_pages">Total de páginas: %1$d</string>
+    <string name="details_size">Tamaño: %1$s</string>
+    <string name="details_last_opened">Última apertura: %1$s</string>
+    <string name="details_uri">Ubicación: %1$s</string>
+
+    <!-- Reader -->
+    <string name="reader_title">Lector de PDF</string>
+    <string name="dialog_password_title">Documento protegido con contraseña</string>
+    <string name="dialog_password_desc">Este PDF está cifrado. Introduce la contraseña para desbloquearlo.</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="action_unlock">Desbloquear</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_ok">Aceptar</string>
+    <string name="error_invalid_password">Contraseña incorrecta. Inténtalo de nuevo.</string>
+    <string name="error_open_document">No se pudo abrir el archivo PDF: %1$s</string>
+
+    <!-- Tools Hub -->
+    <string name="tools_hub_title">Utilidades PDF</string>
+    <string name="tool_merge_title">Combinar PDF</string>
+    <string name="tool_merge_desc">Une dos o más archivos PDF en un solo documento.</string>
+    <string name="tool_split_title">Dividir PDF</string>
+    <string name="tool_split_desc">Extrae páginas concretas o intervalos de páginas a un PDF nuevo.</string>
+    <string name="tool_rotate_title">Girar páginas</string>
+    <string name="tool_rotate_desc">Gira las páginas 90°, 180° o 270°.</string>
+    <string name="tool_delete_title">Eliminar páginas</string>
+    <string name="tool_delete_desc">Quita del documento las páginas que no necesites.</string>
+    <string name="tool_images_to_pdf_title">Imágenes a PDF</string>
+    <string name="tool_images_to_pdf_desc">Convierte imágenes JPEG y PNG en un documento PDF limpio.</string>
+    <string name="tool_watermark_title">Marca de agua</string>
+    <string name="tool_watermark_desc">Superpone un sello diagonal translúcido: COPIA, MUESTRA o un texto propio.</string>
+    <string name="tool_page_numbers_title">Números de página</string>
+    <string name="tool_page_numbers_desc">Inserta una numeración limpia al pie de cada página.</string>
+
+    <string name="watermark_text_label">Texto de la marca de agua</string>
+    <string name="watermark_text_hint">Escribe un texto (p. ej., COPIA, CONFIDENCIAL)</string>
+    <string name="watermark_preset_copy">COPIA</string>
+    <string name="watermark_preset_sample">MUESTRA</string>
+    <string name="watermark_preset_confidential">CONFIDENCIAL</string>
+    <string name="watermark_preset_draft">BORRADOR</string>
+
+    <string name="page_numbers_format_label">Formato de numeración</string>
+    <string name="page_numbers_format_1">Página %1$d de %2$d</string>
+
+    <string name="filename_watermarked">Con_marca_de_agua.pdf</string>
+    <string name="filename_numbered">Numerado.pdf</string>
+    <string name="error_empty_watermark">Escribe el texto de la marca de agua</string>
+
+    <string name="tool_compress_title">Comprimir PDF</string>
+    <string name="tool_compress_desc">Reduce el tamaño del archivo para compartirlo con facilidad.</string>
+    <string name="compress_level_label">Nivel de compresión:</string>
+    <string name="compress_level_medium">Equilibrado (recomendado)</string>
+    <string name="compress_level_high">Compresión máxima (archivo más pequeño)</string>
+    <string name="compress_level_low">Compresión mínima (alta calidad)</string>
+    <string name="filename_compressed">Comprimido.pdf</string>
+
+    <!-- Organize Pages Strings (ТОП-3) -->
+    <string name="tool_organize_title">Organizar páginas</string>
+    <string name="tool_organize_desc">Cuadrícula visual: reordena arrastrando, gira y elimina páginas.</string>
+    <string name="action_organize_pages">Organizar páginas</string>
+    <string name="organize_page_badge">Página %1$d</string>
+    <string name="organize_page_original">(orig. %1$d)</string>
+    <string name="organize_action_rotate_all">Girar todas</string>
+    <string name="organize_action_reset">Restablecer</string>
+    <string name="organize_save_button">Guardar PDF</string>
+    <string name="organize_page_deleted">Página %1$d eliminada</string>
+    <string name="organize_undo">Deshacer</string>
+    <string name="organize_min_pages_warning">El documento debe tener al menos una página</string>
+    <string name="filename_organized">Organizado.pdf</string>
+    <string name="loading_document">Cargando documento…</string>
+
+    <!-- Document Scanner Strings (ТОП-1) -->
+    <string name="tool_scan_title">Escanear documento</string>
+    <string name="tool_scan_desc">Escáner con la cámara: detección automática de bordes, corrección de perspectiva y un PDF limpio, sin marcas de agua.</string>
+    <string name="scan_error_unavailable">El escáner de documentos de Google Play Services no está disponible en este dispositivo.</string>
+    <string name="scan_processing">Procesando el documento escaneado…</string>
+    <string name="filename_scanned">Escaneo_%1$s.pdf</string>
+    <string name="scan_empty_action">Escanear documento</string>
+    <string name="compress_success_stats">Tamaño reducido un %1$d%% (%2$s → %3$s)</string>
+
+    <!-- Tools Flow -->
+    <string name="action_select_files">Seleccionar archivos</string>
+    <string name="action_select_file">Seleccionar archivo</string>
+    <string name="action_select_images">Seleccionar imágenes</string>
+    <string name="action_add_more">Añadir más</string>
+    <string name="action_clear_selection">Borrar selección</string>
+    <string name="action_process_save">Guardar como…</string>
+    <string name="input_pages_hint">Números de página (p. ej., 1-3, 5, 8)</string>
+    <string name="input_pages_label">Páginas que extraer</string>
+    <string name="input_delete_pages_label">Páginas que eliminar (desde 1)</string>
+    <string name="rotation_angle_label">Elige el ángulo de giro:</string>
+    <string name="rotation_90">90° a la derecha</string>
+    <string name="rotation_180">180° (media vuelta)</string>
+    <string name="rotation_270">270° a la izquierda</string>
+    <string name="apply_to_all_pages">Aplicar a todas las páginas</string>
+    <string name="apply_to_custom_pages">Aplicar a páginas concretas</string>
+
+    <!-- Operations Status -->
+    <string name="status_processing">Procesando el documento…</string>
+    <string name="status_step">Procesando paso %1$d de %2$d…</string>
+    <string name="operation_success_title">¡Listo!</string>
+    <string name="operation_success_message">El nuevo PDF se creó correctamente (%1$s).</string>
+    <string name="action_open_result">Abrir PDF</string>
+    <string name="error_title">Error en la operación</string>
+    <string name="error_select_min_two_files">Selecciona al menos 2 archivos PDF para combinar.</string>
+    <string name="error_select_source_file">Primero selecciona un documento PDF de origen.</string>
+    <string name="error_select_images">Selecciona al menos una imagen.</string>
+    <string name="error_invalid_page_range">Los números de página no son válidos. Comprueba el total de páginas.</string>
+    <string name="error_cannot_delete_all_pages">No se pueden eliminar todas las páginas del documento.</string>
+
+    <!-- Default File Names -->
+    <string name="filename_merged">documento_combinado.pdf</string>
+    <string name="filename_split">paginas_extraidas.pdf</string>
+    <string name="filename_rotated">documento_girado.pdf</string>
+    <string name="filename_deleted">paginas_eliminadas.pdf</string>
+    <string name="filename_images">documento_fotos.pdf</string>
+
+    <!-- Annotations & Editing -->
+    <string name="action_draw">Dibujar</string>
+    <string name="action_signature">Firma</string>
+    <string name="action_undo">Deshacer</string>
+    <string name="action_clear_all">Borrar todo</string>
+    <string name="action_save">Guardar</string>
+    <string name="saving_annotations">Guardando anotaciones…</string>
+    <string name="brush_pen">Bolígrafo</string>
+    <string name="brush_marker">Rotulador</string>
+    <string name="brush_highlighter">Resaltador</string>
+    <string name="color_label">Color:</string>
+    <string name="color_black">Negro</string>
+    <string name="color_red">Rojo</string>
+    <string name="color_blue">Azul</string>
+    <string name="color_green">Verde</string>
+    <string name="color_yellow">Amarillo</string>
+    <string name="signature_dialog_title">Crear firma</string>
+    <string name="signature_dialog_hint">Dibuja tu firma con el dedo o un lápiz óptico</string>
+    <string name="signature_clear">Borrar</string>
+    <string name="signature_insert">Insertar</string>
+    <string name="signature_error_empty">Dibuja tu firma antes de insertarla</string>
+    <string name="signature_success">Firma añadida correctamente</string>
+    <string name="text_input_hint">Escribe el texto de la anotación</string>
+    <string name="text_error_empty">El texto no puede estar vacío</string>
+    <string name="drawing_success">Dibujo guardado correctamente</string>
+
+    <!-- Interactive Forms (AcroForm) -->
+    <string name="action_forms">Formularios</string>
+    <string name="forms_sheet_title">Rellenar formulario PDF</string>
+    <string name="action_save_form">Guardar formulario</string>
+    <string name="saving_form">Guardando los datos del formulario…</string>
+    <string name="form_saved_success">Formulario guardado correctamente</string>
+    <string name="form_read_only_badge">Solo lectura</string>
+    <string name="form_select_option">Selecciona una opción</string>
+
+    <!-- Place on page (stage 3a) -->
+    <string name="action_place">Editar</string>
+    <string name="place_tool_check">Marca ✓</string>
+    <string name="place_tool_cross">Cruz</string>
+    <string name="place_tool_text">Texto</string>
+    <string name="place_size_format">%1$s pt</string>
+    <string name="place_done">Listo</string>
+    <string name="place_text_title">Añadir texto</string>
+    <string name="place_text_add">Añadir</string>
+    <string name="place_text_unsupported">Estos caracteres no son compatibles: %1$s</string>
+    <string name="place_saved">Guardado en el documento</string>
+    <string name="place_blocked_encrypted">La edición de documentos protegidos se añadirá más adelante.</string>
+    <string name="place_blocked_rights">El autor del documento ha desactivado los cambios.</string>
+    <string name="place_blocked_unreadable">No se pudo abrir el documento para editarlo.</string>
+    <string name="place_unsaved_title">Cambios sin guardar</string>
+    <string name="place_unsaved_message">¿Guardar los cambios?</string>
+    <string name="place_discard">Descartar</string>
+    <string name="place_delete">Eliminar</string>
+    <string name="place_edit_text">Editar texto</string>
+    <string name="place_change_to_check">Cambiar a ✓</string>
+    <string name="place_change_to_cross">Cambiar a ✗</string>
+    <string name="place_text_apply">Aplicar</string>
+    <string name="place_selected_hint">Objeto seleccionado: muévelo o cambia abajo el tamaño y el color</string>
+    <string name="place_tool_ink">Dibujar</string>
+    <string name="place_tool_hand">Mano (desplazar y hacer zoom)</string>
+    <string name="place_tool_signature">Firma</string>
+    <string name="place_signature_tap_hint">Toca la página para colocar la firma</string>
+    <string name="form_choice_none">Sin seleccionar</string>
+    <string name="forms_apply">Aplicar</string>
+    <string name="forms_reset_all">Restablecer todos los cambios del formulario</string>
+    <string name="forms_read_only_note">Este documento no permite rellenar formularios, así que los campos son de solo lectura.</string>
+    <string name="unsaved_bar_text">Tienes cambios sin guardar</string>
+    <string name="password_title">Se necesita contraseña</string>
+    <string name="password_message">Introduce la contraseña para editar este documento.</string>
+    <string name="password_continue">Continuar</string>
+    <string name="password_wrong">Contraseña incorrecta, o el archivo no admite edición</string>
+    <string name="copy_warning_title">Archivo protegido</string>
+    <string name="copy_warning_message">El archivo está protegido. La copia se guardará con la misma contraseña; la contraseña del propietario y las restricciones de permisos no se trasladan.</string>
+    <string name="copy_save">Guardar copia</string>
+    <string name="save_readonly_message">Este archivo se abrió en modo de solo lectura, así que no se puede modificar directamente. Tus cambios no se pierden: puedes guardarlos como una copia.</string>
+    <string name="place_copy_saved">Copia guardada</string>
+    <string name="save_no_changes_copy_not_created">No hay cambios que guardar; no se creó la copia</string>
+    <string name="save_no_changes">Sin cambios</string>
+    <string name="save_empty_file_left">Quedó un archivo vacío en la carpeta elegida</string>
+    <string name="save_not_completed">No se completó el guardado</string>
+    <string name="place_copy_saved_password_hint">Copia guardada. Para verla, vuelve a introducir la contraseña en el visor</string>
+    <string name="action_licenses">Licencias de código abierto</string>
+    <string name="action_dynamic_colors">Colores del fondo de pantalla</string>
+    <string name="dialog_licenses_title">Licencias de código abierto</string>
+    <string name="action_create_pdf">Crear PDF</string>
+    <string name="tool_create_blank_title">Crear PDF</string>
+    <string name="tool_create_blank_desc">Crea un documento en blanco para notas y texto</string>
+    <string name="tool_add_page">+ Página</string>
+    <string name="tool_add_page_desc">Añade una página en blanco al documento</string>
+    <string name="place_add_page_short">Página en blanco</string>
+    <string name="tool_insert_file">Añadir archivo</string>
+    <string name="tool_insert_file_desc">Añade páginas de un PDF o de imágenes</string>
+    <string name="action_tools">Páginas y archivo</string>
+    <string name="tools_sheet_title">Páginas y archivo</string>
+    <string name="tools_group_pages">Páginas y archivos</string>
+    <string name="tools_group_effects">Diseño y optimización</string>
+    <string name="tools_group_quick">Acciones rápidas</string>
+    <string name="text_pages_added">Se añadieron %d páginas nuevas para el texto</string>
+    <string name="new_document_default_title">Documento nuevo</string>
+    <string name="action_print">Imprimir</string>
+    <string name="page_added_successfully">Página nueva añadida</string>
+    <string name="files_added_successfully">Archivos añadidos correctamente</string>
+    <string name="place_tool_image">Imagen</string>
+    <string name="action_add_image">Añadir imagen</string>
+    <string name="tool_add_image_desc">Inserta una imagen que puedes redimensionar y mover</string>
+    <string name="place_move_to_page">A página</string>
+    <string name="place_move_to_page_title">Mover a la página</string>
+    <string name="place_create_new_page_option">+ Crear una página nueva al final</string>
+    <string name="place_drag_to_new_page_hint">+ Suelta para crear una página nueva</string>
+    <string name="scan_added_to_new_page">Escaneo añadido en una página nueva</string>
+    <string name="page_added_and_moved">Se creó una página nueva y se movió el objeto</string>
+    <string name="page_number_item">Página %1$d</string>
+    <string name="action_clear_history">Borrar historial</string>
+    <string name="action_clear_history_short">Borrar</string>
+    <string name="dialog_clear_history_title">¿Borrar el historial de apertura?</string>
+    <string name="dialog_clear_history_message">Se borrará la lista de documentos abiertos recientemente. Tus archivos PDF en este dispositivo no se eliminarán.</string>
+    <string name="dialog_clear_history_keep_favorites">Conservar los documentos favoritos</string>
+    <string name="history_cleared_message">Historial de apertura borrado</string>
+
+    <!-- Image Rotation and Fit -->
+    <string name="action_rotate_clockwise">Girar a la derecha</string>
+    <string name="action_rotate_counterclockwise">Girar a la izquierda</string>
+    <string name="action_rotate_left_short">−90°</string>
+    <string name="action_rotate_right_short">+90°</string>
+    <string name="action_fit_page">Ajustar a la página</string>
+    <string name="place_drag_outside_snapped_back">La imagen volvió a los límites seguros de la página</string>
+    <string name="image_rotation_angle">%1$d°</string>
+    <string name="action_redo">Rehacer</string>
+    <string name="action_add">Añadir</string>
+    <string name="place_slot_action">Marca, cruz, firma, imagen</string>
+    <string name="place_slot_select">Seleccionar y mover</string>
+    <string name="place_options">Opciones de la herramienta</string>
+    <string name="place_options_close">Cerrar opciones</string>
+    <string name="place_options_page">Página de ajustes %1$d de %2$d</string>
+    <string name="place_width_label">Grosor</string>
+    <string name="place_size_label">Tamaño</string>
+    <string name="place_straighten">Enderezar líneas</string>
+    <string name="color_orange">Naranja</string>
+    <string name="color_indigo">Índigo</string>
+    <string name="color_purple">Morado</string>
+    <string name="color_gray">Gris</string>
+    <string name="color_custom">Color personalizado</string>
+    <string name="place_custom_color_title">Color personalizado</string>
+    <string name="place_text_size_menu">Tamaño del texto</string>
+    <string name="place_text_color_toggle">Color del texto</string>
+    <string name="place_text_bg_color_toggle">Fondo del texto</string>
+    <string name="color_none">Sin fondo</string>
+    <string name="place_size_decrease">Reducir tamaño</string>
+    <string name="place_size_increase">Aumentar tamaño</string>
+    <string name="place_text_style_menu">Estilo del texto</string>
+    <string name="place_text_style_h1">Título 1 (24 pt)</string>
+    <string name="place_text_style_h2">Título 2 (18 pt)</string>
+    <string name="place_text_style_body1">Texto 1 (14 pt)</string>
+    <string name="place_text_style_body2">Texto 2 (11 pt)</string>
+    <string name="action_privacy_policy">Política de privacidad</string>
+    <string name="action_privacy_settings">Ajustes de privacidad</string>
+    <string name="privacy_policy_open_failed">No se pudo abrir el enlace de la política de privacidad</string>
+    <!-- Людські тексти помилок, екран «Не вдалося відкрити файл», лише читання -->
+    <string name="err_generic">Algo salió mal. Inténtalo de nuevo; si no funciona, elige otro archivo.</string>
+    <string name="err_read_only">Este archivo es de solo lectura, así que no se pudo modificar aquí. Guarda una copia en otra carpeta y trabaja con ella.</string>
+    <string name="err_not_found">No se encontró el archivo. Puede que lo hayan movido o eliminado. Vuelve a elegir el archivo.</string>
+    <string name="err_no_space">No hay espacio libre suficiente en el dispositivo. Libera espacio e inténtalo de nuevo.</string>
+    <string name="err_too_big">El archivo es demasiado grande para este dispositivo. Cierra otras aplicaciones o prueba con un archivo más pequeño.</string>
+    <string name="err_io">No se pudo leer o escribir el archivo. Comprueba que esté disponible e inténtalo de nuevo.</string>
+    <string name="err_no_permission">El autor del documento no permite esta acción. Elige otro archivo o, si es posible, guarda una copia.</string>
+    <string name="err_pages_empty">Escribe los números de página, por ejemplo 1-3, 5.</string>
+    <string name="err_pages_format">No se entendieron los números de página. Escríbelos así: 1-3, 5, 8-10.</string>
+    <string name="err_pages_positive">Los números de página empiezan en 1. Corrige el número e inténtalo de nuevo.</string>
+    <string name="err_pages_range">El documento no tiene la página %1$d. Páginas del documento: %2$d. Elige páginas dentro del documento.</string>
+    <string name="err_pages_none">No hay ninguna página seleccionada. Indica al menos una.</string>
+    <string name="err_create_pdf">No se pudo crear el PDF. Inténtalo de nuevo.</string>
+    <string name="err_save_scan">No se pudo guardar el escaneo. Vuelve a escanear.</string>
+    <string name="err_convert_images">No se pudieron convertir las imágenes en un PDF. Prueba con otras imágenes.</string>
+    <string name="err_open_pdf">No se pudo abrir el documento. Vuelve atrás y elígelo de nuevo.</string>
+    <string name="err_organizer_empty">No queda ninguna página en el documento. Restaura al menos una página.</string>
+    <string name="err_print_failed">No se pudo preparar el archivo para imprimir. Inténtalo de nuevo.</string>
+    <string name="err_image_failed">No se pudo procesar la imagen. Prueba con otra.</string>
+    <string name="err_add_failed">No se pudo añadir esto al documento. Inténtalo de nuevo o elige otro archivo.</string>
+    <string name="err_view_copy">No se pudo actualizar la vista del documento. Cierra el documento y ábrelo de nuevo.</string>
+    <string name="open_error_title">No se pudo abrir el archivo</string>
+    <string name="open_error_corrupt">El archivo está dañado o no es un PDF. Prueba a abrir otro archivo.</string>
+    <string name="open_error_denied">No hay acceso a este archivo. Vuelve a elegirlo con «Abrir» o elige otro archivo.</string>
+    <string name="open_error_retry">Reintentar</string>
+    <string name="open_error_pick">Elegir otro archivo</string>
+    <string name="open_error_close">Cerrar</string>
+    <string name="reader_read_only_subtitle">Solo lectura</string>
+    <string name="reader_read_only_notice">Este archivo está abierto solo para lectura. Para modificarlo, guarda una copia.</string>
+    <string name="action_save_copy">Guardar una copia</string>
+    <string name="save_copy_done">Copia guardada. Ahora trabajas con ella.</string>
+    <string name="save_copy_failed">No se pudo guardar la copia. Elige otra carpeta e inténtalo de nuevo.</string>
+    <string name="page_number_item_current">Página %1$d (actual)</string>
+    <string name="reader_title_unknown">Documento</string>
+    <string name="save_copy_done_kept">Copia guardada. Tus cambios sin guardar siguen en este documento.</string>
+    <string name="place_menu_reading_mode">Tema de lectura</string>
+    <string name="action_back">Atrás</string>
+    <string name="a11y_page_jump">Página %1$d de %2$d. Ir a la página</string>
+    <string name="a11y_zoom">Zoom %1$d%%. Cambiar el zoom</string>
+    <string name="reader_edit_fab_desc">Editar PDF. Añade texto, una firma, un dibujo o una imagen. La búsqueda, el tema de lectura y las herramientas de páginas y archivo están en la píldora de página y en el menú</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d página</item>
+        <item quantity="other">%d páginas</item>
+    </plurals>
+    <plurals name="forms_sheet_subtitle">
+        <item quantity="one">%d campo rellenable encontrado</item>
+        <item quantity="other">%d campos rellenables encontrados</item>
+    </plurals>
+    <plurals name="selected_files_count">
+        <item quantity="one">%d archivo seleccionado</item>
+        <item quantity="other">%d archivos seleccionados</item>
+    </plurals>
+    <plurals name="selected_images_count">
+        <item quantity="one">%d imagen seleccionada</item>
+        <item quantity="other">%d imágenes seleccionadas</item>
+    </plurals>
+    <plurals name="document_pages_count">
+        <item quantity="one">%d página</item>
+        <item quantity="other">%d páginas</item>
+    </plurals>
+    <plurals name="organize_pages_count">
+        <item quantity="one">%d página</item>
+        <item quantity="other">%d páginas</item>
+    </plurals>
+    <string name="page_numbers_example_1">Página 1 de 10</string>
+    <string name="page_numbers_example_2">1 / 10</string>
+    <string name="page_numbers_example_3">1</string>
+    <string name="action_more_actions">Más acciones</string>
+    <string name="action_hide_more_actions">Ocultar acciones</string>
+    <string name="action_filter_sort">Filtrar y ordenar</string>
+    <string name="onboarding_skip">Omitir</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_start">Empezar</string>
+    <string name="onboarding_page_indicator">Página %1$d de %2$d</string>
+    <string name="onboarding_1_title">Abre y lee archivos PDF</string>
+    <string name="onboarding_1_body">Toca «Abrir PDF» y elige un archivo de tu dispositivo. Los archivos recientes aparecen en la biblioteca, para que puedas seguir leyendo donde lo dejaste.</string>
+    <string name="onboarding_2_title">Edita: texto, firma, dibujo, formularios</string>
+    <string name="onboarding_2_body">En un documento, toca «Editar» para añadir texto, una firma o un dibujo, y para rellenar campos de formulario. Combinar, dividir, escanear y otras herramientas están en la pestaña Herramientas.</string>
+    <string name="onboarding_3_title">Tus archivos se quedan en tu dispositivo</string>
+    <string name="onboarding_3_body">Los documentos se abren y se editan en tu dispositivo. No hay cuenta ni inicio de sesión. La aplicación muestra anuncios de Google AdMob, que puede recopilar datos del dispositivo; encontrarás los detalles en «Política de privacidad», en el menú ⋮.</string>
+</resources>

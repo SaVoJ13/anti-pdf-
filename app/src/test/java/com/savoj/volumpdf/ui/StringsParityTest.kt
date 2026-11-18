@@ -7,7 +7,7 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
- * Паритет рядків у 4 мовах (uk, en, de, ru): однакові ключі, непорожні значення, однакові аргументи формату
+ * Паритет рядків у 5 мовах (uk, en, de, ru, es): однакові ключі, непорожні значення, однакові аргументи формату
  * (%1$s, %2$d …). XML розбирається як XML, а не шукається текстом.
  */
 class StringsParityTest {
@@ -29,7 +29,9 @@ class StringsParityTest {
     }
 
     private val base by lazy { load("values") }
-    private val locales by lazy { mapOf("uk" to load("values-uk"), "de" to load("values-de"), "ru" to load("values-ru")) }
+    private val locales by lazy { mapOf(
+        "uk" to load("values-uk"), "de" to load("values-de"), "ru" to load("values-ru"), "es" to load("values-es")
+    ) }
 
     @Test
     fun `every language has exactly the same keys as the default`() {
@@ -47,18 +49,53 @@ class StringsParityTest {
         }
     }
 
+    /** Специфікатори формату разом з типом: `%1$s`, `%d`, `%%`. Порядок аргументів може відрізнятись, склад ні. */
+    private val spec = Regex("%(?:(\\d+)\\$)?([sdfx%])")
+    private fun specs(s: String) = spec.findAll(s).map { "${it.groupValues[1]}:${it.groupValues[2]}" }.sorted().toList()
+
     @Test
-    fun `format arguments match across languages`() {
-        val arg = Regex("%(\\d+)\\$[sdfx]")
-        fun args(s: String) = arg.findAll(s).map { it.groupValues[1] }.toSortedSet()
+    fun `format arguments match across languages in count and type`() {
         locales.forEach { (lang, map) ->
-            val bad = base.filter { (k, v) -> map[k]?.let { args(it) != args(v) } ?: false }.keys
-            assertTrue("різні аргументи формату в $lang: $bad", bad.isEmpty())
+            val bad = base.filter { (k, v) -> map[k]?.let { specs(it) != specs(v) } ?: false }.keys
+            assertTrue("різні специфікатори формату в $lang: $bad", bad.isEmpty())
         }
     }
 
     @Test
-    fun `new place-mode strings exist in all four languages`() {
+    fun `html tags and markup are preserved`() {
+        val tag = Regex("</?[a-zA-Z]+[^>]*>")
+        locales.forEach { (lang, map) ->
+            val bad = base.filter { (k, v) -> map[k]?.let { tag.findAll(it).map { m -> m.value }.toList() != tag.findAll(v).map { m -> m.value }.toList() } ?: false }.keys
+            assertTrue("різні HTML-теги в $lang: $bad", bad.isEmpty())
+        }
+    }
+
+    @Test
+    fun `app name stays Anti PDF in every language`() {
+        (locales + ("en" to base)).forEach { (lang, map) -> assertEquals("app_name у $lang", "Anti PDF", map["app_name"]) }
+    }
+
+    @Test
+    fun `locales_config lists exactly the five shipped languages and each has a resource folder`() {
+        val file = File(resDir, "xml/locales_config.xml")
+        assertTrue("нема ${file.path}", file.isFile)
+        val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
+        val nodes = doc.getElementsByTagName("locale")
+        val declared = (0 until nodes.length).map { nodes.item(it).attributes.getNamedItem("android:name").nodeValue }.toSet()
+        assertEquals(setOf("en", "uk", "de", "ru", "es"), declared)
+        listOf("uk", "de", "ru", "es").forEach { assertTrue("нема values-$it", File(resDir, "values-$it/strings.xml").isFile) }
+        // Мова за замовчуванням (values/) англійська: резервна мова для непідтримуваних системних мов.
+        assertEquals("Open PDF", base["action_open_pdf"])
+    }
+
+    @Test
+    fun `manifest declares localeConfig`() {
+        val manifest = File(resDir.parentFile, "AndroidManifest.xml").readText()
+        assertTrue(manifest.contains("android:localeConfig=\"@xml/locales_config\""))
+    }
+
+    @Test
+    fun `new place-mode strings exist in all languages`() {
         val keys = listOf(
             "action_redo", "action_add", "place_slot_action", "place_slot_select", "place_options", "place_options_close",
             "place_options_page", "place_width_label", "place_size_label", "place_straighten", "color_orange", "color_indigo",
@@ -103,6 +140,18 @@ class StringsParityTest {
     }
 
     @Test
+    fun `every plural item keeps the number placeholder`() {
+        listOf("values", "values-uk", "values-de", "values-ru", "values-es").forEach { folder ->
+            val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(File(resDir, "$folder/strings.xml"))
+            val items = doc.getElementsByTagName("item")
+            for (i in 0 until items.length) {
+                val text = items.item(i).textContent
+                assertTrue("plural без %d у $folder: $text", Regex("%(\\d+\\$)?d").containsMatchIn(text))
+            }
+        }
+    }
+
+    @Test
     fun `plurals exist in all languages with the quantities each language needs`() {
         val en = loadPlurals("values")
         assertTrue(en.containsKey("pages_count"))
@@ -110,7 +159,8 @@ class StringsParityTest {
             "values" to setOf("one", "other"),
             "values-de" to setOf("one", "other"),
             "values-uk" to setOf("one", "few", "many", "other"),
-            "values-ru" to setOf("one", "few", "many", "other")
+            "values-ru" to setOf("one", "few", "many", "other"),
+            "values-es" to setOf("one", "other")
         )
         required.forEach { (folder, quantities) ->
             val map = loadPlurals(folder)
@@ -120,7 +170,7 @@ class StringsParityTest {
     }
 
     @Test
-    fun `a11y and unified-name strings exist in all four languages and no hardcoded english page hint remains`() {
+    fun `a11y and unified-name strings exist in all languages and no hardcoded english page hint remains`() {
         val keys = listOf("action_back", "a11y_page_jump", "a11y_zoom", "action_tools", "tools_sheet_title", "err_pages_range", "reader_edit_fab_desc")
         (locales + ("en" to base)).forEach { (lang, map) ->
             keys.forEach { assertTrue("$it відсутній у $lang", map.containsKey(it)) }
