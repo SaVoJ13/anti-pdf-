@@ -361,7 +361,7 @@
     <string name="action_back">Atrás</string>
     <string name="a11y_page_jump">Página %1$d de %2$d. Ir a la página</string>
     <string name="a11y_zoom">Zoom %1$d%%. Cambiar el zoom</string>
-    <string name="reader_edit_fab_desc">Editar PDF. Añade texto, una firma, un dibujo o una imagen. La búsqueda, el tema de lectura y las herramientas de páginas y archivo están en la píldora de página y en el menú</string>
+    <string name="reader_edit_fab_desc">Editar PDF. Añade texto, una firma, un dibujo o una imagen. La búsqueda, el tema de lectura y las herramientas de páginas y archivo están en el indicador de página y en el menú</string>
     <plurals name="pages_count">
         <item quantity="one">%d página</item>
         <item quantity="other">%d páginas</item>

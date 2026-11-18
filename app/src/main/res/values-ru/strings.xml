@@ -58,7 +58,7 @@
     <string name="dialog_password_title">Защищённый документ</string>
     <string name="dialog_password_desc">Этот PDF-файл зашифрован. Введите пароль для открытия.</string>
     <string name="password_hint">Пароль</string>
-    <string name="action_unlock">Открыть</string>
+    <string name="action_unlock">Разблокировать</string>
     <string name="action_cancel">Отмена</string>
     <string name="action_ok">ОК</string>
     <string name="error_invalid_password">Неверный пароль. Попробуйте ещё раз.</string>
@@ -195,7 +195,7 @@
     <string name="forms_sheet_title">Заполнение формы</string>
     <string name="action_save_form">Сохранить форму</string>
     <string name="saving_form">Сохранение данных формы…</string>
-    <string name="form_saved_success">Форма успешно сохранёна</string>
+    <string name="form_saved_success">Форма успешно сохранена</string>
     <string name="form_read_only_badge">Только чтение</string>
     <string name="form_select_option">Выберите вариант</string>
 

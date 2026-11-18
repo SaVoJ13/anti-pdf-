@@ -13,7 +13,7 @@
     <string name="action_continue_reading">Weiter</string>
     <string name="section_recent_documents">Zuletzt</string>
     <string name="action_clear_search">Suche zurücksetzen</string>
-    <string name="dialog_jump_to_page_title">Gehe zu Seite</string>
+    <string name="dialog_jump_to_page_title">Zu Seite gehen</string>
     <string name="dialog_jump_to_page_hint">Seite (1–%1$d)</string>
     <string name="action_go">Los</string>
     <string name="place_tool_hand_short">Hand</string>
@@ -69,7 +69,7 @@
     <string name="tool_merge_title">PDFs zusammenführen</string>
     <string name="tool_merge_desc">Zwei oder mehr PDF-Dateien in einem Dokument vereinen.</string>
     <string name="tool_split_title">PDF teilen</string>
-    <string name="tool_split_desc">Bestimmte Seiten oder Bereiche in eine neue PDF exportieren.</string>
+    <string name="tool_split_desc">Bestimmte Seiten oder Bereiche in eine neue PDF-Datei exportieren.</string>
     <string name="tool_rotate_title">Seiten drehen</string>
     <string name="tool_rotate_desc">Seiten um 90°, 180° oder 270° drehen.</string>
     <string name="tool_delete_title">Seiten löschen</string>
@@ -91,16 +91,16 @@
     <string name="page_numbers_format_label">Nummerierungsformat</string>
     <string name="page_numbers_format_1">Seite %1$d von %2$d</string>
 
-    <string name="filename_watermarked">Wasserzeichen.pdf</string>
+    <string name="filename_watermarked">Mit_Wasserzeichen.pdf</string>
     <string name="filename_numbered">Nummeriert.pdf</string>
     <string name="error_empty_watermark">Bitte Wasserzeichen-Text eingeben</string>
 
     <string name="tool_compress_title">PDF komprimieren</string>
     <string name="tool_compress_desc">Dateigröße reduzieren, damit sich das Dokument leichter teilen lässt.</string>
     <string name="compress_level_label">Komprimierungsstufe:</string>
-    <string name="compress_level_medium">Ausgewogen (Empfohlen)</string>
-    <string name="compress_level_high">Maximale Komprimierung (Kleinste Datei)</string>
-    <string name="compress_level_low">Minimale Komprimierung (Hohe Qualität)</string>
+    <string name="compress_level_medium">Ausgewogen (empfohlen)</string>
+    <string name="compress_level_high">Maximale Komprimierung (kleinste Datei)</string>
+    <string name="compress_level_low">Minimale Komprimierung (hohe Qualität)</string>
     <string name="filename_compressed">Komprimiert.pdf</string>
 
     <!-- Organize Pages Strings (ТОП-3) -->
@@ -148,7 +148,7 @@
     <string name="status_processing">Dokument wird verarbeitet…</string>
     <string name="status_step">Schritt %1$d von %2$d wird verarbeitet…</string>
     <string name="operation_success_title">Erfolgreich!</string>
-    <string name="operation_success_message">Neues PDF erfolgreich erstellt (%1$s).</string>
+    <string name="operation_success_message">Neue PDF-Datei erfolgreich erstellt (%1$s).</string>
     <string name="action_open_result">PDF öffnen</string>
     <string name="error_title">Vorgang fehlgeschlagen</string>
     <string name="error_select_min_two_files">Bitte mindestens 2 PDF-Dateien zum Zusammenführen wählen.</string>
@@ -334,7 +334,7 @@
     <string name="err_pages_positive">Seitenzahlen beginnen bei 1. Korrigieren Sie die Zahl und versuchen Sie es erneut.</string>
     <string name="err_pages_range">Das Dokument hat keine Seite %1$d. Seiten im Dokument: %2$d. Wählen Sie Seiten innerhalb des Dokuments.</string>
     <string name="err_pages_none">Keine Seite ausgewählt. Geben Sie mindestens eine an.</string>
-    <string name="err_create_pdf">Das PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.</string>
+    <string name="err_create_pdf">Die PDF-Datei konnte nicht erstellt werden. Bitte versuchen Sie es erneut.</string>
     <string name="err_save_scan">Der Scan konnte nicht gespeichert werden. Bitte scannen Sie erneut.</string>
     <string name="err_convert_images">Die Bilder konnten nicht in ein PDF umgewandelt werden. Versuchen Sie andere Bilder.</string>
     <string name="err_open_pdf">Das Dokument konnte nicht geöffnet werden. Gehen Sie zurück und wählen Sie es erneut aus.</string>
@@ -349,7 +349,7 @@
     <string name="open_error_retry">Erneut versuchen</string>
     <string name="open_error_pick">Andere Datei wählen</string>
     <string name="open_error_close">Schließen</string>
-    <string name="reader_read_only_subtitle">Nur Lesen</string>
+    <string name="reader_read_only_subtitle">Nur lesen</string>
     <string name="reader_read_only_notice">Diese Datei ist nur zum Lesen geöffnet. Um sie zu ändern, speichern Sie eine Kopie.</string>
     <string name="action_save_copy">Kopie speichern</string>
     <string name="save_copy_done">Kopie gespeichert. Sie arbeiten jetzt damit.</string>

@@ -19,7 +19,7 @@
 - `res/xml/locales_config.xml` (en, uk, de, ru, es) і `android:localeConfig` у `AndroidManifest.xml`.
 - `app/build.gradle.kts`: `lint { error += MissingTranslation, ExtraTranslation }`. Перевірено: прибрав один ключ з `values-es` → `lintDebug` впав з `MissingTranslation`; ключ повернуто.
 - `StringsParityTest` розширено на 5 мов: ключі, склад і тип специфікаторів (`%1$s`, `%d`, `%%`), HTML-теги, `app_name` = «Anti PDF», plurals (ru/uk: one/few/many/other; de/es/en: one/other), `%d` у кожному пункті множини, `locales_config`, `localeConfig` у маніфесті, англійська як мова за замовчуванням.
-- `docs/store/STORE_LISTING.md`: додано коротку (67 символів) і повну (1735 символів) іспанську; розділ «Release notes» для en/uk/de/ru/es (до 345 символів кожна). Короткі описи de/ru вже були (74, 68). У Play Console нічого не вносилось.
+- `docs/store/STORE_LISTING.md`: додано коротку (67 символів) і повну (1706 символів) іспанську; розділ «Release notes» для en/uk/de/ru/es (до 345 символів кожна). Короткі описи de/ru вже були (74, 68). У Play Console нічого не вносилось.
 
 **Результати (XML Gradle, JDK 21, `wt-l10n`)**
 - `:app:testDebugUnitTest`: 408 тестів, 0 збоїв, 0 помилок, 0 пропущено (`StringsParityTest` 12/0/0). `:app:assembleDebug`, `:app:lintDebug`, `:app:lintRelease`, `:core-pdf:test`, `:core-ads:testDebugUnitTest`: успішно, 0 помилок lint.
@@ -28,6 +28,8 @@
 **Верстка (крок 4):** статичний огляд `res/layout`: усі підписи кнопок і діалогів переносяться; `maxLines=1` лише в пароля й у назві файла в списку (середнє скорочення), текст у 48-dp кнопках без фіксованої ширини. Обрізань за кодом не виявлено, розмітку не змінено. Українська (довші слова) і шрифт 1.3 вже проходили QA раніше. НЕ ПЕРЕВІРЕНО на пристрої для de/ru/es, шрифти 1.0 і 1.3.
 
 **Телефон (крок 6): НЕ ВИКОНАНО.** `adb devices` порожній, AVD немає. Підключає телефон лише власник (профіль, розд. 10, п. 4). План перевірки: копії тестових PDF, замок `phone.lock`, keyguard, фокус; мову міняти в Налаштуваннях Android → Застосунки → Anti PDF → Мова; екрани: головний, перегляд, «Редагувати» з панеллю біля об'єкта, сканер, меню, діалог ліцензій; шрифт 1.0 і 1.3; після — повернути налаштування.
+
+**Після QA (1-й прохід, вердикт «QA NOT Verified»):** блокер: у ru `form_saved_success` я помилково написав «сохранёна» (регресія) — виправлено на «сохранена». Також: de «Zu Seite gehen», «PDF-Datei» скрізь, малі літери в дужках, «Nur lesen», «Mit_Wasserzeichen.pdf»; ru `action_unlock` = «Разблокировать»; es «indicador de página». Довжину повного опису es виправлено на 1706 (QA). Не виправлено свідомо: es `many` для plurals (попередження lint `MissingQuantity`, 6 шт.), непослідовні імена файлів ru. Тести після правок: `:app` 408/0/0/0, lintDebug 0 помилок. Потрібен повторний QA на цьому коміті.
 
 **Відкриті питання / передати далі**
 - Власнику: підключити телефон для перевірки; вичитка перекладів носіями (de, ru, es); текст випуску та опис es у Play Console вносить координатор з власником.
