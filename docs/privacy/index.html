@@ -33,14 +33,15 @@ section{scroll-margin-top:1rem}
 
 <section id="uk" lang="uk">
 <h1>Політика приватності застосунку Anti PDF</h1>
-<p class="meta">Остання редакція: 2026-11-17<br>Застосунок: Anti PDF (Volum PDF), пакет <code>com.savoj.volumpdf.anti</code><br>Контакт розробника: <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a></p>
+<p class="meta">Остання редакція: 2026-11-18<br>Застосунок: Anti PDF, пакет <code>com.savoj.volumpdf.anti</code><br>Контакт розробника: <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a></p>
 
 <h2>1. Коротко</h2>
 <div class="box"><ul>
 <li><strong>Ваші документи залишаються на пристрої.</strong> Читання, редагування, підпис, водяні знаки, стиснення, об'єднання, розділення, поворот і сканування виконуються локально. Ми не завантажуємо ваші файли на сервери і не маємо серверів для них.</li>
 <li><strong>Без акаунта.</strong> Ви не вказуєте ім'я, email чи телефон.</li>
-<li><strong>Застосунок показує рекламу Google AdMob.</strong> Щоб її показати, рекламне програмне забезпечення Google збирає дані про ваш пристрій (розділ 3). Це єдиний збір даних у застосунку.</li>
-<li><strong>Немає власної аналітики чи звітів про збої</strong> (немає Firebase Analytics, Crashlytics, Facebook SDK тощо).</li>
+<li><strong>Застосунок показує рекламу Google AdMob.</strong> Щоб її показати, рекламне програмне забезпечення Google збирає дані про ваш пристрій (розділ 3).</li>
+<li><strong>Дані збирають два компоненти Google:</strong> AdMob (реклама, розділ 3) і ML Kit (сканер документів, технічна діагностика, розділ 2.1). Ми самі не збираємо жодних даних.</li>
+<li><strong>Немає власної аналітики чи звітів про збої</strong> (немає Firebase Analytics, Crashlytics, Facebook SDK тощо). Технічну діагностику сканера збирає Google ML Kit, а не ми.</li>
 <li><strong>Немає хмарного резервного копіювання:</strong> автоматичне резервне копіювання Android вимкнено (<code>allowBackup=false</code>).</li>
 </ul></div>
 
@@ -53,6 +54,8 @@ section{scroll-margin-top:1rem}
 <li>Для перегляду результату застосунок може створювати тимчасову копію PDF у власному кеші; вона не залишає пристрій.</li>
 <li>Сканер документів використовує Google ML Kit Document Scanner, що надається через сервіси Google Play. За інформацією Google, сканування та обробка зображень виконуються на пристрої; готові сторінки передаються застосунку, який зберігає скан як PDF у власному закритому сховищі на пристрої (і додає його до списку «Останні»). Копію можна зберегти чи надіслати куди завгодно. Ми не отримуємо і не зберігаємо ваші скани.</li>
 </ul>
+<h3>2.1 Дані, які збирає Google ML Kit (сканер)</h3>
+<p>Сканер працює через сервіси Google Play. За офіційною інформацією Google, ML Kit збирає для діагностики й аналітики використання: інформацію про пристрій (виробник, модель, версія ОС і збірки, доступні апаратні прискорювачі машинного навчання); інформацію про застосунок (назва пакета, версія); ідентифікатор пристрою та ідентифікатори встановлення; показники продуктивності (наприклад, затримку); налаштування API (наприклад, формат і роздільність зображення); розмір вхідних і вихідних даних; версію функції; тип події (наприклад, ініціалізація, завантаження моделі, виявлення, звільнення ресурсів) і коди помилок. Передача шифрується (HTTPS), ML Kit не передає ці дані третім особам. Самі скани й документи цим не надсилаються. Докладніше: <a href="https://developers.google.com/ml-kit/android-data-disclosure">Google ML Kit: розкриття даних (Android)</a>.</p>
 
 <h2>3. Реклама (Google AdMob) і згода (Google UMP)</h2>
 <p>Застосунок безкоштовний і показує рекламу Google AdMob (Google Mobile Ads SDK): банер на головному екрані та екрані інструментів і, не частіше ніж раз на 5 хвилин, повноекранну рекламу після завершення дії в інструментах. Реклами немає під час читання документа й під час відкриття файлу.</p>
@@ -74,11 +77,11 @@ section{scroll-margin-top:1rem}
 <p>Ви можете скинути або видалити рекламний ідентифікатор і керувати персоналізацією реклами в налаштуваннях Android (Google, Реклама). Застосунок через рекламний SDK оголошує дозвіл на рекламний ідентифікатор (<code>AD_ID</code>).</p>
 
 <h2>4. Використання інтернету</h2>
-<p>У власному маніфесті застосунок запитує лише дозвіл <code>INTERNET</code>. Інтернет потрібен тільки рекламному програмному забезпеченню (реклама та форма згоди). Читання й редагування документів працює офлайн; без мережі реклама не показується.</p>
+<p>У власному маніфесті застосунок запитує лише дозвіл <code>INTERNET</code>. Інтернет потрібен рекламному програмному забезпеченню (реклама та форма згоди); технічну діагностику сканера надсилає Google ML Kit (розділ 2.1). Читання й редагування документів працює офлайн; без мережі реклама не показується.</p>
 
 <h2>5. Передавання даних і безпека</h2>
 <ul>
-<li>Дані, зібрані Google AdMob, обробляє Google за власними політиками. Ми не продаємо ваші дані.</li>
+<li>Дані, зібрані Google AdMob і Google ML Kit, обробляє Google за власними політиками. Ми не продаємо ваші дані.</li>
 <li>Обмін рекламного SDK з серверами Google відбувається через HTTPS.</li>
 <li>Ми нікому не передаємо ваші документи: вони не залишають пристрій.</li>
 <li>Застосунок може записувати в системний журнал Android технічні повідомлення (наприклад, тип помилки). Вони лишаються на пристрої й не надсилаються нам.</li>
@@ -106,14 +109,15 @@ section{scroll-margin-top:1rem}
 
 <section id="en" lang="en">
 <h1>Anti PDF Privacy Policy</h1>
-<p class="meta">Last updated: 2026-11-17<br>Application: Anti PDF (Volum PDF), package <code>com.savoj.volumpdf.anti</code><br>Developer contact: <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a></p>
+<p class="meta">Last updated: 2026-11-18<br>Application: Anti PDF, package <code>com.savoj.volumpdf.anti</code><br>Developer contact: <a href="mailto:appvsdeveloper@gmail.com">appvsdeveloper@gmail.com</a></p>
 
 <h2>1. Overview</h2>
 <div class="box"><ul>
 <li><strong>Your documents stay on your device.</strong> Reading, editing, signing, watermarking, compressing, merging, splitting, rotating and scanning are performed locally. We do not upload your files to any server and we do not operate servers for them.</li>
 <li><strong>No account.</strong> You do not give us your name, email or phone.</li>
-<li><strong>The app shows ads from Google AdMob.</strong> To show them, Google's advertising software collects some data about your device (section 3). This is the only data collection in the app.</li>
-<li><strong>No analytics or crash-reporting SDK of our own</strong> (no Firebase Analytics, Crashlytics, Facebook SDK or similar).</li>
+<li><strong>The app shows ads from Google AdMob.</strong> To show them, Google's advertising software collects some data about your device (section 3).</li>
+<li><strong>Two Google components collect data:</strong> AdMob (ads, section 3) and ML Kit (document scanner, technical diagnostics, section 2.1). We ourselves collect no data.</li>
+<li><strong>No analytics or crash-reporting SDK of our own</strong> (no Firebase Analytics, Crashlytics, Facebook SDK or similar). The scanner's technical diagnostics are collected by Google ML Kit, not by us.</li>
 <li><strong>No cloud backup:</strong> Android automatic backup is disabled (<code>allowBackup=false</code>).</li>
 </ul></div>
 
@@ -126,6 +130,8 @@ section{scroll-margin-top:1rem}
 <li>To show a result, the app may create a temporary copy of the PDF in its own cache; it never leaves the device.</li>
 <li>The document scanner uses the Google ML Kit Document Scanner, provided through Google Play services. Per Google, scanning and image processing run on the device; the scanned pages are handed to the app, which saves the scan as a PDF in its own private storage on your device (and adds it to the "Recent" list). You can save or share a copy anywhere you choose. We do not receive or store your scans.</li>
 </ul>
+<h3>2.1 Data collected by Google ML Kit (scanner)</h3>
+<p>The scanner runs through Google Play services. According to Google's official information, ML Kit collects for diagnostics and usage analytics: device information (manufacturer, model, OS version and build, available ML hardware accelerators); app information (package name, version); a device identifier and per-installation identifiers; performance metrics (for example latency); API configuration (for example image format and resolution); input and output size; feature version; event type (for example initialization, model download, detection, resource release) and error codes. The data is encrypted in transit (HTTPS) and ML Kit does not transfer it to third parties. Your scans and documents are not sent by this. Learn more: <a href="https://developers.google.com/ml-kit/android-data-disclosure">Google ML Kit data disclosure (Android)</a>.</p>
 
 <h2>3. Advertising (Google AdMob) and consent (Google UMP)</h2>
 <p>The app is free and shows ads from Google AdMob (Google Mobile Ads SDK): a banner on the home and tools screens and, at most once every 5 minutes, a full-screen ad after you finish an action in the tools. There are no ads while you read a document or when a file is opened.</p>
@@ -147,11 +153,11 @@ section{scroll-margin-top:1rem}
 <p>You can reset or delete the advertising ID and manage ad personalization in Android Settings (Google, Ads). Through the ads SDK the app declares the advertising ID permission (<code>AD_ID</code>).</p>
 
 <h2>4. Internet use</h2>
-<p>In its own manifest the app requests only the <code>INTERNET</code> permission. The internet is used only by the advertising software (ads and the consent form). Reading and editing documents works offline; when offline, no ads are shown.</p>
+<p>In its own manifest the app requests only the <code>INTERNET</code> permission. The internet is used by the advertising software (ads and the consent form); the scanner's technical diagnostics are sent by Google ML Kit (section 2.1). Reading and editing documents works offline; when offline, no ads are shown.</p>
 
 <h2>5. Data sharing and security</h2>
 <ul>
-<li>Data collected by Google AdMob is processed by Google under Google's policies. We do not sell your data.</li>
+<li>Data collected by Google AdMob and Google ML Kit is processed by Google under Google's policies. We do not sell your data.</li>
 <li>The ad SDK communicates with Google servers over HTTPS.</li>
 <li>We do not share your documents with anyone: they never leave your device.</li>
 <li>The app may write technical messages (for example an error type) to the Android system log. They stay on the device and are not sent to us.</li>
