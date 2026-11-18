@@ -1,0 +1,12 @@
+# Копія цього файла називається admob.properties (він у .gitignore і НІКОЛИ не потрапляє в git).
+# Заповни своїми значеннями з консолі AdMob. Реальні значення тут не вказуємо навмисно.
+# Без admob.properties release збирається з ТЕСТОВИМИ ID Google (з помітним попередженням).
+# debug завжди використовує тестові ID і цей файл ігнорує.
+# Покрокова інструкція: docs/release/ADMOB_SETUP.md
+
+# ID застосунку AdMob (Android). Має вигляд ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY (із тильдою ~)
+admob.appId=
+# ID рекламного блоку «Банер». Має вигляд ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY (зі слешем /)
+admob.bannerAdUnitId=
+# ID рекламного блоку «Interstitial» (повноекранний). Той самий вигляд зі слешем /
+admob.interstitialAdUnitId=

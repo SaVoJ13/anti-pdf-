@@ -135,7 +135,7 @@ class AdMobAdsManager(
         container.removeAllViews()
 
         val adView = AdView(activity).apply {
-            adUnitId = TEST_BANNER_AD_UNIT_ID
+            adUnitId = BuildConfig.ADMOB_BANNER_AD_UNIT_ID
         }
 
         // Обчислюємо адаптивний розмір банера
@@ -143,6 +143,9 @@ class AdMobAdsManager(
         val widthPixels = if (container.width > 0) container.width.toFloat() else displayMetrics.widthPixels.toFloat()
         val density = displayMetrics.density
         val adWidth = (widthPixels / density).toInt()
+        // Метод deprecated з 25.0.0 (заміна getLargeAnchoredAdaptiveBannerAdSize дає вищий банер і відео-попит):
+        // лишаємо перевірений розмір, щоб не міняти макет списків; див. DECISIONS.md (AdMob 25.5.0).
+        @Suppress("DEPRECATION")
         val adSize = AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity, adWidth)
         adView.setAdSize(adSize)
 
@@ -209,7 +212,7 @@ class AdMobAdsManager(
         try {
             InterstitialAd.load(
                 appContext,
-                TEST_INTERSTITIAL_AD_UNIT_ID,
+                BuildConfig.ADMOB_INTERSTITIAL_AD_UNIT_ID,
                 adRequest,
                 object : InterstitialAdLoadCallback() {
                     override fun onAdLoaded(interstitialAd: InterstitialAd) {
@@ -263,6 +266,8 @@ class AdMobAdsManager(
          */
         const val MAX_AD_CONTENT_RATING = RequestConfiguration.MAX_AD_CONTENT_RATING_PG
 
+        // Теги віку deprecated з 25.3.0; UNSPECIFIED = значення за замовчуванням, явна фіксація лишена свідомо (13+).
+        @Suppress("DEPRECATION")
         fun buildRequestConfiguration(): RequestConfiguration =
             RequestConfiguration.Builder()
                 .setMaxAdContentRating(MAX_AD_CONTENT_RATING)

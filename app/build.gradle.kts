@@ -48,8 +48,15 @@ android {
         }
     }
 
+    // AdMob Application ID у маніфест: debug завжди тестовий, release з admob.properties (див. кореневий build.gradle.kts)
+    @Suppress("UNCHECKED_CAST")
+    val admob = rootProject.extra["admob"] as Map<String, String>
     buildTypes {
+        debug {
+            manifestPlaceholders["admobAppId"] = admob.getValue("testAppId")
+        }
         release {
+            manifestPlaceholders["admobAppId"] = admob.getValue("releaseAppId")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -113,4 +120,51 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("org.mockito:mockito-core:5.15.2")
+}
+
+// Перевірка склеєного маніфесту: debug лише тестовий AdMob Application ID, release збігається з конфігурацією.
+// Падає при розбіжності. Підключено до check і (після збірки) до assemble/bundleRelease.
+@Suppress("UNCHECKED_CAST")
+val admobCfg = rootProject.extra["admob"] as Map<String, String>
+
+abstract class VerifyAdmobManifestTask : DefaultTask() {
+    @get:InputFile abstract val manifest: RegularFileProperty
+    @get:Input abstract val expectedAppId: Property<String>
+    @get:Input abstract val variantName: Property<String>
+    @get:Input abstract val testPublisher: Property<String>
+    @get:Input abstract val mustBeTest: Property<Boolean>
+
+    @TaskAction
+    fun verify() {
+        val text = manifest.get().asFile.readText()
+        val m = Regex("""com\.google\.android\.gms\.ads\.APPLICATION_ID"\s+android:value="([^"]*)"""").find(text)
+            ?: throw GradleException("AdMob: у склеєному маніфесті ${variantName.get()} немає APPLICATION_ID")
+        val actual = m.groupValues[1]
+        if (actual != expectedAppId.get()) {
+            throw GradleException("AdMob: Application ID у маніфесті ${variantName.get()} не збігається з очікуваним")
+        }
+        if (mustBeTest.get() && !actual.startsWith(testPublisher.get())) {
+            throw GradleException("AdMob: у ${variantName.get()} знайдено НЕ тестовий Application ID")
+        }
+        println("AdMob: маніфест ${variantName.get()} OK (${if (actual.startsWith(testPublisher.get())) "тестовий" else "бойовий"} Application ID)")
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val isDebug = variant.buildType == "debug"
+        val cap = variant.name.replaceFirstChar { it.uppercase() }
+        val t = tasks.register<VerifyAdmobManifestTask>("verifyAdmob${cap}Manifest") {
+            manifest.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.MERGED_MANIFEST))
+            expectedAppId.set(if (isDebug) admobCfg.getValue("testAppId") else admobCfg.getValue("releaseAppId"))
+            variantName.set(variant.name)
+            testPublisher.set(admobCfg.getValue("testPublisher"))
+            mustBeTest.set(isDebug)
+        }
+        if (isDebug) {
+            tasks.matching { it.name == "check" }.configureEach { dependsOn(t) }
+        } else {
+            tasks.matching { it.name == "assemble$cap" || it.name == "bundle$cap" }.configureEach { finalizedBy(t) }
+        }
+    }
 }

@@ -3,14 +3,14 @@
 > Чернетка для Власника, форму в Play Console заповнює Власник. Форму подано в Play Console 2026-11-18 (на розгляді Google). Відповідь про видалення даних у поданій формі поки «Так»; її буде змінено на «Ні» разом з RC2, після завершення поточної перевірки Google (зміну в консолі робить координатор з Власником; цей документ уже містить цільову відповідь «Ні»). Звірено з кодом 2026-11-16; звірку зі сторінками Google повторено **2026-11-18**.
 >
 > **Версії SDK і дата звірки (2026-11-18):**
-> - AdMob: `play-services-ads:23.6.0` (з `core-ads/build.gradle.kts`). Актуальна сторінка Google https://developers.google.com/admob/android/privacy/play-data-disclosure описує Google Mobile Ads SDK **25.5.0**; сторінка охоплює лише поточну версію. На сторінці зазначено Last updated 2026-11-17 UTC; у службовому блоці сторінки згадується SDK 23.6.0, у тексті 25.5.0; звірку для 23.6.0 слід повторити після оновлення SDK. Різниці в категоріях даних між 23.6.0 і 25.5.0 з сторінки встановити не можна: НЕ ПЕРЕВІРЕНО.
+> - AdMob: `play-services-ads:25.5.0` (з `core-ads/build.gradle.kts`, оновлено з 23.6.0 на гілці `fix/stage1-ads-16kb`). Сторінка Google https://developers.google.com/admob/android/privacy/play-data-disclosure описує саме Google Mobile Ads SDK **25.5.0** («latest»); отримано 2026-11-18; у підвалі сторінки зазначено «Last updated 2026-11-17 UTC.» (підтверджено незалежним QA у сирому HTML). **Повторну звірку для 25.5.0 виконано 2026-11-18** (розд. 5). Сторінка охоплює лише поточну версію, тож порівняння «23.6.0 проти 25.5.0» зі сторінки неможливе (НЕ ПЕРЕВІРЕНО); перевірено 25.5.0 проти цього документа.
 > - ML Kit Document Scanner: `play-services-mlkit-document-scanner:16.0.0-beta1` (з `app/build.gradle.kts`). Сторінка Google https://developers.google.com/ml-kit/android-data-disclosure (редакція 14 травня 2025) охоплює лише останні версії SDK і Document Scanner окремо не згадує; віднесення сканера до функцій, що працюють через Google Play services (там ідентифікатори: пристрою та встановлення), є висновком, не прямим текстом сторінки.
-> - Google UMP: `user-messaging-platform:3.1.0` (власних даних для Data safety не додає).
+> - Google UMP: `user-messaging-platform:4.0.0` (власних даних для Data safety не додає; окремої сторінки розкриття даних для UMP при звірці не знайдено: НЕ ПЕРЕВІРЕНО).
 
 **Application:** Anti PDF
 **Package:** `com.savoj.volumpdf.anti`
 **Min / target SDK:** 28 / 36
-**SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:23.6.0`), Google UMP (`com.google.android.ump:user-messaging-platform:3.1.0`), Google ML Kit Document Scanner (`com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1`, працює через Google Play services; збирає технічну діагностику; застосунок скани не передає).
+**SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:25.5.0`), Google UMP (`com.google.android.ump:user-messaging-platform:4.0.0`), Google ML Kit Document Scanner (`com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1`, працює через Google Play services; збирає технічну діагностику; застосунок скани не передає).
 **Інші SDK:** PdfBox-Android, androidx.pdf, Room (усе локально); `com.google.android.gms:play-services-oss-licenses:17.1.0` (лише показ ліцензій на екрані, мережевого збору даних не додає).
 **Резервне копіювання:** `allowBackup="false"` (рішення Власника 2026-11-14); `dataExtractionRules` / `fullBackupContent` не задано, бо автокопіювання вимкнено.
 **Дозволи у власному маніфесті:** лише `INTERNET`. Склеєний маніфест релізу перевірено, дивись `docs/project_log.md` (запис release-prep).
@@ -36,7 +36,7 @@
 - **Не збираються і не передаються.** PDF, зображення та результати сканера обробляються локально. Сканер (Google ML Kit Document Scanner) працює через Google Play services. Застосунок не завантажує скани й не передає їх на власні сервери. Прямого підтвердження «обробка лише на пристрої» від Google немає: НЕ ПЕРЕВІРЕНО. Технічну діагностику сканера збирає ML Kit (дивись 2.3 і 2.5); самі скани й документи не надсилаються.
 
 ### 2.2 Location
-- **Approximate location:** збирається AdMob (з IP). Передається. **Обов'язково (Required)**. Цілі: Advertising or marketing; Fraud prevention, security and compliance.
+- **Approximate location:** збирається AdMob (з IP). Передається. **Обов'язково (Required)**. Цілі: Advertising or marketing; Analytics; Fraud prevention, security and compliance. (Analytics додано 2026-11-18: сторінка Google для 25.5.0 називає цілі «advertising, analytics, fraud prevention» для всієї групи типів, включно з IP-адресою.)
 
 ### 2.3 Device or other IDs
 - **Device or other IDs** (рекламний ID, app set ID, ідентифікатори пристрою/додатка SDK): збирається AdMob. Передається. **Обов'язково (Required)**. Цілі: Advertising or marketing; Fraud prevention, security and compliance; Analytics.
@@ -64,7 +64,12 @@ Google UMP показує форму в ЄЕЗ/Великій Британії/�
 Реліз тягне дозвіл `com.google.android.gms.permission.AD_ID` через SDK реклами (підтвердження зі склеєного маніфесту в журналі). У Play Console: App content / Advertising ID: так, застосунок використовує рекламний ID для реклами.
 
 ## 5. Повторна звірка після оновлення SDK
-- **Повторна звірка після оновлення AdMob SDK до 25.x: обов'язкова.** Поточна звірка зроблена для 23.6.0 (див. шапку); після підняття `play-services-ads` до 25.x повторити звірку категорій даних зі сторінкою Google й за потреби виправити цей документ і форму.
+- **Виконано 2026-11-18 для AdMob 25.5.0** (джерело: https://developers.google.com/admob/android/privacy/play-data-disclosure, отримано 2026-11-18). Сторінка перелічує: IP-адреса (може слугувати для оцінки загального місцезнаходження), взаємодія з продуктом (запуск, тапи, перегляди відео), діагностика (час запуску, hang rate, енергоспоживання), ідентифікатори пристрою й облікових записів (рекламний ID Android, app set ID, за наявності інші ідентифікатори входу на пристрої). Цілі названо для групи загалом: реклама, аналітика, запобігання шахрайству. Шифрування: TLS. Рекламний ID: збір необов'язковий, розробник може заборонити через маніфест.
+- **Збіг із документом:** типи (approx location з IP; Device or other IDs; App interactions; Diagnostics), Required, шифрування у дорозі, «Crash logs не збираються»: збігаються.
+- **Розбіжність 1 (виправлено в документі):** Approximate location мала цілі Advertising + Fraud prevention; сторінка називає ще Analytics. Додано Analytics (п. 2.2).
+- **Розбіжність 2 (рішення координатора, не змінено):** сторінка не розрізняє «collected» і «shared»; заголовок говорить «collects and shares». Позначення «Передається» (shared) для AdMob лишено як було.
+- **Що змінити у формі Play Console (робить координатор із власником; форму я не чіпав):** у типі «Approximate location» додати мету «Analytics» до вже вибраних «Advertising or marketing» і «Fraud prevention, security and compliance». Інших змін типів/цілей для AdMob 25.5.0 не виявлено.
+- **НЕ ПЕРЕВІРЕНО:** різниця між 23.6.0 і 25.5.0 (сторінка для старої версії недоступна); чи вимагають правила Google «Analytics» для approx location окремо від тексту групи.
 
 ## 6. Що вирішує Власник
 - Остаточні відповіді у формі Data safety (після звірки з актуальною сторінкою Google).
