@@ -3,6 +3,10 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-14 (`main` = `067bc41`, після злиття PR #1 `feature/qa-full-main-check`; раніше 2026-11-13: `Owner Approved` Етапу 4 `feature/qa-markup`; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-18: Data safety (видалення «Ні») і повний екран ліцензій (гілка `fix/stage1-licenses`, чекає незалежного QA)
+- `DATA_SAFETY.md`: відповідь про видалення даних «Ні» з поясненням, застарілі фрази прибрано, додано «повторна звірка після AdMob 25.x обов'язкова». Форму в Play Console не змінено: це дія координатора з власником разом з RC2.
+- Екран ліцензій: тексти в `assets/licenses/` + плагін/екран `oss-licenses` для SDK Google і транзитивних залежностей; `THIRD_PARTY.md` звірено з `releaseRuntimeClasspath` (BC фактично 1.72). Факти й НЕ ПЕРЕВІРЕНО: `project_log.md`, запис 2026-11-18 «повторна перевірка Етапу 1». **Не злито:** потрібні «QA Verified» незалежного агента й зелений CI.
+
 ## Оновлення 2026-11-18: мови інтерфейсу en/uk/de/ru/es (гілка `feat/localization-de-ru-es`, чекає незалежного QA)
 - Додано іспанську (`values-es`, 345 рядків + 6 множин), вичитано de і ru, per-app language (`locales_config.xml`), перевірки паритету й lint (`MissingTranslation`/`ExtraTranslation` = error). `:app` 408/0/0/0; lint 0 помилок. Код політики приватності й реклами не змінено.
 - **Не злито:** потрібні незалежний QA і `QA Verified`. **НЕ ПЕРЕВІРЕНО:** телефон (не підключений) для de/ru/es, шрифт 1.3, per-app language на пристрої; переклад не вичитаний носіями. **Власнику:** підключити телефон; вичитка носіями; опис es і примітки до випуску в Play Console (зробить координатор з власником).

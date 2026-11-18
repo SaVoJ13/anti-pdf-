@@ -34,7 +34,7 @@ object LicensesDialogHelper {
     /** Склеює розділи; [open] віддає потік за іменем файла. Чиста функція (без Android) для тестів. */
     fun buildLicensesText(open: (String) -> InputStream): String =
         ASSET_FILES.joinToString(separator = "\n\n") { name ->
-            open(name).bufferedReader(Charsets.UTF_8).use { it.readText() }.trimEnd()
+            open(name).bufferedReader(Charsets.UTF_8).use { it.readText() }.replace("\r\n", "\n").trimEnd()
         }
 
     fun showLicensesDialog(context: Context) {
