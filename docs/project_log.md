@@ -36,6 +36,11 @@
 **Телефон (RZCX326349A, debug, `pm clear` перед запуском)**: `phone.lock` взято й видалено; запуск без падіння; форма UMP показана (натиснуто «Consent»), потім банер «Тестове оголошення / This is a 320x50 test ad» (пізніше 468x60); у меню ⋮ є «Налаштування конфіденційності» і відкриває форму UMP. Перед кожним тапом знімок екрана. `screen_off_timeout` 30000, `font_scale` 1.0, `accelerometer_rotation` 1, `user_rotation` 0 до й після; збірку з телефона видалено (`adb uninstall` Success); знімки видалено. У logcat `FATAL`/`AndroidRuntime` немає; є попередження «Google Mobile Ads SDK will not integrate with Firebase» (Firebase у застосунку немає).
 - НЕ ПЕРЕВІРЕНО: interstitial на телефоні; release-збірка на телефоні; поведінка UMP саме в ЄЕЗ (форма показана на цьому пристрої, країну не змінював); ML Kit Document Scanner 16.0.0 (стабільна є, не оновлював).
 
+**Після QA (`QA Verified` @ `253b299`, дефектів високого й середнього рівня немає): виправлено в docs і беклог**
+- L-b: у шапці `DATA_SAFETY.md` вказано «Last updated 2026-11-17 UTC» зі сторінки AdMob, фразу про «розбіжність, не з'ясовано» прибрано.
+- L-c: у `THIRD_PARTY.md` додано рядок про `hsdp` 2.0.1 (транзитивно від `play-services-ads-api` 25.5.0; за документацією Google інлайн-встановлення з Google Play). НЕ ПЕРЕВІРЕНО: чи збирає вона дані поза сторінкою розкриття AdMob.
+- Беклог: (1) L-a: попередження про тестові AdMob ID друкується й для `:app:dependencies` (фільтр за словом «release» у назві конфігурації); (2) немає автоматичного тесту «release без `admob.properties`» (перевірено лише вручну); (3) перевірка banner, interstitial і форми UMP 4.0.0 у release-збірці на пристрої (з RC2); (4) чи Google Play прийме `<queries>` для `com.android.vending` (перевіряється при RC2).
+
 **Що передати далі**: незалежний QA (`QA Verified` до злиття); координатору: зміна Data safety (Approximate location + Analytics), питання про `queries` Google Play; власнику: створити застосунок і два блоки в AdMob, коли захоче (`ADMOB_SETUP.md`).
 
 ## 2026-11-18 (мердж) — Керівник проєкту: `fix/stage1-licenses` злито в `main`
