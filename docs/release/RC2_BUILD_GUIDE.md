@@ -72,7 +72,7 @@ Select-String -Path ".\app\build\intermediates\merged_manifests\release\processR
 ```
 Очікуєш два рядки: `android:versionCode="2"` і `android:versionName="1.0.1"`.
 
-3.3. Файл справді підписаний. Команди `jarsigner` і `keytool` входять у JDK 21 (якщо PowerShell їх не знаходить, запускай з папки `bin` твого JDK 21, наприклад `& "$env:JAVA_HOMEin\jarsigner.exe" ...`):
+3.3. Файл справді підписаний. Команди `jarsigner` і `keytool` входять у JDK 21 (якщо PowerShell їх не знаходить, запускай з папки `bin` твого JDK 21, наприклад `& "$env:JAVA_HOME\bin\jarsigner.exe" ...`):
 ```powershell
 jarsigner -verify $aab
 ```
