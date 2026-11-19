@@ -3,6 +3,11 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-14 (`main` = `067bc41`, після злиття PR #1 `feature/qa-full-main-check`; раніше 2026-11-13: `Owner Approved` Етапу 4 `feature/qa-markup`; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-19: реліз-кандидат RC2, 1.0.1 (гілка `release/rc2`, чекає незалежного QA)
+- Версія 2 / 1.0.1. У `main` після RC1 злито: de/ru/es, екран ліцензій, AdMob 25.5.0 + UMP 4.0.0, поділ тестових/бойових ID. Release збирається з тестовими AdMob ID (свідомо, закритий тест). Підписаний AAB збирає власник за `docs/release/RC2_BUILD_GUIDE.md`; тексти консолі: `docs/store/RELEASE_NOTES_RC2.md`, кроки: `docs/release/RC2_CHECKLIST.md`.
+- Факти: `:app` 414/0/0/0, `:core-pdf` 107/0/0/1 пропущено, `:core-ads` 9/0/0/0, lint 0 помилок, `bundleRelease` успішний (AAB 16 320 218 байт, непідписаний). **Не злито:** потрібен `QA Verified` іншого агента.
+- НЕ ПЕРЕВІРЕНО: усе на телефоні (там стоїть Play-версія 1.0.0 з іншим підписом; debug поставити не можна, рішення за координатором); підпис ключем власника; `<queries>`/`HsdpShimActivity` для декларацій Play.
+
 ## Оновлення 2026-11-18: AdMob 25.5.0, поділ ID, 16 KB (гілка `fix/stage1-ads-16kb`, чекає незалежного QA)
 - `play-services-ads` 25.5.0, UMP 4.0.0; `uses-permission` 9 → 9 (без змін); `THIRD_PARTY.md`, `DATA_SAFETY.md` перезвірено (одна розбіжність: Approximate location + Analytics; форму не змінено). Debug завжди тестові ID; release бере бойові лише з локального `admob.properties` (без файла тестові + попередження; `-Pproduction=true` вимагає бойові). Інструкція: `docs/release/ADMOB_SETUP.md`. `.so` у release немає: `docs/release/ELF_16KB_CHECK_2026-11-18.md`.
 - Факти: `:app` 414/0/0/0, `:core-pdf` 107/0/0/1 пропущено, `:core-ads` 9/0/0/0, lint 0 помилок. Телефон: тестова реклама, UMP, пункт конфіденційності працюють. **Не злито:** потрібен `QA Verified` іншого агента. НЕ ПЕРЕВІРЕНО: interstitial, release на телефоні.
