@@ -1,3 +1,44 @@
+## 2026-11-23 — Керівник проєкту: зупинка сесії та передача D2
+
+**Простими словами**
+- На окремій гілці підготовлено наступний зріз редизайну бібліотеки D2.
+- Пошук, фільтр «Обране» та порожня бібліотека тепер мають різні зрозумілі стани.
+- Дії бібліотеки приховуються на вкладці «Інструменти», а підписи доступності уточнені.
+- Збірка, 420 тестів застосунку, 214 тестів PDF-ядра й Lint пройшли без помилок.
+- Незалежний QA був запущений, але зупинений на пряме прохання Власника; статус `QA Verified` D2 не надано.
+- На нестабільному Android 16 емуляторі підтверджено порожній екран бібліотеки, але повторні ANR не дозволяють вважати це device proof.
+- D2 на телефон не встановлено; активна Play-копія не змінена, окрема D1 QA-копія лишається встановленою.
+
+**Що зроблено**
+- Створено гілку `codex/redesign-d2-library` поверх перевіреного коду D1 та коміт `6ad52f5` (`feat: refine redesigned library states`).
+- Бібліотечні Search / Filter & order / Clear history приховуються на вкладці Tools; toolbar отримує контекстну назву.
+- Додано окремий стан без обраних документів і одну дію скидання активних пошуку/фільтра; «Очистити історію» більше не залежить від порожнього результату фільтра.
+- Для favorite/more actions встановлено правдиві TalkBack-підписи; декоративні зображення вилучено з accessibility tree; лічильник документів форматується за локаллю.
+- Додано однакові D2-рядки en/uk/de/es/ru та unit/regression checks.
+
+**Що змінено**
+- Код/ресурси D2: `HomeLogic`, `MainActivity`, `MainViewModel`, `RecentsFragment`, `RecentsAdapter`, два layout, п'ять локалей і `HomeOnboardingTest`.
+- Фінальний локальний прогін на JDK 21: `:app:assembleDebug :app:testDebugUnitTest :core-pdf:test :app:lintDebug` = `BUILD SUCCESSFUL`.
+- XML Gradle: app 420 tests / 0 failures / 0 errors / 0 skipped; core-pdf 214 / 0 / 0 / 2 skipped. Lint XML: 0 errors, 149 warnings.
+- Android 16/API 36 emulator: онбординг відкрився, UMP test form відкрилась, порожня Library візуально коректна. До запуску застосунку вже був `System UI isn't responding`; пізніше `MainActivity` отримала input-dispatch ANR. Debug-копію з емулятора видалено.
+
+**Рішення**
+- Не ставити D2 `QA Verified`: незалежний QA не завершився через команду Власника зупинити роботу.
+- Не вважати нестабільний emulator-5554 доказом device gate; його `sys.boot_completed=1` не скасовує System UI ANR.
+- Не встановлювати D2 на S24 Ultra після команди зупинки. Google Play/closed test не змінювати.
+
+**Що передати далі**
+- Claude має почати з обов'язкового startup-протоколу AGENTS.md, перевірити гілку `codex/redesign-d2-library` і коміт `6ad52f5`, а потім повторно запустити незалежний QA D2 на JDK 21.
+- Після QA без блокерів зібрати окрему debug QA-копію з іншим applicationId, встановити її на S24 Ultra, не замінюючи `com.savoj.volumpdf.anti`, і перевірити Library/Tools, пошук, filter/sort, empty/no-results/favorites, FAB, banner, light/dark, 150–200% font та TalkBack.
+- Після device proof і QA перейти до D3: групи «Створити», «Сторінки», «Оформити й оптимізувати», не змінюючи 11 `ToolType` і маршрути.
+
+**Відкриті питання**
+- Чи був emulator-5554 запущений Власником/Android Studio; через системний ANR його не використовувати як чистий доказ без cold boot і стабільного повторного прогону.
+- Окрема `com.savoj.volumpdf.anti.d1qa` лишається на телефоні; видаляти її лише після рішення, чи потрібна вона для завершення D1 device gate.
+
+**НЕ ПЕРЕВІРЕНО**
+- Незалежний QA D2; D2 на фізичному S24 Ultra; TalkBack; 150%/200% font; dark mode; landscape; search/filter/sort/favorites із реальними документами; banner/FAB після усіх state transitions; Android 9–11.
+
 ## 2026-11-23 — Керівник проєкту: закриття кодової частини D1
 
 **Простими словами**

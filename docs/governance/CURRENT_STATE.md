@@ -1,7 +1,17 @@
 # CURRENT_STATE — знімок проєкту Anti PDF
 
-> За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D1 у `codex/redesign-d1-foundation` = `bcbffde`, код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
+> За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
+
+## Оновлення 2026-11-23: D2 — реалізація є, QA і device gate не завершені
+- Гілка `codex/redesign-d2-library`, коміт `6ad52f5`, побудована поверх D1. Робоче дерево після закриття сесії чисте до обов'язкових документів закриття.
+- Реалізовано контекстний toolbar Library/Tools, правильні empty/search/favorites states, спільне скидання пошуку/фільтра, незалежний від фільтра стан Clear history, динамічні a11y labels і locale-aware count.
+- Додано/оновлено рядки en/uk/de/ru/es; `ToolType`, PDF-контракти, дозволи, реклама, версія та Play Console не змінені.
+- JDK 21: assembleDebug + app tests + core-pdf tests + lint = green. XML: app 420/0/0/0; core-pdf 214/0/0/2; lint 0 errors/149 warnings.
+- Незалежний QA-субагент запущено, але перервано на пряме прохання Власника «припини роботу»; **D2 НЕ QA Verified**.
+- Android 16/API 36 emulator показав коректний empty Library і UMP, але сам емулятор мав System UI ANR ще до тесту, а далі input ANR застосунку; це **НЕ device proof**. Встановлену debug-копію з емулятора видалено.
+- На S24 Ultra лишаються активна `com.savoj.volumpdf.anti` та окрема D1 QA-копія `com.savoj.volumpdf.anti.d1qa`. D2 на телефон **не встановлено**.
+- **НЕ ПЕРЕВІРЕНО:** незалежний QA D2, D2 на S24, реальні recent/search/filter/sort/favorite flows, light/dark, landscape, 150–200% font, TalkBack, Android 9–11.
 
 ## Оновлення 2026-11-23: D1 — код QA Verified, device gate очікує
 - У гілці `codex/redesign-d1-foundation` реалізовано власні `LibraryLicensesActivity`/detail на generated OSS metadata/blob; runtime `play-services-oss-licenses` видалено, build-time plugin лишено.
