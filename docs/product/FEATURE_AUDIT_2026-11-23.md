@@ -10,7 +10,7 @@
 
 | Екран | Фактичні можливості | Основні власники в коді |
 |---|---|---|
-| Онбординг | 3 сторінки; пропуск; після запуску з зовнішнього PDF не блокує відкриття | `ui/onboarding/OnboardingActivity.kt`, `OnboardingLogic.kt` |
+| Онбординг | 3 сторінки: читання; редагування/інструменти; локальність файлів + AdMob/приватність; пропуск; зовнішній `ACTION_VIEW` з PDF не блокується | `ui/onboarding/OnboardingActivity.kt`, `OnboardingLogic.kt` |
 | Головний контейнер | ViewPager2; Бібліотека/Інструменти; app bar; banner; FAB-кластер | `ui/main/MainActivity.kt`, `res/layout/activity_main.xml` |
 | Бібліотека | продовжити читання, недавні, пошук, обране, сортування, очистити історію, Open/Create/Scan | `RecentsFragment.kt`, `RecentsAdapter.kt`, `MainViewModel.kt`, `HomeLogic.kt` |
 | Інструменти | 11 карток, див. повний список нижче | `ToolsFragment.kt`, `ToolsAdapter.kt` |
@@ -26,7 +26,7 @@
 ## 3. Фактичні входи й переходи
 
 - Launcher → `MainActivity`; перший звичайний запуск → `OnboardingActivity` → назад у Main.
-- `ACTION_VIEW`/`ACTION_EDIT` з PDF обходить онбординг і відкриває `ReaderActivity`.
+- Зовнішній `ACTION_VIEW` з PDF (саме він оголошений у manifest) обходить онбординг і відкриває `ReaderActivity`. `MainActivity` також захисно обробляє `ACTION_EDIT`, але intent-filter для зовнішнього `ACTION_EDIT` не оголошений.
 - Бібліотека → системний SAF picker → Читач.
 - Create blank → локальний односторінковий PDF → Читач.
 - Scan → Сканер → Читач.
@@ -81,7 +81,7 @@
 - `AdaptiveGrid`, `AdaptiveLayoutLogic`, `MaxWidthLinearLayout` уже дають адаптивні колонки й максимальну ширину 840 dp.
 - Основні XML-кнопки здебільшого мають 48 dp.
 - Статична індиго/графітова палітра має JVM-перевірку контрасту.
-- Banner живе тільки в головному контейнері й стає `GONE` при помилці/відмові.
+- Banner живе у головному контейнері та `ToolsActivity`; `AdMobAdsManager` робить контейнер `GONE` до завантаження й при помилці/неможливості запиту.
 - Reader має polite live-region для сторінки й кілька корисних accessibility descriptions.
 
 ## 7. UX-борг, підтверджений кодом

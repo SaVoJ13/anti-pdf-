@@ -11,7 +11,7 @@
 - `HomeLibrary`: Anti PDF + Search + Filter/Sort + Settings;
 - `HomeTools`: Інструменти + Settings, без бібліотечних команд;
 - `Detail`: Back + Title + optional primary action + Overflow;
-- `Edit`: Cancel/Back + filename/unsaved state + Save.
+- `Edit`: Back/Done + filename/unsaved state + Add + Save.
 
 Правила: висота формується контентом та top inset; назва файла скорочується, але має повне accessibility name; overflow не містить дубль основної видимої дії.
 
@@ -131,7 +131,7 @@ Thumbnail, page number, selected state, drag handle, overflow/rotate. Accessibil
 
 ### `ScanResultList`
 
-Page thumbnail list, reorder, rotate, rescan/delete, filename. Camera permission і scanner availability пояснюються в момент дії; fallback не виглядає як помилка користувача.
+Page thumbnail list, reorder, rotate, rescan/delete, filename. Scanner availability пояснюється в момент дії; Anti PDF не додає власний `CAMERA` permission, а fallback через системний вибір зображень не виглядає як помилка користувача.
 
 ## 7. Зворотний зв’язок
 

@@ -6,7 +6,7 @@
 
 | ID | Сценарій | Критерій успіху |
 |---|---|---|
-| AC-01 | Перший запуск | 3 сторінки онбордингу читаються при 150% шрифті; Пропустити й Почати ведуть у Бібліотеку; UMP не перекривається онбордингом |
+| AC-01 | Перший запуск | 3 сторінки (читання; редагування/інструменти; локальність файлів + AdMob/приватність) читаються при 150% шрифті; Пропустити й Почати ведуть у Бібліотеку; UMP запускається лише після онбордингу й не перекриває його |
 | AC-02 | Відкрити PDF | З Бібліотеки файл вибирається через SAF, відкривається в Читачі, системний Назад повертає без втрати стану |
 | AC-03 | Пошук недавніх | Результат оновлюється, no-results state зрозумілий, закриття пошуку повертає повний список |
 | AC-04 | Редагувати й зберегти | Текст додається, незбережений стан видимий, копія зберігається, оригінал не пошкоджено |
@@ -23,7 +23,7 @@
 
 | Вимір | Значення |
 |---|---|
-| Android | 9 (API 28), 11 (API 30), актуальний на Galaxy S24 Ultra |
+| Android | API 28; API 30/31; API 34; API 35; API 36; актуальна версія Android на Galaxy S24 Ultra |
 | Ширина | 320, 360, 411 dp; 600+ dp; 840+ dp для адаптивних ресурсів |
 | Орієнтація | портрет, ландшафт |
 | Тема | світла, темна, системна; dynamic color on/off де підтримано |
@@ -54,19 +54,20 @@
 | A11Y-09 | Reduced motion | функція не залежить від анімації; зайвий рух вимикається |
 | A11Y-10 | Editor objects | кожен об’єкт має virtual node/доступний список із selected state та діями без drag/pinch |
 | A11Y-11 | Speed dial | фон недоступний під час відкриття; фокус входить у дії й повертається на opener |
-| A11Y-12 | Signature/drawing | custom canvas не створює пастку; існує доступна альтернатива або чесне обмеження |
+| A11Y-12 | Signature/drawing | custom canvas не створює пастку; для критичного сценарію існує доступна кнопкова/імпортна/текстова альтернатива |
 
 ## 4. Повнота функцій
 
 Після редизайну мають залишитися доступними:
 
 - Library: open, recent history, search, filter/sort, favorite, clear history;
-- appearance/legal/privacy: theme, dynamic colors, consent/privacy, OSS licenses;
-- reader: read, page navigation, search, favorite, save/save copy, share, print, details;
-- markup: text, freehand, ✓/✗, image, signature, select/edit/delete, undo/redo;
+- appearance/legal/privacy: тема оболонки, dynamic colors, Day/Night/Sepia для сторінок, consent/privacy, OSS licenses;
+- reader: read, continue/restore progress, page navigation, zoom, search, favorite, save/save copy, share, print, details;
+- markup: text, freehand і пресети, ✓/✗, image, signature, select/edit/move/resize/delete, параметри кольору/розміру, undo/redo;
 - forms: виявлення, навігація, заповнення, збереження підтриманих AcroForm-полів;
 - pages/tools: blank, scan, organize, merge, split, rotate, delete, images-to-PDF, watermark, page numbers, compress;
-- reader add/actions: add page, add image, insert file та всі фактично підтримані дії з карти функцій.
+- reader add/actions: add page, add image, insert file, scan та всі фактично підтримані дії з карти функцій;
+- document access: password flow, read-only reason, encrypted-copy rules і єдине збереження без зміни контрактів R15/§1.5.
 
 Втрата маршруту до будь-якої функції — блокуючий дефект, навіть якщо сама реалізація лишилася в коді.
 
