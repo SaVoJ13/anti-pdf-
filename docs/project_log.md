@@ -1,3 +1,45 @@
+## 2026-11-23 — QA і безпека: повторна незалежна перевірка D1 після виправлень
+
+**Простими словами**
+- Незалежно повторно перевірено фундамент редизайну D1 після двох виправлень.
+- Усі інтерактивні елементи цього зрізу тепер мають спільну ціль 48 dp; мертвий control прибрано.
+- Пошкоджені або неповні дані ліцензій більше не можуть мовчки приховати юридичний запис.
+- Debug і release збираються; XML містить 633 tests, 0 failures/errors і 2 skipped; lint не має errors.
+- Release містить 196 валідних записів ліцензій і не містить Google OSS Activity/runtime-бібліотеки.
+- Дозволи, AdMob, PDF-контракти, версія застосунку й п'ять локалей не отримали небажаних змін.
+- Код D1 отримав **QA Verified**; перевірка на Galaxy S24 Ultra та AVD лишається **НЕ ПЕРЕВІРЕНО**.
+
+**Що зроблено**
+- Як окремий QA-агент перевірено коміти `c0552c4` і виправлення `59e0096` відносно бази `733cb52`.
+- Повторно переглянуто fail-closed parser, byte bounds, strict UTF-8, непорожні юридичні тексти, lifecycle guards, Back, edge-to-edge/insets, теми, масштабування тексту та 48 dp targets.
+- Перевірено release metadata/blob: 196 entries, 435170 байт, 0 malformed/out-of-bounds/empty/invalid-UTF-8 entries.
+- Release merged manifest: 9 дозволів, обидві власні legal Activity мають `exported=false`, Google OSS Activity відсутня.
+
+**Що змінено**
+- Продуктовий код не змінювався; додано лише цей незалежний QA-запис.
+
+**Перевірки**
+- JDK 21: `:app:assembleDebug :app:testDebugUnitTest :core-pdf:test :app:lintDebug` — `BUILD SUCCESSFUL`.
+- Примусовий незалежний повтор: `:app:testDebugUnitTest :core-pdf:test --rerun-tasks` — `BUILD SUCCESSFUL`, 83/83 Gradle tasks executed.
+- XML Gradle: `:app` 419 tests, 0 failures, 0 errors, 0 skipped; `:core-pdf` debug 107/0/0/1 і release 107/0/0/1, разом 214/0/0/2.
+- lint XML: 0 errors, 152 warnings; warnings не є новим блокером D1.
+- `:app:assembleRelease` — `BUILD SUCCESSFUL`; release APK 17393221 байт, тестовий AdMob Application ID.
+- `dependencyInsight`: `play-services-oss-licenses` відсутній у `releaseRuntimeClasspath`.
+
+**Рішення**
+- **QA Verified** для коду D1 у `c0552c4` + `59e0096`; два попередні QA-блокери усунено.
+- Не закривати етапний device gate D1/L7 до фактичного проходження на пристрої/емуляторах.
+
+**Що передати далі**
+- Агенту 0 можна готувати злиття після перевірки гігієни журналів і зеленого CI.
+- Коли Galaxy S24 Ultra або AVD стане доступним, перевірити Back, cutout/system bars, light/dark, font scale 200% і TalkBack на списку та деталях ліцензій.
+
+**Відкриті питання**
+- Блокерів коду, збірки, юридичних даних чи manifest/runtime-залежностей не знайдено.
+
+**НЕ ПЕРЕВІРЕНО**
+- Фактичний вигляд і поведінка на Galaxy S24 Ultra, Android 9–11/емуляторах, TalkBack, font scale 200%, cutout та gesture/3-button navigation: телефон не підключений, AVD відсутній.
+
 ## 2026-11-23 — Android і UI: виправлення блокерів незалежного QA D1
 
 **Простими словами**
