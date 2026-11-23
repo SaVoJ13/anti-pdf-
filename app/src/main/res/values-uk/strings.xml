@@ -13,6 +13,7 @@
     <string name="action_continue_reading">Продовжити</string>
     <string name="section_recent_documents">Нещодавні</string>
     <string name="action_clear_search">Скинути пошук</string>
+    <string name="action_show_all_documents">Показати всі документи</string>
     <string name="dialog_jump_to_page_title">Перейти до сторінки</string>
     <string name="dialog_jump_to_page_hint">Сторінка (1–%1$d)</string>
     <string name="action_go">Перейти</string>
@@ -32,6 +33,8 @@
     <string name="empty_recents_desc">Натисніть «Відкрити PDF» нижче, щоб почати читання. Кнопка «+» поруч відкриває ще дії: створити PDF або сканувати документ.</string>
     <string name="empty_search_title">Документів не знайдено</string>
     <string name="empty_search_desc">Спробуйте змінити пошуковий запит.</string>
+    <string name="empty_favorites_title">В обраному ще немає документів</string>
+    <string name="empty_favorites_desc">Додайте документ до обраного або покажіть усі документи.</string>
 
     <!-- Document Card & Item Actions -->
     <string name="document_page_progress">Стор. %1$d з %2$d</string>

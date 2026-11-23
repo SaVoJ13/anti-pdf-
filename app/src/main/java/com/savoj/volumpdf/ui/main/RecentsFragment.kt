@@ -20,6 +20,7 @@ import com.savoj.volumpdf.ui.reader.ReadingProgressLogic
 import com.savoj.volumpdf.util.PdfThumbnailLoader
 import com.savoj.volumpdf.util.SafUtils
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
 
 class RecentsFragment : Fragment() {
 
@@ -48,7 +49,7 @@ class RecentsFragment : Fragment() {
             (activity as? MainActivity)?.createNewBlankDocumentAndOpen()
         }
         binding.btnClearSearch.setOnClickListener {
-            (activity as? MainActivity)?.clearSearchQuery()
+            (activity as? MainActivity)?.resetLibraryFilters()
         }
         binding.btnClearHistory.setOnClickListener {
             (activity as? MainActivity)?.showClearHistoryConfirmationDialog()
@@ -89,6 +90,7 @@ class RecentsFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.recentDocuments.collect { documents ->
                     adapter.submitList(documents)
+                    requireActivity().invalidateOptionsMenu()
                     val isEmpty = documents.isEmpty()
                     val hasSearch = viewModel.searchQuery.value.isNotBlank()
 
@@ -96,27 +98,42 @@ class RecentsFragment : Fragment() {
                     binding.scrollLibraryContent.visibility = if (isEmpty) View.GONE else View.VISIBLE
 
                     if (!isEmpty) {
-                        binding.tvSectionRecentsCount.text = documents.size.toString()
+                        binding.tvSectionRecentsCount.text = NumberFormat.getIntegerInstance()
+                            .format(documents.size.toLong())
                         val continueDoc = if (!hasSearch) {
                             documents.maxByOrNull { it.lastOpenedTimestamp }
                         } else {
                             null
                         }
                         bindContinueReadingCard(continueDoc)
-                    } else if (hasSearch) {
-                        binding.ivEmptyIcon.setImageResource(R.drawable.ic_search)
-                        binding.tvEmptyTitle.setText(R.string.empty_search_title)
-                        binding.tvEmptyDesc.setText(R.string.empty_search_desc)
-                        val buttons = HomeLogic.emptyStateButtons(hasSearch = true)
-                        binding.btnEmptyCreate.visibility = if (buttons.create) View.VISIBLE else View.GONE
-                        binding.btnClearSearch.visibility = if (buttons.clearSearch) View.VISIBLE else View.GONE
                     } else {
-                        binding.ivEmptyIcon.setImageResource(R.drawable.ic_empty_recents)
-                        binding.tvEmptyTitle.setText(R.string.empty_recents_title)
-                        binding.tvEmptyDesc.setText(R.string.empty_recents_desc)
-                        val buttons = HomeLogic.emptyStateButtons(hasSearch = false)
+                        val state = HomeLogic.emptyState(
+                            hasSearch = hasSearch,
+                            favoritesOnly = viewModel.favoritesOnly.value
+                        )
+                        when (state) {
+                            HomeLogic.EmptyState.LIBRARY_EMPTY -> {
+                                binding.ivEmptyIcon.setImageResource(R.drawable.ic_empty_recents)
+                                binding.tvEmptyTitle.setText(R.string.empty_recents_title)
+                                binding.tvEmptyDesc.setText(R.string.empty_recents_desc)
+                                binding.btnClearSearch.setText(R.string.action_show_all_documents)
+                            }
+                            HomeLogic.EmptyState.SEARCH_NO_RESULTS -> {
+                                binding.ivEmptyIcon.setImageResource(R.drawable.ic_search)
+                                binding.tvEmptyTitle.setText(R.string.empty_search_title)
+                                binding.tvEmptyDesc.setText(R.string.empty_search_desc)
+                                binding.btnClearSearch.setText(R.string.action_clear_search)
+                            }
+                            HomeLogic.EmptyState.FAVORITES_NO_RESULTS -> {
+                                binding.ivEmptyIcon.setImageResource(R.drawable.ic_star_outline)
+                                binding.tvEmptyTitle.setText(R.string.empty_favorites_title)
+                                binding.tvEmptyDesc.setText(R.string.empty_favorites_desc)
+                                binding.btnClearSearch.setText(R.string.action_show_all_documents)
+                            }
+                        }
+                        val buttons = HomeLogic.emptyStateButtons(state)
                         binding.btnEmptyCreate.visibility = if (buttons.create) View.VISIBLE else View.GONE
-                        binding.btnClearSearch.visibility = if (buttons.clearSearch) View.VISIBLE else View.GONE
+                        binding.btnClearSearch.visibility = if (buttons.reset) View.VISIBLE else View.GONE
                     }
                 }
             }

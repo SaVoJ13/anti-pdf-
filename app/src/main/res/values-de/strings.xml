@@ -13,6 +13,7 @@
     <string name="action_continue_reading">Weiter</string>
     <string name="section_recent_documents">Zuletzt</string>
     <string name="action_clear_search">Suche zurücksetzen</string>
+    <string name="action_show_all_documents">Alle Dokumente anzeigen</string>
     <string name="dialog_jump_to_page_title">Zu Seite gehen</string>
     <string name="dialog_jump_to_page_hint">Seite (1–%1$d)</string>
     <string name="action_go">Los</string>
@@ -32,6 +33,8 @@
     <string name="empty_recents_desc">Tippen Sie unten auf „PDF öffnen“, um mit dem Lesen zu beginnen. Die Schaltfläche „+“ daneben öffnet weitere Aktionen: PDF erstellen oder Dokument scannen.</string>
     <string name="empty_search_title">Keine Dokumente gefunden</string>
     <string name="empty_search_desc">Versuchen Sie einen anderen Suchbegriff.</string>
+    <string name="empty_favorites_title">Noch keine Favoriten</string>
+    <string name="empty_favorites_desc">Markieren Sie ein Dokument als Favorit oder zeigen Sie alle Dokumente an.</string>
 
     <!-- Document Card & Item Actions -->
     <string name="document_page_progress">Seite %1$d von %2$d</string>

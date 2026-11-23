@@ -13,15 +13,41 @@ object HomeLogic {
     /** Розкриття можливе лише коли головна кнопка видима. */
     fun effectiveExpanded(expanded: Boolean, position: Int): Boolean = expanded && fabVisibleOnPage(position)
 
+    /** Бібліотечні дії toolbar не повинні з'являтися на вкладці «Інструменти». */
+    data class ToolbarState(
+        val showLibraryActions: Boolean,
+        val showLibraryFab: Boolean
+    )
+
+    fun toolbarState(position: Int): ToolbarState = ToolbarState(
+        showLibraryActions = position == 0,
+        showLibraryFab = fabVisibleOnPage(position)
+    )
+
     /** Дії розкриття, що показуються в порядку зверху вниз: «Створити PDF», «Сканувати». Основна дія (відкрити) окремо. */
     enum class SpeedDialAction { CREATE_PDF, SCAN }
 
     val speedDialActions: List<SpeedDialAction> = listOf(SpeedDialAction.CREATE_PDF, SpeedDialAction.SCAN)
 
-    /** Кнопки порожнього стану (без дублю головної кнопки «Відкрити PDF» та «Сканувати» з розкриття). */
-    data class EmptyStateButtons(val create: Boolean, val clearSearch: Boolean)
+    /**
+     * Порожній стан відрізняє справді порожню бібліотеку від нульового результату
+     * пошуку або фільтра «Обране». Інакше користувачеві помилково пропонується
+     * створити PDF, хоча його документи просто приховані фільтром.
+     */
+    enum class EmptyState { LIBRARY_EMPTY, SEARCH_NO_RESULTS, FAVORITES_NO_RESULTS }
 
-    fun emptyStateButtons(hasSearch: Boolean): EmptyStateButtons =
-        if (hasSearch) EmptyStateButtons(create = false, clearSearch = true)
-        else EmptyStateButtons(create = true, clearSearch = false)
+    fun emptyState(hasSearch: Boolean, favoritesOnly: Boolean): EmptyState = when {
+        hasSearch -> EmptyState.SEARCH_NO_RESULTS
+        favoritesOnly -> EmptyState.FAVORITES_NO_RESULTS
+        else -> EmptyState.LIBRARY_EMPTY
+    }
+
+    /** Кнопки порожнього стану без дублю глобальних «Відкрити PDF» та «Сканувати». */
+    data class EmptyStateButtons(val create: Boolean, val reset: Boolean)
+
+    fun emptyStateButtons(state: EmptyState): EmptyStateButtons = when (state) {
+        EmptyState.LIBRARY_EMPTY -> EmptyStateButtons(create = true, reset = false)
+        EmptyState.SEARCH_NO_RESULTS,
+        EmptyState.FAVORITES_NO_RESULTS -> EmptyStateButtons(create = false, reset = true)
+    }
 }

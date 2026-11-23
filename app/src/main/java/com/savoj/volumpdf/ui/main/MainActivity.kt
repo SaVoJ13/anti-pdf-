@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var adsManager: AdsManager
     private var searchMenuItem: MenuItem? = null
+    private var selectedHomePage = 0
 
     private val openDocumentLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -215,11 +216,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun clearSearchQuery() {
-        viewModel.setSearchQuery("")
+    fun resetLibraryFilters() {
+        viewModel.resetLibraryFilters()
         val searchView = searchMenuItem?.actionView as? SearchView
         searchView?.setQuery("", false)
         searchMenuItem?.collapseActionView()
+        invalidateOptionsMenu()
     }
 
     private fun setupViewPagerAndBottomNav() {
@@ -254,12 +256,16 @@ class MainActivity : AppCompatActivity() {
 
         binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
+                selectedHomePage = position
                 val targetNavId = if (position == 0) R.id.nav_library else R.id.nav_tools
                 if (binding.bottomNavigation.selectedItemId != targetNavId) {
                     binding.bottomNavigation.selectedItemId = targetNavId
                 }
-                binding.fabCluster.visibility = if (HomeLogic.fabVisibleOnPage(position)) View.VISIBLE else View.GONE
-                if (!HomeLogic.fabVisibleOnPage(position)) setSpeedDialExpanded(false, animate = false)
+                val chrome = HomeLogic.toolbarState(position)
+                binding.toolbar.setTitle(if (position == 0) R.string.app_name else R.string.tab_tools)
+                binding.fabCluster.visibility = if (chrome.showLibraryFab) View.VISIBLE else View.GONE
+                if (!chrome.showLibraryFab) setSpeedDialExpanded(false, animate = false)
+                invalidateOptionsMenu()
             }
         })
     }
@@ -373,7 +379,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         super.onPrepareOptionsMenu(menu)
-        val hasDocs = viewModel.recentDocuments.value.isNotEmpty()
+        val showLibraryActions = HomeLogic.toolbarState(selectedHomePage).showLibraryActions
+        menu.findItem(R.id.action_search)?.isVisible = showLibraryActions
+        menu.findItem(R.id.action_filter_sort)?.isVisible = showLibraryActions
+        menu.findItem(R.id.action_clear_history)?.isVisible = showLibraryActions
+        val hasDocs = viewModel.hasAnyRecentDocuments.value
         menu.findItem(R.id.action_clear_history)?.isEnabled = hasDocs
         menu.findItem(R.id.action_privacy_settings)?.isVisible = adsManager.isPrivacyOptionsRequired()
         // М11: стан «Фільтр і порядок» відновлюється з ViewModel (меню перебудовується при recreate).
