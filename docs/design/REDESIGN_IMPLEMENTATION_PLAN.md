@@ -11,7 +11,7 @@
 | Етап | Результат | Основні файли/зони | Ризик | Ворота |
 |---|---|---|---|---|
 | D0 | Специфікація, аудит, критерії | `docs/design/`, `docs/product/` | низький | незалежний QA документів |
-| D1 | Токени, спільні inset-и, власний екран ліцензій | themes/colors/styles, базові Activity, новий legal UI | середній | L7 закрито на S24 + емулятори |
+| D1 | Токени, спільні inset-и, власний екран ліцензій — **код QA Verified (`bcbffde`), device gate очікує** | themes/colors/styles, базові Activity, новий legal UI | середній | L7 закрито на S24 + емулятори |
 | D2 | Бібліотека та головна навігація | `MainActivity`, `RecentsFragment`, адаптер, main layouts | середній | відкрити/пошук/сортування/FAB/ads |
 | D3 | Групована вкладка Інструменти | `ToolsFragment`, `ToolsAdapter`, resources | низький | усі 11 команд доступні |
 | D4 | Спільний каркас операцій | `ToolsActivity`, `ToolsViewModel`, operation layouts | високий | усі входи, валідація, прогрес, результат |

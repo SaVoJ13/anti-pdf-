@@ -1,7 +1,17 @@
 # CURRENT_STATE — знімок проєкту Anti PDF
 
-> За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (пакет редизайну D0 у `codex/ux-redesign-plan` = `c2fd8a2`, **QA Verified**; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
+> За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D1 у `codex/redesign-d1-foundation` = `bcbffde`, код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
+
+## Оновлення 2026-11-23: D1 — код QA Verified, device gate очікує
+- У гілці `codex/redesign-d1-foundation` реалізовано власні `LibraryLicensesActivity`/detail на generated OSS metadata/blob; runtime `play-services-oss-licenses` видалено, build-time plugin лишено.
+- L7 усунено на рівні маршруту й коду: сторонні Google OSS Activity відсутні в release manifest, власні Activity `exported=false` і використовують спільний `WindowInsetsHelper` для status/cutout/navigation/IME edges.
+- Parser працює fail-closed: будь-який malformed/overflow/out-of-bounds/empty запис ховає весь неповний список за помилкою, а не окрему ліцензію. Release: 196/196 валідних entries, blob 435170 байт.
+- Базові a11y targets: compact swatches, resize та color-close використовують спільний 48 dp token; мертвий 28 dp control видалено; regression-тест розв’язує `@dimen`.
+- R6/R8 синхронізовано: Anti PDF / `com.savoj.volumpdf.anti`, мови en/uk/de/ru/es. Дозволи (9), AdMob/UMP, PDF-контракти й версія не змінені.
+- Незалежний QA: `bcbffde`, **QA Verified** для `c0552c4` + `59e0096`. XML: app 419/0/0/0; core-pdf 214/0/0/2; lint 0 errors/152 warnings; debug/release green.
+- Телефон не підключений. Готових AVD немає; спроба створити тимчасовий API 37 AVD з наявного образу не вдалася, бо локальний system image неповний і не має `kernel-ranchu`. Тимчасові файли прибрано.
+- **НЕ ПЕРЕВІРЕНО:** S24 Ultra, Android 9–11, TalkBack, font scale 200%, cutout, gesture/3-button navigation. Через це етапний device gate D1 і фактичне закриття L7 ще не оголошуються завершеними.
 
 ## Оновлення 2026-11-23: пакет UX/UI редизайну D0 — QA Verified
 - За прямою командою Власника автономно підготовлено великий пакет майбутнього редизайну без зміни коду, APK, активної збірки закритого тесту або Play Console.
