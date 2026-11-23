@@ -111,9 +111,6 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
 
-    // Екран ліцензій залежностей (POM-ліцензії, зокрема Google Play services); див. DECISIONS.md
-    implementation("com.google.android.gms:play-services-oss-licenses:17.1.0")
-
     // Document Scanner API (ТОП-1)
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1")
 

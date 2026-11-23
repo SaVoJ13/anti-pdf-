@@ -1,6 +1,7 @@
 package com.savoj.volumpdf.ui
 
 import com.savoj.volumpdf.util.Haptics
+import com.savoj.volumpdf.ui.reader.SwatchView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -80,8 +81,15 @@ class TouchTargetsTest {
     fun `text toolbar buttons are at least 48dp`() {
         listOf(
             "btnKbToolPen", "btnKbToolCheck", "btnKbToolText", "btnTextColor", "btnTextBgColor", "btnTextStyle",
-            "btnTextSize", "btnKbSizeMinus", "btnTextUndo", "btnTextRedo", "btnTextConfirm", "btnTextCancel"
+            "btnTextSize", "btnKbSizeMinus", "btnTextUndo", "btnTextRedo", "btnTextConfirm", "btnTextCancel",
+            "btnTextBoxResize",
         ).forEach { assertTarget("dialog_place_text", it) }
+    }
+
+    @Test
+    fun `compact swatches keep a 48dp accessibility target`() {
+        assertEquals(48, SwatchView.minimumTargetPx(1f))
+        assertEquals(96, SwatchView.minimumTargetPx(2f))
     }
 
     @Test

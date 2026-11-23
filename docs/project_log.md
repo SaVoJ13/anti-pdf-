@@ -1,3 +1,48 @@
+## 2026-11-23 — Android і UI: реалізація фундаменту редизайну D1
+
+**Простими словами**
+- Проблемний зовнішній екран ліцензій замінено двома власними екранами Anti PDF.
+- Список і повні юридичні тексти й далі автоматично генерує перевірений build-плагін.
+- Стару runtime-бібліотеку екрана прибрано, нових залежностей і дозволів немає.
+- Нові екрани враховують статус-бар, виріз, навігаційну панель і збільшений шрифт.
+- Кольорові кружки та ручка розміру тепер мають доступну зону 48 dp.
+- Debug і release збираються, unit-тести й lint проходять без помилок.
+- Телефон та емулятор недоступні, тому фактичне закриття L7 на пристрої **НЕ ПЕРЕВІРЕНО**.
+
+**Що зроблено**
+- Додано `LibraryLicensesActivity`, `LibraryLicenseDetailActivity`, `OssLicenseParser` і два Material/XML layouts.
+- `LicensesDialogHelper` тепер відкриває власний список; Google `OssLicensesMenuActivity` більше не входить у runtime-маршрут.
+- Видалено `play-services-oss-licenses:17.1.0`; build-time OSS plugin збережено. Release-генерація дала 196 metadata entries і blob 435170 байт.
+- Додано parser bounds/UTF-8 tests, regression test маршруту L7, перевірку 48 dp compact swatches і resize control.
+- R6/R8 у `MASTER_SPEC.md` синхронізовано з рішеннями Власника: Anti PDF / `com.savoj.volumpdf.anti`, п’ять мов en/uk/de/ru/es.
+
+**Що змінено**
+- `app/`: legal UI, manifest, shared insets helper, touch targets, локалізації та тести.
+- `docs/MASTER_SPEC.md`, `docs/THIRD_PARTY.md`, `docs/governance/DECISIONS.md`.
+- Дозволи, PDF-контракти, AdMob/UMP, versionCode/versionName і активна Play-збірка не змінені.
+
+**Перевірки**
+- JDK 21: `:app:assembleDebug :app:testDebugUnitTest :core-pdf:test` — `BUILD SUCCESSFUL`.
+- XML Gradle: `:app` 418 тестів, 0 failures, 0 errors, 0 skipped; `:core-pdf` 214, 0 failures, 0 errors, 2 skipped.
+- `:app:lintDebug :app:testDebugUnitTest` — `BUILD SUCCESSFUL`; lint XML: 0 errors, 152 warnings.
+- `:app:assembleRelease` — `BUILD SUCCESSFUL`; release APK 17394401 байт, тестовий AdMob Application ID, не публікувався.
+- `dependencyInsight`: `play-services-oss-licenses` відсутній у `releaseRuntimeClasspath`.
+- Release merged manifest містить лише власні `LibraryLicensesActivity`/detail; Google OSS activities не знайдені.
+
+**Рішення**
+- Код D1 передати незалежному QA до будь-якого злиття.
+- Не називати L7 закритим на пристрої без фактичного S24/emulator proof.
+
+**Що передати далі**
+- Незалежному QA: перевірити parser, юридичну повноту, manifests/dependency graph, edge-to-edge logic, touch targets і докази Gradle.
+- При доступному тестовому пристрої перевірити список і деталі: status bar/cutout, Back, light/dark, 200% font і TalkBack.
+
+**Відкриті питання**
+- Блокерів коду/збірки немає; device gate D1 ще не пройдений.
+
+**НЕ ПЕРЕВІРЕНО**
+- Вигляд і поведінка нових екранів на Galaxy S24 Ultra, Android 9–11, TalkBack, font scale 200% і реальний cutout/gesture navigation.
+
 ## 2026-11-23 — Керівник проєкту: завершення автономного пакета редизайну D0
 
 **Простими словами**

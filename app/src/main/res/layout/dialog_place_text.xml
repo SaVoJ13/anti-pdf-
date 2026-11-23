@@ -103,10 +103,10 @@
 
                 <ImageView
                     android:id="@+id/btnTextBoxResize"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:contentDescription="@string/place_text_size_menu"
-                    android:padding="4dp"
+                    android:padding="14dp"
                     android:src="@drawable/ic_resize_corner"
                     app:tint="#4A80F0" />
             </LinearLayout>

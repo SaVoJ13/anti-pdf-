@@ -7,6 +7,7 @@ import android.graphics.SweepGradient
 import android.util.AttributeSet
 import android.view.View
 import com.savoj.volumpdf.R
+import kotlin.math.roundToInt
 
 /**
  * Кружок кольору для картки параметрів: зона дотику ≥ 48 dp, видимий кружок 32 dp, вибраний — кільце.
@@ -73,8 +74,8 @@ class SwatchView @JvmOverloads constructor(
 
     /**
      * Компактний режим кружечка для однорядкової плаваючої картки кольорів над клавіатурою (Samsung Notes):
-     * зменшений розмір (30 dp замість 48 dp, радіус кружечка 11 dp), щоб усі кольори + райдужний кружечок
-     * вміщувалися в один компактний ряд без збільшення висоти картки.
+     * зменшує лише видимий кружечок (радіус 11 dp). Accessibility/touch-вузол лишається 48 dp;
+     * якщо ряд не вміщується, його контейнер прокручується горизонтально.
      */
     var compactMode: Boolean = false
         set(value) {
@@ -95,12 +96,13 @@ class SwatchView @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val min = if (compactMode) {
-            (30f * density).toInt()
-        } else {
-            (resources.getDimension(R.dimen.place_swatch_size)).toInt()
-        }
+        val min = maxOf(minimumTargetPx(density), resources.getDimensionPixelSize(R.dimen.place_swatch_size))
         setMeasuredDimension(resolveSize(min, widthMeasureSpec), resolveSize(min, heightMeasureSpec))
+    }
+
+    companion object {
+        internal const val MIN_TOUCH_TARGET_DP = 48f
+        internal fun minimumTargetPx(density: Float): Int = (MIN_TOUCH_TARGET_DP * density).roundToInt()
     }
 
     override fun onDraw(canvas: Canvas) {

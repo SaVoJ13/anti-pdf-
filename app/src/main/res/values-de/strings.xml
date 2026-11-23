@@ -250,6 +250,8 @@
     <string name="dialog_licenses_title">Open-Source-Lizenzen</string>
     <string name="licenses_libraries_button">Bibliothekslizenzen</string>
     <string name="licenses_load_failed">Lizenzen konnten nicht geladen werden</string>
+    <string name="licenses_loading">Lizenzen werden geladen</string>
+    <string name="licenses_detail_title">Lizenz</string>
     <string name="action_create_pdf">PDF erstellen</string>
     <string name="tool_create_blank_title">PDF erstellen</string>
     <string name="tool_create_blank_desc">Neues leeres Dokument für Notizen und Text erstellen</string>

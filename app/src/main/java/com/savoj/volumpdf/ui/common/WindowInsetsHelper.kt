@@ -53,6 +53,11 @@ object WindowInsetsHelper {
         appBar.setPadding(appBar.paddingLeft, topPx, appBar.paddingRight, appBar.paddingBottom)
     }
 
+    /** Кореневий контейнер edge-to-edge екрана: бічні системні області та нижня панель/IME. */
+    fun applyRootInsets(root: View, edges: SystemEdges) {
+        root.setPadding(edges.left, root.paddingTop, edges.right, edges.bottom)
+    }
+
     /** Нижній відступ елемента-контейнера [baseMarginPx] + [bottomPx] (для плаваючих карток у FrameLayout). */
     fun applyMargins(view: View, left: Int, top: Int, right: Int, bottom: Int) {
         val lp = view.layoutParams as? ViewGroup.MarginLayoutParams ?: return
