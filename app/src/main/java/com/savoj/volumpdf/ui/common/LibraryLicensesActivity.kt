@@ -40,9 +40,13 @@ class LibraryLicensesActivity : AppCompatActivity() {
         showLoading()
         Thread({
             val result = runCatching {
-                resources.openRawResource(R.raw.third_party_license_metadata).bufferedReader(Charsets.UTF_8).use {
+                val entries = resources.openRawResource(R.raw.third_party_license_metadata).bufferedReader(Charsets.UTF_8).use {
                     OssLicenseParser.parseMetadata(it.readText())
                 }
+                val blob = resources.openRawResource(R.raw.third_party_licenses).use { it.readBytes() }
+                entries.takeIf { list ->
+                    list.isNotEmpty() && list.all { OssLicenseParser.licenseText(blob, it) != null }
+                }.orEmpty()
             }.getOrNull()
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread

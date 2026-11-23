@@ -6,10 +6,17 @@ import org.junit.Test
 
 class OssLicenseParserTest {
     @Test
-    fun `metadata is parsed and sorted without accepting malformed rows`() {
-        val entries = OssLicenseParser.parseMetadata("5:4 Zebra\n0:5 alpha\nbad\n3:0 Empty")
+    fun `valid metadata is parsed and sorted`() {
+        val entries = OssLicenseParser.parseMetadata("5:4 Zebra\n0:5 alpha")
         assertEquals(listOf("alpha", "Zebra"), entries.map { it.name })
         assertEquals(OssLicenseEntry("alpha", 0, 5), entries.first())
+    }
+
+    @Test
+    fun `one malformed metadata row fails the complete index closed`() {
+        assertEquals(emptyList<OssLicenseEntry>(), OssLicenseParser.parseMetadata("0:5 Valid\nbad"))
+        assertEquals(emptyList<OssLicenseEntry>(), OssLicenseParser.parseMetadata("0:5 Valid\n3:0 Empty"))
+        assertEquals(emptyList<OssLicenseEntry>(), OssLicenseParser.parseMetadata("999999999999:5 Overflow"))
     }
 
     @Test
@@ -18,5 +25,6 @@ class OssLicenseParserTest {
         assertEquals("LICENCE", OssLicenseParser.licenseText(blob, OssLicenseEntry("x", 5, 7)))
         assertNull(OssLicenseParser.licenseText(blob, OssLicenseEntry("x", -1, 2)))
         assertNull(OssLicenseParser.licenseText(blob, OssLicenseEntry("x", 5, 99)))
+        assertNull(OssLicenseParser.licenseText("   ".toByteArray(), OssLicenseEntry("x", 0, 3)))
     }
 }

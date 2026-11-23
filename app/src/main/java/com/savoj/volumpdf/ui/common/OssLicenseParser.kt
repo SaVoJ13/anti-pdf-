@@ -8,24 +8,26 @@ data class OssLicenseEntry(val name: String, val offset: Int, val length: Int)
 object OssLicenseParser {
     private val metadataLine = Regex("^(\\d+):(\\d+) (.+)$")
 
-    fun parseMetadata(text: String): List<OssLicenseEntry> =
-        text.lineSequence()
-            .map(String::trim)
-            .filter(String::isNotEmpty)
-            .mapNotNull { line ->
-                val match = metadataLine.matchEntire(line) ?: return@mapNotNull null
-                val offset = match.groupValues[1].toIntOrNull() ?: return@mapNotNull null
-                val length = match.groupValues[2].toIntOrNull() ?: return@mapNotNull null
-                val name = match.groupValues[3].trim()
-                if (length <= 0 || name.isEmpty()) null else OssLicenseEntry(name, offset, length)
-            }
-            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
-            .toList()
+    /** Fail closed: один пошкоджений непорожній рядок робить весь індекс непридатним. */
+    fun parseMetadata(text: String): List<OssLicenseEntry> {
+        val entries = ArrayList<OssLicenseEntry>()
+        for (raw in text.lineSequence()) {
+            val line = raw.trim()
+            if (line.isEmpty()) continue
+            val match = metadataLine.matchEntire(line) ?: return emptyList()
+            val offset = match.groupValues[1].toIntOrNull() ?: return emptyList()
+            val length = match.groupValues[2].toIntOrNull() ?: return emptyList()
+            val name = match.groupValues[3].trim()
+            if (length <= 0 || name.isEmpty()) return emptyList()
+            entries += OssLicenseEntry(name, offset, length)
+        }
+        return entries.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+    }
 
     fun licenseText(blob: ByteArray, entry: OssLicenseEntry): String? {
         if (entry.offset < 0 || entry.length <= 0) return null
         val end = entry.offset.toLong() + entry.length.toLong()
         if (end > blob.size.toLong()) return null
-        return String(blob, entry.offset, entry.length, StandardCharsets.UTF_8).trim()
+        return String(blob, entry.offset, entry.length, StandardCharsets.UTF_8).trim().takeIf(String::isNotEmpty)
     }
 }
