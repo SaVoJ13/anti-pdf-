@@ -41,3 +41,17 @@
 
 ## НЕ ПЕРЕВІРЕНО
 Усе на пристрої (Galaxy S24 Ultra): вигляд меню ⋮ в читанні й «Редагувати», сірий «Зберегти», діалог і всі три кнопки, поворот з відкритим діалогом, TalkBack, потік NEW_COPY (D-1), друк.
+
+## Повторна перевірка 47281f9
+
+Голова гілки автора `origin/codex/redesign-r1-reader-menu` = `47281f9c2a93b0d80b752f2fd1f6146723302b42`. Гілка QA `qa/r1-reader-menu-2` = merge (без force) гілки автора в `qa/r1-reader-menu`; конфлікт у `docs/project_log.md` (обидві сторони додали записи зверху) вирішено збереженням обох записів. Телефон не підключався. **Device proof ВІДСУТНІЙ.**
+
+**Вердикт: QA Verified (код)** для 47281f9. D-1, D-2, D-3 закрито у коді. Блокерів немає.
+
+1. Diff `39be59d..47281f9`: 4 файли (ReaderActivity.kt, ReaderChromeLogic.kt, ReaderChromeLogicTest.kt, project_log.md; +41/-3). Манифест, дозволи, gradle, core-pdf, ресурси/локалі, версія не змінені. 5 мов без змін, паритет збережено.
+2. D-1 закрито. `shouldLaunchCopyAfterSave(before, after) = before != null && before == after`. `before` береться в кліку «Зберегти зміни» (до асинхронного збереження), `after` читається в `onSuccess`. Збереження в нову копію (`confirmCopy`/`startCopyPick`/`runSave(copy=true)`, а також `showReadOnlyOffer`) викликає `switchToDocument(output)`, що синхронно виставляє `documentUri = newUri` до `onSuccess()` (і в гілці відкладеного діалогу теж після `switchToDocument`), тож uri різні й другий вибір файлу не стартує. Збереження на місці лишає `documentUri` незмінним, копія стартує. Документ null: `before == null`, копія не стартує. Гонки не знайдено (усе в головному потоці; `savingPlace` блокує паралельне збереження).
+   - Крайній випадок (D-4, низький, інформаційний): `NothingToSave` у шляху copy=true лишає uri незмінним і запустить вибір файлу. Практично недосяжний (`savePending` вже відсікає порожній запит), на пристрої не перевірено.
+3. D-2 закрито: перший assert тепер `order.containsAll(expected)`, другий реально перевіряє порядок. Новий тест `shouldLaunchCopyAfterSave` (3 випадки) змістовний. D-3: коментар біля `renderUnsavedUi` оновлено. Друк з незбереженими змінами без попередження лишається (задокументовано автором, низький).
+4. Збірка на JDK 21 (`--no-daemon`), BUILD SUCCESSFUL, числа з XML: app 431/0/0/0, core-pdf debug 107/0/0/1, core-pdf release 107/0/0/1, lint 0 errors/149 warnings. Заяву автора підтверджено.
+
+НЕ ПЕРЕВІРЕНО: потік NEW_COPY/read-only, діалоги, поворот, сірий «Зберегти», друк, TalkBack на пристрої.
