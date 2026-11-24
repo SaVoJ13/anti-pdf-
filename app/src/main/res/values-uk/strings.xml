@@ -19,6 +19,9 @@
     <string name="action_go">Перейти</string>
     <string name="place_tool_hand_short">Рука</string>
     <string name="tools_hub_subtitle">Оберіть потрібну дію — застосунок одразу запропонує вибрати PDF-файл.</string>
+    <string name="tools_section_create">Створити</string>
+    <string name="tools_section_pages">Сторінки</string>
+    <string name="tools_section_enhance">Оформити й оптимізувати</string>
     <string name="action_search">Пошук</string>
     <string name="search_hint">Пошук документів…</string>
     <string name="action_sort">Сортувати за</string>

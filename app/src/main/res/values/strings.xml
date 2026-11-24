@@ -19,6 +19,9 @@
     <string name="action_go">Go</string>
     <string name="place_tool_hand_short">Hand</string>
     <string name="tools_hub_subtitle">Tap any tool below to immediately choose your PDF and start.</string>
+    <string name="tools_section_create">Create</string>
+    <string name="tools_section_pages">Pages</string>
+    <string name="tools_section_enhance">Enhance &amp; optimize</string>
     <string name="action_search">Search</string>
     <string name="search_hint">Search documents…</string>
     <string name="action_sort">Sort by</string>

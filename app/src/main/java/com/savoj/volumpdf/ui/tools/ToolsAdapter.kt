@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.recyclerview.widget.RecyclerView
+import com.savoj.volumpdf.databinding.ItemToolGroupHeaderBinding
 import com.savoj.volumpdf.R
 import com.savoj.volumpdf.databinding.ItemToolCardBinding
 
@@ -31,9 +32,9 @@ data class ToolDefinition(
 
 class ToolsAdapter(
     private val onToolClicked: (ToolType) -> Unit
-) : RecyclerView.Adapter<ToolsAdapter.ToolViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private val tools = listOf(
+    private val definitions = listOf(
         ToolDefinition(
             type = ToolType.CREATE_BLANK,
             titleRes = R.string.tool_create_blank_title,
@@ -102,20 +103,39 @@ class ToolsAdapter(
         )
     )
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ToolViewHolder {
-        val binding = ItemToolCardBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
-        )
-        return ToolViewHolder(binding)
+    private val toolsByType = definitions.associateBy { it.type }
+    private val items = ToolGroupingLogic.buildItems()
+
+    /** Заголовок групи займає всю ширину сітки. */
+    fun isHeader(position: Int): Boolean = items[position] is ToolListItem.Header
+
+    override fun getItemViewType(position: Int): Int = if (isHeader(position)) VIEW_HEADER else VIEW_TOOL
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return if (viewType == VIEW_HEADER) {
+            HeaderViewHolder(ItemToolGroupHeaderBinding.inflate(inflater, parent, false))
+        } else {
+            ToolViewHolder(ItemToolCardBinding.inflate(inflater, parent, false))
+        }
     }
 
-    override fun onBindViewHolder(holder: ToolViewHolder, position: Int) {
-        holder.bind(tools[position])
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val item = items[position]) {
+            is ToolListItem.Header -> (holder as HeaderViewHolder).bind(item.group)
+            is ToolListItem.Tool -> (holder as ToolViewHolder).bind(toolsByType.getValue(item.type))
+        }
     }
 
-    override fun getItemCount(): Int = tools.size
+    override fun getItemCount(): Int = items.size
+
+    class HeaderViewHolder(
+        private val binding: ItemToolGroupHeaderBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(group: ToolGroup) {
+            binding.tvToolGroupTitle.setText(group.titleRes)
+        }
+    }
 
     inner class ToolViewHolder(
         private val binding: ItemToolCardBinding
@@ -130,5 +150,10 @@ class ToolsAdapter(
                 onToolClicked(tool.type)
             }
         }
+    }
+
+    private companion object {
+        const val VIEW_HEADER = 0
+        const val VIEW_TOOL = 1
     }
 }

@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import com.savoj.volumpdf.databinding.FragmentToolsBinding
 import com.savoj.volumpdf.ui.organizer.PageOrganizerActivity
 import com.savoj.volumpdf.ui.scanner.ScanDocumentActivity
@@ -52,11 +53,15 @@ class ToolsFragment : Fragment() {
         }
 
         // Колонки рахуються за шириною списку й оновлюються при зміні розміру вікна (поворот, split-screen).
-        com.savoj.volumpdf.ui.common.AdaptiveGrid.attach(
+        val gridManager = com.savoj.volumpdf.ui.common.AdaptiveGrid.attach(
             binding.recyclerViewTools,
             com.savoj.volumpdf.ui.common.AdaptiveLayoutLogic.LIST_ITEM_MIN_DP,
             com.savoj.volumpdf.ui.common.AdaptiveLayoutLogic.LIST_MAX_COLUMNS
         )
+        gridManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int =
+                if (adapter.isHeader(position)) gridManager.spanCount else 1
+        }
         binding.recyclerViewTools.adapter = adapter
     }
 
