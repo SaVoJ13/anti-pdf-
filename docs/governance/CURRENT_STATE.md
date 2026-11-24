@@ -3,6 +3,12 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-24 (фінал): device gate D2 ЗАКРИТО
+- D2-1 виправлено (`eb888e9`, автор ≠ QA); QA Verified (код) у `16348e7`: app 422/0/0/0; core-pdf 107/0/0/1 на варіант (214/2 сумарно); lint 0 errors/149 warnings.
+- На S24 Ultra (`d2qa`, оновлено 17:43) Власник підтвердив пошук, «нічого не знайдено»/скидання і «Очистити історію». Разом 14 із 15 пунктів ок, TalkBack пропущено.
+- Fix злито fast-forward у `codex/redesign-d2-library`; `main` не змінено. Далі D3 в окремій гілці.
+- НЕ ПЕРЕВІРЕНО: TalkBack, 150% font окремо, Android 9–11. Борг: регресійний тест, що ловить повернення `invalidateOptionsMenu()`.
+
 ## Оновлення 2026-11-24 (пізніше): device gate D2 — знайдено дефект D2-1, gate НЕ закрито
 - QA-копія `com.savoj.volumpdf.anti.d2qa` встановлена на S24 Ultra; пройдено 13 із 15 пунктів чекліста (ок), TalkBack пропущено, пункт 7 (пошук) **не ок**.
 - **D2-1:** пошук у бібліотеці згортається одразу після вводу символа; у Play-копії цього немає (регресія D2). Імовірна причина — `invalidateOptionsMenu()` на кожну зміну списку в `RecentsFragment.kt` (НЕ ПЕРЕВІРЕНО). Не виправлено.
