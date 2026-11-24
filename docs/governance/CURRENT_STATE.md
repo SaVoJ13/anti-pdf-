@@ -3,6 +3,13 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-24: D2 — код QA Verified, device gate відкритий
+- Незалежний QA (Claude, чат-координатор; автор D2 — Codex) дав вердикт **QA Verified (код)** для `6ad52f5` (гілка `codex/redesign-d2-library`, HEAD `a1037a1`). Попередній запис нижче («QA зупинено без вердикту») цим оновлено.
+- XML Gradle на ПК Власника (прогін 2026-11-23 20:21): app 420/0/0/0; core-pdf 214/0/0/2; lint 0 errors/149 warnings. Дозволів, секретів, AdMob-ID у diff D1→D2 немає.
+- **Device gate D2 НЕ закритий.** Відкриті зауваження QA для телефона: (а) поворот на вкладці Tools (`selectedHomePage` не зберігається); (б) «Очистити історію» одразу після очищення (`hasAnyRecentDocuments` стартує з false); (в) зайвий `setText` для прихованої кнопки в порожній бібліотеці (безпечно).
+- Далі: окрема QA-копія `com.savoj.volumpdf.anti.d2qa` на S24 Ultra; Play-копія `com.savoj.volumpdf.anti` і `...d1qa` не чіпаються. D3 — лише після закритого device gate D2.
+- **НЕ ПЕРЕВІРЕНО:** D2 на телефоні, light/dark, landscape, 150–200% font, TalkBack, Android 9–11. Телефон на момент запису не підключений.
+
 ## Оновлення 2026-11-23: D2 — реалізація є, QA і device gate не завершені
 - Гілка `codex/redesign-d2-library`, коміт `6ad52f5`, побудована поверх D1. Робоче дерево після закриття сесії чисте до обов'язкових документів закриття.
 - Реалізовано контекстний toolbar Library/Tools, правильні empty/search/favorites states, спільне скидання пошуку/фільтра, незалежний від фільтра стан Clear history, динамічні a11y labels і locale-aware count.
