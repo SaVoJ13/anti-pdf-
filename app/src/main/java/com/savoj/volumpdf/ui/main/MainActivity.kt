@@ -17,7 +17,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.savoj.volumpdf.BuildConfig
@@ -44,6 +46,8 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var adsManager: AdsManager
     private var searchMenuItem: MenuItem? = null
+    private var clearHistoryMenuItem: MenuItem? = null
+    private var lastHasAnyRecents: Boolean? = null
     private var selectedHomePage = 0
 
     private val openDocumentLauncher = registerForActivityResult(
@@ -84,6 +88,7 @@ class MainActivity : AppCompatActivity() {
         applyWindowInsets()
 
         setupViewPagerAndBottomNav()
+        observeClearHistoryState()
         setupActionButtons()
         onBackPressedDispatcher.addCallback(this, speedDialBackCallback)
 
@@ -224,6 +229,23 @@ class MainActivity : AppCompatActivity() {
         invalidateOptionsMenu()
     }
 
+    /**
+     * «Очистити історію» залежить лише від нефільтрованої наявності історії. Оновлюємо пункт напряму,
+     * без invalidateOptionsMenu: перебудова меню під час пошуку згортає SearchView (D2-1).
+     */
+    private fun observeClearHistoryState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.hasAnyRecentDocuments.collect { hasDocs ->
+                    if (HomeLogic.clearHistoryStateChanged(lastHasAnyRecents, hasDocs)) {
+                        lastHasAnyRecents = hasDocs
+                        clearHistoryMenuItem?.isEnabled = hasDocs
+                    }
+                }
+            }
+        }
+    }
+
     private fun setupViewPagerAndBottomNav() {
         binding.viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount(): Int = 2
@@ -360,6 +382,7 @@ class MainActivity : AppCompatActivity() {
 
         val searchItem = menu.findItem(R.id.action_search)
         searchMenuItem = searchItem
+        clearHistoryMenuItem = menu.findItem(R.id.action_clear_history)
         val searchView = searchItem?.actionView as? SearchView
         searchView?.queryHint = getString(R.string.search_hint)
         searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {

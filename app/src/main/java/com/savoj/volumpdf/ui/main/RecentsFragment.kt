@@ -90,7 +90,6 @@ class RecentsFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.recentDocuments.collect { documents ->
                     adapter.submitList(documents)
-                    requireActivity().invalidateOptionsMenu()
                     val isEmpty = documents.isEmpty()
                     val hasSearch = viewModel.searchQuery.value.isNotBlank()
 

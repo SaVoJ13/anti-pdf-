@@ -228,4 +228,18 @@ class HomeOnboardingTest {
         val block = Regex("<activity[^>]*OnboardingActivity[^>]*/>", RegexOption.DOT_MATCHES_ALL).find(manifest)!!.value
         assertTrue(block.contains("android:exported=\"false\""))
     }
+
+    @Test
+    fun clearHistoryStateChange_doesNotRebuildMenuForFilteredListChanges() {
+        // Зміна відфільтрованого списку під час пошуку не змінює hasAnyRecentDocuments.
+        assertFalse(HomeLogic.clearHistoryStateChanged(previous = true, current = true))
+        assertFalse(HomeLogic.clearHistoryStateChanged(previous = false, current = false))
+    }
+
+    @Test
+    fun clearHistoryStateChange_requiresUpdateWhenAvailabilityChanges() {
+        assertTrue(HomeLogic.clearHistoryStateChanged(previous = null, current = false))
+        assertTrue(HomeLogic.clearHistoryStateChanged(previous = true, current = false))
+        assertTrue(HomeLogic.clearHistoryStateChanged(previous = false, current = true))
+    }
 }

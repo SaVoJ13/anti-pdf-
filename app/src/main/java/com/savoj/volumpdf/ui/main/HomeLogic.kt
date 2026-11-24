@@ -50,4 +50,11 @@ object HomeLogic {
         EmptyState.SEARCH_NO_RESULTS,
         EmptyState.FAVORITES_NO_RESULTS -> EmptyStateButtons(create = false, reset = true)
     }
+
+    /**
+     * Меню потрібно оновити лише коли змінилася нефільтрована наявність історії
+     * («Очистити історію»). Зміна відфільтрованого списку під час пошуку не повинна
+     * перебудовувати меню: це згортає SearchView (дефект D2-1).
+     */
+    fun clearHistoryStateChanged(previous: Boolean?, current: Boolean): Boolean = previous != current
 }
