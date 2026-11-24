@@ -18,6 +18,14 @@ object ReaderChromeLogic {
     /** Стан пошуку змінився відносно того, з яким останній раз рахували видимість: треба перерахувати. */
     fun needsChromeRefresh(lastApplied: Boolean, current: Boolean): Boolean = lastApplied != current
 
+    /**
+     * R1 (D-1): після «Зберегти зміни» запускати вибір файлу для копії лише коли збереження було на місці.
+     * Якщо зміни збережено в нову копію (NEW_COPY / «лише копіювати»), поточним документом уже стала ця копія
+     * (змінився uri), і другий вибір файлу був би зайвим.
+     */
+    fun shouldLaunchCopyAfterSave(uriBeforeSave: String?, uriAfterSave: String?): Boolean =
+        uriBeforeSave != null && uriBeforeSave == uriAfterSave
+
     /** Видимість пунктів верхньої панелі й меню ⋮. */
     data class MenuState(
         /** «Зберегти» у режимі «Редагувати» видно завжди (R1). */

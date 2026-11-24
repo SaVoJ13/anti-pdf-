@@ -91,12 +91,19 @@ class ReaderChromeLogicTest {
     }
 
     @Test
+    fun `save copy after save changes launches only when saved in place`() {
+        assertTrue("збережено на місці: документ той самий", ReaderChromeLogic.shouldLaunchCopyAfterSave("content://a/1", "content://a/1"))
+        assertFalse("збережено в нову копію: документ змінився", ReaderChromeLogic.shouldLaunchCopyAfterSave("content://a/1", "content://b/2"))
+        assertFalse("документа немає", ReaderChromeLogic.shouldLaunchCopyAfterSave(null, null))
+    }
+
+    @Test
     fun `menu order puts print and save copy after share and before pages and file`() {
         val order = ids("menu/menu_reader.xml").map { it.removePrefix("@+id/") }
         fun at(n: String) = order.indexOf(n).also { assertTrue("$n є в меню", it >= 0) }
         val expected = listOf("action_toggle_favorite", "action_share", "action_print", "action_save_copy",
             "action_tools", "action_organize_pages", "action_details", "action_reading_theme")
-        assertEquals(expected.sorted(), expected.sorted().filter { at(it) >= 0 })
+        assertTrue("усі очікувані пункти є в меню", order.containsAll(expected))
         assertEquals(expected, expected.sortedBy { at(it) })
         listOf("action_search", "action_forms", "action_place_save", "action_place_done", "action_add").forEach { at(it) }
     }
