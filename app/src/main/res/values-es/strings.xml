@@ -412,4 +412,9 @@
     <string name="onboarding_2_body">En un documento, toca «Editar» para añadir texto, una firma o un dibujo, y para rellenar campos de formulario. Combinar, dividir, escanear y otras herramientas están en la pestaña Herramientas.</string>
     <string name="onboarding_3_title">Tus archivos se quedan en tu dispositivo</string>
     <string name="onboarding_3_body">Los documentos se abren y se editan en tu dispositivo. No hay cuenta ni inicio de sesión. La aplicación muestra anuncios de Google AdMob, que puede recopilar datos del dispositivo; encontrarás los detalles en «Política de privacidad», en el menú ⋮.</string>
+    <string name="action_print_menu">Imprimir</string>
+    <string name="save_copy_unsaved_title">Cambios sin guardar</string>
+    <string name="save_copy_unsaved_message">Los cambios sin guardar no se incluirán en la copia. ¿Guardarlos primero?</string>
+    <string name="save_copy_unsaved_save">Guardar cambios</string>
+    <string name="save_copy_unsaved_as_is">Copiar tal cual</string>
 </resources>

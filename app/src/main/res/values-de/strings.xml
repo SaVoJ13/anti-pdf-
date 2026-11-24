@@ -412,4 +412,9 @@
     <string name="onboarding_2_body">Tippen Sie in einem Dokument auf „Bearbeiten“, um Text, eine Unterschrift oder eine Zeichnung hinzuzufügen und Formularfelder auszufüllen. Zusammenführen, Teilen, Scannen und weitere Werkzeuge finden Sie im Tab „Werkzeuge“.</string>
     <string name="onboarding_3_title">Ihre Dateien bleiben auf Ihrem Gerät</string>
     <string name="onboarding_3_body">Dokumente werden auf Ihrem Gerät geöffnet und bearbeitet. Es gibt kein Konto und keine Anmeldung. Die App zeigt Werbung von Google AdMob, die Gerätedaten erfassen kann; Einzelheiten stehen unter „Datenschutzerklärung“ im ⋮-Menü.</string>
+    <string name="action_print_menu">Drucken</string>
+    <string name="save_copy_unsaved_title">Nicht gespeicherte Änderungen</string>
+    <string name="save_copy_unsaved_message">Nicht gespeicherte Änderungen werden nicht in die Kopie übernommen. Zuerst speichern?</string>
+    <string name="save_copy_unsaved_save">Änderungen speichern</string>
+    <string name="save_copy_unsaved_as_is">So kopieren</string>
 </resources>

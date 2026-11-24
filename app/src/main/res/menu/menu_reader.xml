@@ -26,41 +26,25 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/action_reading_theme"
-        android:icon="@drawable/ic_night_mode"
-        android:title="@string/place_menu_reading_mode"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_search"
-        android:icon="@drawable/ic_search"
-        android:title="@string/action_search"
-        android:visible="false"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/action_toggle_favorite"
         android:icon="@drawable/ic_star_outline"
         android:title="@string/action_favorite"
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_save_copy"
-        android:title="@string/action_save_copy"
-        android:visible="false"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_forms"
-        android:icon="@drawable/ic_forms"
-        android:title="@string/action_forms"
-        android:visible="false"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/action_share"
         android:icon="@drawable/ic_share"
         android:title="@string/action_share"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_print"
+        android:title="@string/action_print_menu"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_save_copy"
+        android:title="@string/action_save_copy"
         app:showAsAction="never" />
 
     <item
@@ -79,6 +63,26 @@
         android:id="@+id/action_details"
         android:icon="@drawable/ic_info"
         android:title="@string/action_details"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_reading_theme"
+        android:icon="@drawable/ic_night_mode"
+        android:title="@string/place_menu_reading_mode"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search"
+        android:title="@string/action_search"
+        android:visible="false"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_forms"
+        android:icon="@drawable/ic_forms"
+        android:title="@string/action_forms"
+        android:visible="false"
         app:showAsAction="never" />
 
 </menu>

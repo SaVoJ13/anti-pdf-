@@ -424,4 +424,9 @@
     <string name="onboarding_2_body">У документі натисніть «Редагувати», щоб додати текст, підпис чи малюнок і заповнити поля форм. Злиття, розділення, сканування та інші інструменти є на вкладці «Інструменти».</string>
     <string name="onboarding_3_title">Ваші файли лишаються на пристрої</string>
     <string name="onboarding_3_body">Документи відкриваються й редагуються на вашому пристрої. Облікового запису чи входу немає. У застосунку показується реклама Google AdMob, яка може збирати дані пристрою; подробиці є в пункті «Політика приватності» меню ⋮.</string>
+    <string name="action_print_menu">Друкувати</string>
+    <string name="save_copy_unsaved_title">Є незбережені зміни</string>
+    <string name="save_copy_unsaved_message">Незбережені зміни не потраплять у копію. Спершу зберегти?</string>
+    <string name="save_copy_unsaved_save">Зберегти зміни</string>
+    <string name="save_copy_unsaved_as_is">Копіювати як є</string>
 </resources>

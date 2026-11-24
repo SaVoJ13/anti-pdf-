@@ -424,4 +424,9 @@
     <string name="onboarding_2_body">В документе нажмите «Редактировать», чтобы добавить текст, подпись или рисунок и заполнить поля форм. Объединение, разделение, сканирование и другие инструменты находятся на вкладке «Инструменты».</string>
     <string name="onboarding_3_title">Ваши файлы остаются на устройстве</string>
     <string name="onboarding_3_body">Документы открываются и редактируются на вашем устройстве. Учётной записи и входа нет. В приложении показывается реклама Google AdMob, которая может собирать данные устройства; подробности в пункте «Политика конфиденциальности» меню ⋮.</string>
+    <string name="action_print_menu">Печатать</string>
+    <string name="save_copy_unsaved_title">Есть несохранённые изменения</string>
+    <string name="save_copy_unsaved_message">Несохранённые изменения не попадут в копию. Сначала сохранить?</string>
+    <string name="save_copy_unsaved_save">Сохранить изменения</string>
+    <string name="save_copy_unsaved_as_is">Копировать как есть</string>
 </resources>
