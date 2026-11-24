@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -49,6 +50,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         initialValue = emptyList()
     )
 
+    /** Нефільтрована наявність історії для стану меню; пошук не повинен вимикати «Очистити історію». */
+    val hasAnyRecentDocuments: StateFlow<Boolean> = repository.getRecentDocuments()
+        .map { it.isNotEmpty() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = false
+        )
+
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
     }
@@ -61,6 +71,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val next = !_favoritesOnly.value
         _favoritesOnly.value = next
         return next
+    }
+
+    fun resetLibraryFilters() {
+        _searchQuery.value = ""
+        _favoritesOnly.value = false
     }
 
     fun toggleFavorite(uri: String) {

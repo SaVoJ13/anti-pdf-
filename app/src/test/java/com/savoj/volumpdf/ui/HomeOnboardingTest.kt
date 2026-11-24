@@ -103,12 +103,28 @@ class HomeOnboardingTest {
         assertTrue(HomeLogic.effectiveExpanded(true, 0))
         assertTrue(HomeLogic.speedDialHorizontal(360))
         assertFalse(HomeLogic.speedDialHorizontal(800))
+        assertEquals(HomeLogic.ToolbarState(showLibraryActions = true, showLibraryFab = true), HomeLogic.toolbarState(0))
+        assertEquals(HomeLogic.ToolbarState(showLibraryActions = false, showLibraryFab = false), HomeLogic.toolbarState(1))
     }
 
     @Test
     fun `empty state does not duplicate open and scan`() {
-        assertEquals(HomeLogic.EmptyStateButtons(create = true, clearSearch = false), HomeLogic.emptyStateButtons(hasSearch = false))
-        assertEquals(HomeLogic.EmptyStateButtons(create = false, clearSearch = true), HomeLogic.emptyStateButtons(hasSearch = true))
+        assertEquals(HomeLogic.EmptyState.LIBRARY_EMPTY, HomeLogic.emptyState(hasSearch = false, favoritesOnly = false))
+        assertEquals(HomeLogic.EmptyState.SEARCH_NO_RESULTS, HomeLogic.emptyState(hasSearch = true, favoritesOnly = false))
+        assertEquals(HomeLogic.EmptyState.SEARCH_NO_RESULTS, HomeLogic.emptyState(hasSearch = true, favoritesOnly = true))
+        assertEquals(HomeLogic.EmptyState.FAVORITES_NO_RESULTS, HomeLogic.emptyState(hasSearch = false, favoritesOnly = true))
+        assertEquals(
+            HomeLogic.EmptyStateButtons(create = true, reset = false),
+            HomeLogic.emptyStateButtons(HomeLogic.EmptyState.LIBRARY_EMPTY)
+        )
+        assertEquals(
+            HomeLogic.EmptyStateButtons(create = false, reset = true),
+            HomeLogic.emptyStateButtons(HomeLogic.EmptyState.SEARCH_NO_RESULTS)
+        )
+        assertEquals(
+            HomeLogic.EmptyStateButtons(create = false, reset = true),
+            HomeLogic.emptyStateButtons(HomeLogic.EmptyState.FAVORITES_NO_RESULTS)
+        )
         val layoutIds = ids("layout/fragment_recents.xml")
         assertTrue(layoutIds.contains("@+id/btnEmptyCreate"))
         assertFalse(layoutIds.contains("@+id/btnEmptyOpen"))
@@ -156,6 +172,18 @@ class HomeOnboardingTest {
         assertEquals("true", element("menu/menu_main.xml", "@+id/action_filter_favorites").getAttributeNS(androidNs, "checkable"))
     }
 
+    @Test
+    fun `recent row has 48dp actions with truthful accessible labels`() {
+        val favorite = element("layout/item_recent_document.xml", "@+id/ivFavorite")
+        val more = element("layout/item_recent_document.xml", "@+id/ivMoreMenu")
+        listOf(favorite, more).forEach {
+            assertEquals("48dp", it.getAttributeNS(androidNs, "layout_width"))
+            assertEquals("48dp", it.getAttributeNS(androidNs, "layout_height"))
+        }
+        assertEquals("@string/action_favorite", favorite.getAttributeNS(androidNs, "contentDescription"))
+        assertEquals("@string/action_more_actions", more.getAttributeNS(androidNs, "contentDescription"))
+    }
+
     // --- Онбординг: розмітка, тексти, дозволи ---
 
     @Test
@@ -174,7 +202,7 @@ class HomeOnboardingTest {
             "onboarding_1_title", "onboarding_1_body", "onboarding_2_title", "onboarding_2_body",
             "onboarding_3_title", "onboarding_3_body", "action_more_actions", "action_hide_more_actions", "action_filter_sort"
         )
-        listOf("values", "values-uk", "values-de", "values-ru").forEach { folder ->
+        listOf("values", "values-uk", "values-de", "values-es", "values-ru").forEach { folder ->
             val nodes = parse("$folder/strings.xml").getElementsByTagName("string")
             val names = (0 until nodes.length).map { (nodes.item(it) as Element).getAttribute("name") }.toSet()
             keys.forEach { assertTrue("нема $it у $folder", it in names) }
@@ -199,5 +227,19 @@ class HomeOnboardingTest {
         assertEquals(listOf("android.permission.INTERNET"), perms)
         val block = Regex("<activity[^>]*OnboardingActivity[^>]*/>", RegexOption.DOT_MATCHES_ALL).find(manifest)!!.value
         assertTrue(block.contains("android:exported=\"false\""))
+    }
+
+    @Test
+    fun clearHistoryStateChange_doesNotRebuildMenuForFilteredListChanges() {
+        // Зміна відфільтрованого списку під час пошуку не змінює hasAnyRecentDocuments.
+        assertFalse(HomeLogic.clearHistoryStateChanged(previous = true, current = true))
+        assertFalse(HomeLogic.clearHistoryStateChanged(previous = false, current = false))
+    }
+
+    @Test
+    fun clearHistoryStateChange_requiresUpdateWhenAvailabilityChanges() {
+        assertTrue(HomeLogic.clearHistoryStateChanged(previous = null, current = false))
+        assertTrue(HomeLogic.clearHistoryStateChanged(previous = true, current = false))
+        assertTrue(HomeLogic.clearHistoryStateChanged(previous = false, current = true))
     }
 }

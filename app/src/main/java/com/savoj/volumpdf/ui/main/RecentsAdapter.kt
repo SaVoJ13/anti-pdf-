@@ -86,8 +86,10 @@ class RecentsAdapter(
 
             if (doc.isFavorite) {
                 binding.ivFavorite.setImageResource(R.drawable.ic_star_filled)
+                binding.ivFavorite.contentDescription = context.getString(R.string.action_unfavorite)
             } else {
                 binding.ivFavorite.setImageResource(R.drawable.ic_star_outline)
+                binding.ivFavorite.contentDescription = context.getString(R.string.action_favorite)
             }
 
             binding.root.setOnClickListener {

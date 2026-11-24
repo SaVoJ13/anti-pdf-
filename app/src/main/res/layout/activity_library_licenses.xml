@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/licensesRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorSurface"
+        android:navigationIcon="@drawable/ic_arrow_back"
+        android:title="@string/licenses_libraries_button" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ListView
+            android:id="@+id/licensesList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:divider="?attr/colorOutlineVariant"
+            android:dividerHeight="1dp"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/loading"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/licenses_loading" />
+
+        <TextView
+            android:id="@+id/loadError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:accessibilityLiveRegion="polite"
+            android:gravity="center"
+            android:padding="24dp"
+            android:text="@string/licenses_load_failed"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>

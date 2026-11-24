@@ -103,10 +103,10 @@
 
                 <ImageView
                     android:id="@+id/btnTextBoxResize"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="@dimen/place_swatch_size"
+                    android:layout_height="@dimen/place_swatch_size"
                     android:contentDescription="@string/place_text_size_menu"
-                    android:padding="4dp"
+                    android:padding="14dp"
                     android:src="@drawable/ic_resize_corner"
                     app:tint="#4A80F0" />
             </LinearLayout>
@@ -150,21 +150,14 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <com.savoj.volumpdf.ui.reader.SwatchView
-                android:id="@+id/btnTextCustomColor"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:contentDescription="@string/color_custom"
-                android:visibility="gone" />
-
             <ImageButton
                 android:id="@+id/btnTextColorClose"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="@dimen/place_swatch_size"
+                android:layout_height="@dimen/place_swatch_size"
                 android:layout_marginStart="4dp"
                 android:background="@drawable/bg_place_slot"
                 android:contentDescription="@string/action_cancel"
-                android:padding="5dp"
+                android:padding="14dp"
                 android:src="@drawable/ic_close"
                 app:tint="@color/place_card_on" />
         </LinearLayout>

@@ -1,6 +1,7 @@
 package com.savoj.volumpdf.ui
 
 import com.savoj.volumpdf.util.Haptics
+import com.savoj.volumpdf.ui.reader.SwatchView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -17,7 +18,25 @@ class TouchTargetsTest {
 
     private val layoutDir: File = listOf(File("src/main/res/layout"), File("app/src/main/res/layout")).first { it.isDirectory }
 
-    private fun dp(value: String?): Float? = value?.takeIf { it.endsWith("dp") }?.removeSuffix("dp")?.toFloatOrNull()
+    private val dimensions: Map<String, Float> by lazy {
+        val valuesDir = listOf(File("src/main/res/values"), File("app/src/main/res/values")).first { it.isDirectory }
+        valuesDir.listFiles { file -> file.extension == "xml" }.orEmpty().flatMap { file ->
+            val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
+            val nodes = doc.getElementsByTagName("dimen")
+            (0 until nodes.length).mapNotNull { index ->
+                val element = nodes.item(index) as Element
+                val value = element.textContent.trim()
+                if (value.endsWith("dp")) element.getAttribute("name") to value.removeSuffix("dp").toFloat() else null
+            }
+        }.toMap()
+    }
+
+    private fun dp(value: String?): Float? = when {
+        value == null -> null
+        value.endsWith("dp") -> value.removeSuffix("dp").toFloatOrNull()
+        value.startsWith("@dimen/") -> dimensions[value.removePrefix("@dimen/")]
+        else -> null
+    }
 
     private fun find(layout: String, id: String): Element {
         val doc = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
@@ -41,10 +60,11 @@ class TouchTargetsTest {
         val e = find(layout, id)
         val h = side(e, "layout_height", "minHeight")
         val w = side(e, "layout_width", "minWidth")
-        val wrapW = e.getAttributeNS("http://schemas.android.com/apk/res/android", "layout_width").let { it == "wrap_content" || it == "match_parent" || it.endsWith("dp") }
+        val rawWidth = e.getAttributeNS("http://schemas.android.com/apk/res/android", "layout_width")
+        val wrapW = rawWidth == "wrap_content" || rawWidth == "match_parent" || dp(rawWidth) != null
         assertTrue("$layout/$id: висота $h < 48", h >= 48f)
         // wrap_content/match_parent без minWidth: ширину задає вміст, але для кнопок-іконок ширина має бути заданою
-        if (e.getAttributeNS("http://schemas.android.com/apk/res/android", "layout_width").endsWith("dp")) {
+        if (dp(rawWidth) != null) {
             assertTrue("$layout/$id: ширина $w < 48", w >= 48f)
         }
         assertTrue("$layout/$id: layout_width не задано або невідоме значення", wrapW)
@@ -80,8 +100,16 @@ class TouchTargetsTest {
     fun `text toolbar buttons are at least 48dp`() {
         listOf(
             "btnKbToolPen", "btnKbToolCheck", "btnKbToolText", "btnTextColor", "btnTextBgColor", "btnTextStyle",
-            "btnTextSize", "btnKbSizeMinus", "btnTextUndo", "btnTextRedo", "btnTextConfirm", "btnTextCancel"
+            "btnTextSize", "btnKbSizeMinus", "btnTextUndo", "btnTextRedo", "btnTextConfirm", "btnTextCancel",
+            "btnTextBoxResize", "btnTextColorClose",
         ).forEach { assertTarget("dialog_place_text", it) }
+    }
+
+    @Test
+    fun `compact swatches keep a 48dp accessibility target`() {
+        assertEquals(48f, dimensions.getValue("place_swatch_size"))
+        val source = File("src/main/java/com/savoj/volumpdf/ui/reader/SwatchView.kt").readText()
+        assertTrue(source.contains("getDimensionPixelSize(R.dimen.place_swatch_size)"))
     }
 
     @Test

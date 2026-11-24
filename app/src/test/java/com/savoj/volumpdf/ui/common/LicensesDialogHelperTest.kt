@@ -65,4 +65,17 @@ class LicensesDialogHelperTest {
         val coreOfl = File("../core-pdf/src/main/assets/fonts/OFL.txt").readText().replace("\r\n", "\n").trimEnd()
         assertTrue("Повний OFL у ліцензіях має збігатися з core-pdf/.../OFL.txt", text.contains(coreOfl))
     }
+
+    @Test
+    fun libraryLicensesUseOwnedEdgeToEdgeScreens() {
+        val source = File("src/main/java/com/savoj/volumpdf/ui/common/LicensesDialogHelper.kt").readText()
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        val build = File("build.gradle.kts").readText()
+
+        assertTrue(source.contains("LibraryLicensesActivity::class.java"))
+        assertFalse(source.contains("OssLicensesMenuActivity"))
+        assertTrue(manifest.contains(".ui.common.LibraryLicensesActivity"))
+        assertTrue(manifest.contains(".ui.common.LibraryLicenseDetailActivity"))
+        assertFalse("Стороння Activity з L7 не повинна лишатися runtime-залежністю", build.contains("play-services-oss-licenses:"))
+    }
 }

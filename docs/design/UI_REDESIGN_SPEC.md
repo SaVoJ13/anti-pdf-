@@ -1,5 +1,7 @@
 # UI/UX Redesign Specification — Volum PDF (Anti PDF)
 
+> **ІСТОРИЧНИЙ ДОКУМЕНТ.** Описує стан 2026-11-15 і частково вже реалізовані рішення. Для нової роботи використовувати `ANTI_PDF_REDESIGN_V2.md` та `docs/product/FEATURE_AUDIT_2026-11-23.md`; цей файл не переписується як історичний доказ.
+
 > **Статус:** Phase 0 (Оновлено за результатами покадрового аналізу відео `Screen_Recording_20261114_184603_Samsung_Notes.mp4`) — Очікує затвердження Власником (`Owner Approval Required`)  
 > **Дата:** 2026-11-15  
 > **Базові документи:** `AGENTS.md`, `docs/governance/CONSTITUTION.uk.md`, `docs/governance/PROJECT_PROFILE.md`, `docs/MASTER_SPEC.md`, `docs/CONTRACTS.md`, `docs/research/MARKUP_STAGES.md`

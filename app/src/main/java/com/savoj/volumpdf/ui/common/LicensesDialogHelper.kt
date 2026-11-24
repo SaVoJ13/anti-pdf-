@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.widget.ScrollView
 import android.widget.TextView
-import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.savoj.volumpdf.R
 import java.io.InputStream
@@ -15,7 +14,7 @@ import java.io.InputStream
  * Тексти, яких немає в POM-файлах залежностей (Apache-2.0, Bouncy Castle, нотатки PdfBox-Android,
  * Liberation Sans, Roboto, SIL OFL 1.1), лежать в `assets/licenses` (файли .txt) (англійською, як опубліковано
  * авторами) і читаються з фонового потоку. Ліцензії бібліотек з POM, зокрема SDK Google Play services,
- * показує `OssLicensesMenuActivity` (плагін com.google.android.gms.oss-licenses-plugin).
+ * показує власний edge-to-edge список на основі ресурсів плагіна com.google.android.gms.oss-licenses-plugin.
  */
 object LicensesDialogHelper {
 
@@ -73,7 +72,6 @@ object LicensesDialogHelper {
     }
 
     private fun showLibraryLicenses(context: Context) {
-        OssLicensesMenuActivity.setActivityTitle(context.getString(R.string.licenses_libraries_button))
-        context.startActivity(Intent(context, OssLicensesMenuActivity::class.java))
+        context.startActivity(Intent(context, LibraryLicensesActivity::class.java))
     }
 }

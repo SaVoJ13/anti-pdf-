@@ -63,6 +63,14 @@
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
 
+        <activity
+            android:name=".ui.common.LibraryLicensesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.common.LibraryLicenseDetailActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

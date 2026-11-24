@@ -73,8 +73,8 @@ class SwatchView @JvmOverloads constructor(
 
     /**
      * Компактний режим кружечка для однорядкової плаваючої картки кольорів над клавіатурою (Samsung Notes):
-     * зменшений розмір (30 dp замість 48 dp, радіус кружечка 11 dp), щоб усі кольори + райдужний кружечок
-     * вміщувалися в один компактний ряд без збільшення висоти картки.
+     * зменшує лише видимий кружечок (радіус 11 dp). Accessibility/touch-вузол лишається 48 dp;
+     * якщо ряд не вміщується, його контейнер прокручується горизонтально.
      */
     var compactMode: Boolean = false
         set(value) {
@@ -95,11 +95,7 @@ class SwatchView @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val min = if (compactMode) {
-            (30f * density).toInt()
-        } else {
-            (resources.getDimension(R.dimen.place_swatch_size)).toInt()
-        }
+        val min = resources.getDimensionPixelSize(R.dimen.place_swatch_size)
         setMeasuredDimension(resolveSize(min, widthMeasureSpec), resolveSize(min, heightMeasureSpec))
     }
 
