@@ -19,6 +19,9 @@
     <string name="action_go">Ir</string>
     <string name="place_tool_hand_short">Mano</string>
     <string name="tools_hub_subtitle">Toca cualquier herramienta para elegir enseguida tu PDF y empezar.</string>
+    <string name="tools_section_create">Crear</string>
+    <string name="tools_section_pages">Páginas</string>
+    <string name="tools_section_enhance">Personalizar y optimizar</string>
     <string name="action_search">Buscar</string>
     <string name="search_hint">Buscar documentos…</string>
     <string name="action_sort">Ordenar por</string>
