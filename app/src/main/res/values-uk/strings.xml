@@ -268,9 +268,6 @@
     <string name="tool_insert_file_desc">Додати сторінки з PDF або зображень</string>
     <string name="action_tools">Сторінки й файл</string>
     <string name="tools_sheet_title">Сторінки й файл</string>
-    <string name="tools_group_pages">Сторінки та файли</string>
-    <string name="tools_group_effects">Оформлення та оптимізація</string>
-    <string name="tools_group_quick">Швидкі дії</string>
     <string name="text_pages_added">Додано %d нових стор. для тексту</string>
     <string name="new_document_default_title">Новий документ</string>
     <string name="action_print">Друк</string>
