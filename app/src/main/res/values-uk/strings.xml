@@ -273,7 +273,7 @@
     <string name="tools_group_quick">Швидкі дії</string>
     <string name="text_pages_added">Додано %d нових стор. для тексту</string>
     <string name="new_document_default_title">Новий документ</string>
-    <string name="action_print">Друк</string>
+    <string name="action_print">Друкувати</string>
     <string name="page_added_successfully">Нову сторінку додано</string>
     <string name="files_added_successfully">Файли успішно додано</string>
     <string name="place_tool_image">Зображення</string>
