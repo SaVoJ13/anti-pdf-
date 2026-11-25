@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.savoj.volumpdf.R
 import com.savoj.volumpdf.databinding.ItemSelectedFileBinding
+import com.savoj.volumpdf.util.ImageRotationHelper
 
 data class SelectedFileItem(
     val uri: Uri,
@@ -15,7 +16,7 @@ data class SelectedFileItem(
     val rotationDeg: Int = 0
 ) {
     /** Копія, повернута ще на 90° за годинниковою стрілкою. */
-    fun rotatedClockwise(): SelectedFileItem = copy(rotationDeg = (rotationDeg + 90) % 360)
+    fun rotatedClockwise(): SelectedFileItem = copy(rotationDeg = ImageRotationHelper.nextClockwise(rotationDeg))
 }
 
 class SelectedFileAdapter(
