@@ -11,9 +11,10 @@
 **Package:** `com.savoj.volumpdf.anti`
 **Min / target SDK:** 28 / 36
 **SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:25.5.0`), Google UMP (`com.google.android.ump:user-messaging-platform:4.0.0`), Google ML Kit Document Scanner (`com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1`, працює через Google Play services; збирає технічну діагностику; застосунок скани не передає).
-**Інші SDK:** PdfBox-Android, androidx.pdf, Room (усе локально); `com.google.android.gms:play-services-oss-licenses:17.1.0` (лише показ ліцензій на екрані, мережевого збору даних не додає).
+**Інші SDK:** PdfBox-Android, androidx.pdf, Room (усе локально); екрани ліцензій власні (`LibraryLicensesActivity`, `LibraryLicenseDetailActivity`, `OssLicenseParser`); тексти беруться з локальних ресурсів `res/raw/third_party_license_metadata` і `res/raw/third_party_licenses`, які під час збірки генерує Gradle-плагін `oss-licenses-plugin` (у APK плагін не потрапляє). Залежність `play-services-oss-licenses` видалено в D1 (`docs/governance/DECISIONS.md:104`, `docs/THIRD_PARTY.md:45`); екрани ліцензій мережі не використовують і даних не збирають.
 **Резервне копіювання:** `allowBackup="false"` (рішення Власника 2026-11-14); `dataExtractionRules` / `fullBackupContent` не задано, бо автокопіювання вимкнено.
-**Дозволи у власному маніфесті:** лише `INTERNET`. Склеєний маніфест релізу перевірено, дивись `docs/project_log.md` (запис release-prep).
+**Дозволи у власному маніфесті:** лише `INTERNET`. Склеєний маніфест релізу перевірено, дивись `docs/project_log.md` (запис 2026-11-16 «Підготовка до публікації», release-prep).
+**Склеєний маніфест релізу (повторно зібрано 2026-11-25 на `fb99f35`):** 9 `uses-permission` (власний лише `INTERNET`; решта від SDK реклами та `androidx.work`); `uses-feature android.hardware.screen.portrait required=false` (власний маніфест); `<queries>` із `com.android.vending`. Деталі й посилання: `docs/store/PLAY_DECLARATIONS_RC3_REVIEW.md`.
 
 ---
 
@@ -62,6 +63,8 @@ Google UMP показує форму в ЄЕЗ/Великій Британії/�
 
 ## 4. Декларація Advertising ID (App content)
 Реліз тягне дозвіл `com.google.android.gms.permission.AD_ID` через SDK реклами (підтвердження зі склеєного маніфесту в журналі). У Play Console: App content / Advertising ID: так, застосунок використовує рекламний ID для реклами.
+
+Склеєний маніфест містить також дозволи Privacy Sandbox від SDK реклами (`ACCESS_ADSERVICES_AD_ID`, `ACCESS_ADSERVICES_ATTRIBUTION`, `ACCESS_ADSERVICES_TOPICS`); це не окремий збір даних застосунком, а частина AdMob 25.5.0. Чи потрібна для них окрема відповідь у формах Play: НЕ ПЕРЕВІРЕНО (рішення Власника з координатором).
 
 ## 5. Повторна звірка після оновлення SDK
 - **Виконано 2026-11-18 для AdMob 25.5.0** (джерело: https://developers.google.com/admob/android/privacy/play-data-disclosure, отримано 2026-11-18). Сторінка перелічує: IP-адреса (може слугувати для оцінки загального місцезнаходження), взаємодія з продуктом (запуск, тапи, перегляди відео), діагностика (час запуску, hang rate, енергоспоживання), ідентифікатори пристрою й облікових записів (рекламний ID Android, app set ID, за наявності інші ідентифікатори входу на пристрої). Цілі названо для групи загалом: реклама, аналітика, запобігання шахрайству. Шифрування: TLS. Рекламний ID: збір необов'язковий, розробник може заборонити через маніфест.
