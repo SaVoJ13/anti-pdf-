@@ -72,6 +72,15 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Повертає зображення в списку вибору на 90° за годинниковою стрілкою (лише зображення). */
+    fun rotateFileAt(position: Int) {
+        val current = _selectedFiles.value.toMutableList()
+        if (position in current.indices && current[position].isImage) {
+            current[position] = current[position].rotatedClockwise()
+            _selectedFiles.value = current
+        }
+    }
+
     fun clearFiles() {
         _selectedFiles.value = emptyList()
         sourceDocumentPages = 0
@@ -167,6 +176,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
 
     fun executeImagesToPdf(context: Context, outputUri: Uri) {
         val imageUris = _selectedFiles.value.map { it.uri }
+        val rotations = _selectedFiles.value.map { it.rotationDeg }
         if (imageUris.isEmpty()) {
             _uiState.value = OperationUiState.Error(UserMessage(R.string.error_select_images))
             return
@@ -174,7 +184,7 @@ class ToolsViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             _uiState.value = OperationUiState.Loading(1, imageUris.size)
-            val result = engine.imagesToPdf(context, imageUris, outputUri)
+            val result = engine.imagesToPdf(context, imageUris, outputUri, rotations)
             handleEngineResult(context, result)
         }
     }
