@@ -1,3 +1,15 @@
+## 2026-11-25 — Автор (Claude, беклог): іспанські plurals з формою many
+
+**Простими словами**
+- В іспанських рядках усі 6 plurals мали лише «one» і «other»; lint просив ще форму «many» (для мільйонів: «1 000 000 de páginas»).
+- Додано `many` до всіх шести: `pages_count`, `forms_sheet_subtitle`, `selected_files_count`, `selected_images_count`, `document_pages_count`, `organize_pages_count`. Текст — «%d de …».
+- Перевірено всі plurals у `values-es`: інших без `many` немає (їх рівно 6).
+- Тест паритету рядків тепер вимагає для es форми `one`, `many`, `other` (раніше `one`, `other`).
+- Готово до QA (не `QA Verified`): на пристрої не перевірялось, носія мови не залучено.
+
+**Що змінено:** `app/src/main/res/values-es/strings.xml` (+6 рядків), `StringsParityTest.kt` (вимога `many` для es). Гілка `codex/backlog-es-plurals` від `b65a684`.
+**Числа (XML, JDK 21, `--no-daemon`):** app 431 тест, 0 збоїв, 0 помилок, 0 пропущено; core-pdf 107, 0/0, 1 пропущено на варіант (XML debug); `lint-results-debug.xml`: 0 errors, 143 warnings (було 149; `MissingQuantity` 6 → 0).
+**Ризики:** низькі; `many` у es використовується лише для чисел ≥ 1 000 000. **НЕ ПЕРЕВІРЕНО:** переклад носієм мови; release-варіанти; пристрій.
 ## 2026-11-25 — Керівник проєкту (Агент 0): O-1 пройшов перевірку на телефоні
 
 **Простими словами**
