@@ -1,3 +1,10 @@
+## 2026-11-25 — QA: backlog-portrait-feature
+
+**Простими словами**
+- Незалежна перевірка дозволу на запуск без портретного екрана: змінено лише маніфест, нових дозволів немає, тести й lint без помилок.
+
+**Вердикт:** QA Verified. Звіт: docs/qa/QA_backlog-portrait-feature_2026-11-25.md. **НЕ ПЕРЕВІРЕНО:** Google Play, пристрої.
+
 ## 2026-11-25 — Автор (Claude, беклог): uses-feature screen.portrait required=false
 
 **Простими словами**
