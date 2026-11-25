@@ -160,7 +160,7 @@ class StringsParityTest {
             "values-de" to setOf("one", "other"),
             "values-uk" to setOf("one", "few", "many", "other"),
             "values-ru" to setOf("one", "few", "many", "other"),
-            "values-es" to setOf("one", "other")
+            "values-es" to setOf("one", "many", "other")
         )
         required.forEach { (folder, quantities) ->
             val map = loadPlurals(folder)

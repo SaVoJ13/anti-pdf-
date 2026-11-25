@@ -375,26 +375,32 @@
     <plurals name="pages_count">
         <item quantity="one">%d página</item>
         <item quantity="other">%d páginas</item>
+        <item quantity="many">%d de páginas</item>
     </plurals>
     <plurals name="forms_sheet_subtitle">
         <item quantity="one">%d campo rellenable encontrado</item>
         <item quantity="other">%d campos rellenables encontrados</item>
+        <item quantity="many">%d de campos rellenables encontrados</item>
     </plurals>
     <plurals name="selected_files_count">
         <item quantity="one">%d archivo seleccionado</item>
         <item quantity="other">%d archivos seleccionados</item>
+        <item quantity="many">%d de archivos seleccionados</item>
     </plurals>
     <plurals name="selected_images_count">
         <item quantity="one">%d imagen seleccionada</item>
         <item quantity="other">%d imágenes seleccionadas</item>
+        <item quantity="many">%d de imágenes seleccionadas</item>
     </plurals>
     <plurals name="document_pages_count">
         <item quantity="one">%d página</item>
         <item quantity="other">%d páginas</item>
+        <item quantity="many">%d de páginas</item>
     </plurals>
     <plurals name="organize_pages_count">
         <item quantity="one">%d página</item>
         <item quantity="other">%d páginas</item>
+        <item quantity="many">%d de páginas</item>
     </plurals>
     <string name="page_numbers_example_1">Página 1 de 10</string>
     <string name="page_numbers_example_2">1 / 10</string>

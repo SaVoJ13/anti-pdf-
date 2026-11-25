@@ -10,11 +10,17 @@ import com.savoj.volumpdf.databinding.ItemSelectedFileBinding
 data class SelectedFileItem(
     val uri: Uri,
     val displayName: String,
-    val isImage: Boolean = false
-)
+    val isImage: Boolean = false,
+    /** Кут повороту зображення за годинниковою стрілкою (0/90/180/270); лише для зображень. */
+    val rotationDeg: Int = 0
+) {
+    /** Копія, повернута ще на 90° за годинниковою стрілкою. */
+    fun rotatedClockwise(): SelectedFileItem = copy(rotationDeg = (rotationDeg + 90) % 360)
+}
 
 class SelectedFileAdapter(
-    private val onRemoveClicked: (Int) -> Unit
+    private val onRemoveClicked: (Int) -> Unit,
+    private val onRotateClicked: (Int) -> Unit = {}
 ) : RecyclerView.Adapter<SelectedFileAdapter.FileViewHolder>() {
 
     private val items = mutableListOf<SelectedFileItem>()
@@ -65,6 +71,15 @@ class SelectedFileAdapter(
                 binding.ivItemTypeIcon.setImageResource(R.drawable.ic_image_to_pdf)
             } else {
                 binding.ivItemTypeIcon.setImageResource(R.drawable.ic_pdf_document)
+            }
+
+            binding.ivItemTypeIcon.rotation = if (item.isImage) item.rotationDeg.toFloat() else 0f
+            binding.btnRotateFile.visibility = if (item.isImage) android.view.View.VISIBLE else android.view.View.GONE
+            binding.btnRotateFile.setOnClickListener {
+                val currentPos = bindingAdapterPosition
+                if (currentPos != RecyclerView.NO_POSITION) {
+                    onRotateClicked(currentPos)
+                }
             }
 
             binding.btnRemoveFile.setOnClickListener {
