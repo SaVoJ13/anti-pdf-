@@ -36,3 +36,39 @@
 - Реальні PNG/WebP (тести використовують лише JPEG з підміненим SOF).
 - Android 9-11; поведінка переглядачів на дуже малих сторінках.
 - Lint-базу main не порівнювали.
+
+---
+
+# Коло 2: O1-2 (скан ML Kit обходив imagesToPdf), автор SHA `8f80dee`
+
+Злито `origin/codex/fix-o1-image-page-size` (8f80dee) у `qa/o1-image-page-size` merge-комітом (без force); єдиний конфлікт - `docs/project_log.md` (обидва записи збережено). Зміни автора в колі 2: `DocumentScannerLogic.kt` (+`chooseScanSource`, `ScanSource`), `ScanDocumentActivity.kt`, `DocumentScannerLogicTest.kt` (+4 тести), `CURRENT_STATE.md`, `project_log.md`. core-pdf, залежності, дозволи, AGENTS/CLAUDE/конституція не чіпались.
+
+## Вердикт кола 2: QA Verified (код і автотести). Device gate (O1-2 на телефоні) НЕ пройдено.
+
+## Перевірено читанням
+- `chooseScanSource`: є JPEG-сторінки -> `Images(pages, pdfUri як запасний)`; немає сторінок, є PDF -> `MlKitPdf`; нічого -> null (тост помилки й `finish()`). Коректно, покрито 4 тестами.
+- `handleScanSuccess`: URI сторінок і PDF зчитуються синхронно з результату одразу в обробнику, до `launch` і до закриття сканера. Права: `takePersistableUriPermissionSafe` для кожної сторінки (для content://; помилки проковтуються), читання йде в межах тимчасового дозволу активності - прийнятно.
+- Побудова: `imagesToPdf` (IO) пише у `filesDir/scanned/<ім'я>`; запис у core-pdf через `saveSafely` (temp + rename), тож часткового цільового файлу при збої не лишається. При `Error` (також якщо виняток) - `targetFile.delete()`, потім запасний ML Kit PDF (`persistScannedPdf` у той самий файл); якщо запасного немає - виняток -> тост `err_save_scan` і `finish()`.
+- `pageCount`: після успіху `result.pagesCount`, у запасному шляху `pages.size` від ML Kit (або 1). `recordDocumentOpened` викликається один раз, після побудови, з тим самим `persistentUri`. `openScannedDocument` один раз, далі `finish()`: подвійного відкриття нема. Витоків ресурсів не знайдено (потоки в core-pdf під `use`).
+- `ReaderActivity` ~2284-2310 (скан для вставки на сторінку, `pageLimit=1`): бере `pages.first().imageUri` (запасно pdf) і малює через `placeImageOnPage` у межах уже наявної сторінки; PDF-сторінка із зображенням розміру не створюється. Змін справді не потребує.
+- Інші шляхи: пошук `PDPage(`/`PDRectangle(`/`createFromByteArray`/`JPEGFactory`/`LosslessFactory`/`GmsDocumentScanning`/`pdf?.uri`: сторінка з розміром зображення створюється лише в двох місцях core-pdf (обидва через `ImagePageGeometry`). `JPEGFactory` у `PdfBoxPageOperationsEngine` (стиснення) і підпис/штамп - не створюють сторінок. Єдиний споживач PDF сканера, що обходив геометрію, був `ScanDocumentActivity` - виправлено; решта шляхів (`ToolsViewModel`, запасний вибір фото) вже йшли через `imagesToPdf`.
+
+## Мутація
+У `chooseScanSource` умову `pageImageUris.isNotEmpty()` змінено на `... && pdfUri == null` (повернення до обходу, коли є і сторінки, і PDF): впав `chooseScanSource_pagesPresent_usesImagesWithPdfFallback` (7 тестів, 1 впав). Файл відновлено `git checkout`, дерево чисте.
+
+## Числа з XML (JDK 21, BUILD SUCCESSFUL)
+- core-pdf: 17 файлів, 119 тестів, 0 failures, 0 errors, 1 skipped.
+- app: 46 файлів, 435 тестів, 0 failures, 0 errors, 0 skipped (`DocumentScannerLogicTest`: 7, 0 помилок).
+- lint (перегенеровано `--rerun-tasks`, `lint-results-debug.xml`): 0 Error, 149 Warning.
+
+## Дефекти кола 2
+Критичних, високих, середніх немає. Низькі (не блокують):
+- L1: помилка скасування корутини (повертання/закриття екрана під час побудови) у внутрішньому `catch (e: Exception)` перетворюється на `Error` і веде на запасний шлях; далі `withContext` знову кидає скасування, зовнішній `catch` показує тост. Практично лише зайва робота/тост при закритті екрана.
+- L2: у запасному шляху `persistScannedPdf` пише у файл напряму; при збої копіювання може лишитись частковий файл (поведінка існувала раніше).
+- L3: `pageCount` у запасному шляху береться з `pages.size`; якщо частина сторінок без `imageUri` (`mapNotNull`), кількість могла б розійтись - малоймовірно.
+- L4 (з кола 1, лишається): ReaderActivity для `pdf.uri` без сторінок декодує PDF як bitmap (не відтворюється при формат JPEG+PDF).
+
+## НЕ ПЕРЕВІРЕНО (коло 2)
+- Реальне «Сканувати» на телефоні (1 і багато сторінок, порожня A4 проти скану), права на content:// URI ML Kit, поведінка запасного шляху.
+- Пам'ять/швидкість для ~100 сторінок великих JPEG (`imagesToPdf` ловить Throwable і піде на запасний PDF, але не вимірювалось).
+- Ручне скасування й поворот екрана під час обробки.
