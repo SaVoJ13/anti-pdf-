@@ -3,6 +3,12 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25 (RC3): `release/rc3`, версія 1.0.2 (код 3), готово до QA
+- Гілка `release/rc3` від `main` `fb99f35`: змінено лише `versionCode` 2->3 і `versionName` 1.0.1->1.0.2; додано `RELEASE_NOTES_RC3.md`, `RC3_BUILD_GUIDE.md`, `RC3_CHECKLIST.md`. PR/злиття не робились, у Play нічого не завантажено.
+- XML (JDK 21): app 451/0/0/0; core-pdf 137/0/0/1; lint 0 errors/143 warnings. Маніфест release RC3 проти RC2: дозволи, queries, intent-filters без змін; нове лише uses-feature portrait required=false і дві внутрішні activity ліцензій (замість двох gms OssLicenses). R8 пройшов (непідписаний AAB 16 320 010 байт); `.so` у AAB немає (16 KB: нічого перевіряти).
+- Без `admob.properties` release зібрано з тестовими ID (правильна політика); справжній реліз Власник збирає на своєму ПК.
+- НЕ ПЕРЕВІРЕНО: підпис ключем Власника; release на телефоні; QA немає; примітки de/ru/es не складено.
+
 ## Оновлення 2026-11-25 (усе злито): стан main `951f697`
 - За словом Власника злито в `main` окремими PR, merge-коміти без squash і без force (SHA merge): R1 `2111870` (#14); O-1 `a76f664` (#16); es-plurals `ea3848c` (#17); portrait `6b43999` (#18); no-invalidate-optionsmenu-test `0710610` (#19); release-no-admob-test `ea5c885` (#20); licenses-error-test `0d7ee1f` (#21); docs/feature-audit `951f697` (#22). Версію не змінювали, у Google Play нічого не публікували. Попередній розділ «у main НЕ зливати» втратив чинність.
 - Документи правил (AGENTS.md, CLAUDE.md, конституція, профіль, .agents) збігаються з версією до злиттів. Конфлікти були лише в `docs/project_log.md` (вирішені об'єднанням записів).
