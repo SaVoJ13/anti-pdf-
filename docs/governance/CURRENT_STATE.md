@@ -3,6 +3,13 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25 (усе злито): стан main `951f697`
+- За словом Власника злито в `main` окремими PR, merge-коміти без squash і без force (SHA merge): R1 `2111870` (#14); O-1 `a76f664` (#16); es-plurals `ea3848c` (#17); portrait `6b43999` (#18); no-invalidate-optionsmenu-test `0710610` (#19); release-no-admob-test `ea5c885` (#20); licenses-error-test `0d7ee1f` (#21); docs/feature-audit `951f697` (#22). Версію не змінювали, у Google Play нічого не публікували. Попередній розділ «у main НЕ зливати» втратив чинність.
+- Документи правил (AGENTS.md, CLAUDE.md, конституція, профіль, .agents) збігаються з версією до злиттів. Конфлікти були лише в `docs/project_log.md` (вирішені об'єднанням записів).
+- Числа на злитому main (XML Gradle, JDK 21): app 451/0/0/0; core-pdf 137/0/0/1; lint 0 errors/0 fatal/143 warnings.
+- Беклог (записано): (1) тест, що `ToolsViewModel.executeImagesToPdf` передає кути повороту в рушій, а також `rotateFileAt` і видалення (борг QA O-1, L5); (2) D-8 аудиту: зсунутий номер рядка AUDIT §4 T5; (3) `DATA_SAFETY.md:14` застарілий (залежність oss-licenses видалена в D1): передати ролі «Монетизація і Google Play»; (4) дзеркальні EXIF 2/4/5/7 лише повертаються (L6); (5) EXIF/PNG/WebP, поворот у «Сканувати» і при додаванні зображення в читалці — не робилось; (6) «Друк» у шторці читалки без перейменування на «Друкувати»; (7) невикористані рядки tools_group_*.
+- НЕ ПЕРЕВІРЕНО: TalkBack; Android 9–11; планшет; PNG/WebP; реальна release-збірка без `admob.properties`; фільтрація пристроїв у Play Console для `uses-feature`.
+
 ## Оновлення 2026-11-25 (O-1, device gate): пройдено на телефоні
 - Збірка `com.savoj.volumpdf.anti.o1qa` на SHA `4188580`. Власник: O1-1 (фото з камери) ок; O1-2 (скан) спершу не ок (скан ML Kit обходив `imagesToPdf`, виправлено `8f80dee`), потім ок; O1-3 (альбомне ширше за A4) не ок → рішення Власника: зменшувати до ширини A4 і додати поворот зображення (`96adaba`), потім ок; «вертикальні фото лягають горизонтально» → автоповорот за EXIF (`4188580`), O1-4 ок; O1-5 (скан після EXIF) ок.
 - QA Verified (код) у 4 кола (qa/o1-image-page-size, `175cb78`): core-pdf 137/0/0/1, app 438/0/0/0, lint 0 errors/149 warnings.
