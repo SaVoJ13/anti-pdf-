@@ -96,7 +96,7 @@
 1. **Перегляд зашифрованого PDF** виконує `androidx.pdf`. У `PdfViewerBridge.kt` обробки пароля немає (`grep`). Як бібліотека питає пароль і чи локалізує діалог: **НЕ ПЕРЕВІРЕНО**.
 2. **Режим «Редагувати» і форми для зашифрованого документа.** Власний діалог пароля: `ReaderActivity.kt:397-460` (`obtainAccess`, `askPassword`), макет `DialogDocumentPasswordBinding`, рядки `password_title`, `password_wrong`, `password_continue`. Пароль живе лише у `ReaderViewModel.documentPassword`, на диск не пишеться (коментар `:433`). Стан: `EditAccessModel.resolve` (`A ui/reader/EditAccess.kt`). Права автора: `PlaceMarkupLogic.kt:784-789` (`Gate.ENCRYPTED`, `NO_MARKUP_RIGHTS`).
 3. **Збереження** зберігає шифрування: `PdfIo.copyEncryption` (`C PdfIo.kt:175-182`) і `keepEncryption` (`:190`); ключ 40/128/256, AES для ≥128.
-4. **Інструменти** (`ToolsActivity`) для зашифрованих PDF: `ToolsViewModel` не передає пароль (`password = null` за замовчуванням у `PageOperationsEngine.kt:20, 30, 39`; виклики `ToolsViewModel.kt:99-118`). Помилка пароля зіставляється з `ErrorMessages.Kind.PASSWORD` → `error_invalid_password` (`A util/ErrorMessages.kt:32, 61`). Тобто інструменти не питають пароль, а показують помилку (висновок із коду, не перевірено на пристрої). Для інструментів «відкриття із паролем» неповне.
+4. **Інструменти** (`ToolsActivity`) для зашифрованих PDF: `ToolsViewModel` не передає пароль (`password = null` за замовчуванням у `PageOperationsEngine.kt:20, 30, 39`; виклики `ToolsViewModel.kt:124, 151, 172`). Помилка пароля зіставляється з `ErrorMessages.Kind.PASSWORD` → `error_invalid_password` (`A util/ErrorMessages.kt:32, 61`). Тобто інструменти не питають пароль, а показують помилку (висновок із коду, не перевірено на пристрої). Для інструментів «відкриття із паролем» неповне.
 
 Тести: `EditAccessTest`, `PendingLoadGuardTest`; `CT large/LargeEncryptedTest`, `PdfIoErrorMappingTest`.
 
@@ -133,15 +133,15 @@
 
 `ToolType` (11): `CREATE_BLANK`, `SCAN_DOCUMENT`, `ORGANIZE_PAGES`, `MERGE`, `SPLIT`, `ROTATE`, `DELETE_PAGES`, `IMAGES_TO_PDF`, `WATERMARK`, `PAGE_NUMBERS`, `COMPRESS` (`A ui/tools/ToolsAdapter.kt:12-24`). Групи D3 (`A ui/tools/ToolGroups.kt:7-23`): **Створити** (порожній, Сканувати, Зображення в PDF), **Сторінки** (Упорядкувати, Об'єднати, Розділити, Повернути, Видалити), **Оформити й оптимізувати** (Водяний знак, Нумерація, Стиснення). Тест групування: `AT ui/tools/ToolGroupingLogicTest`.
 
-Потік: вибір файлів → перевірка введення → `CreateDocument` (реєстрація `ToolsActivity.kt:82-83`, запуск `:370`) → `ToolsViewModel.execute*` → `PageOperationsEngine` (PdfBox) → interstitial з кулдауном 5 хв і діалог результату (`ToolsActivity.kt:485-486`). Вихід завжди в новий файл за вибором користувача; захист від збігу вхідного й вихідного файлу: `CT PdfIoSameTargetTest` (висновок щодо UI: **НЕ ПЕРЕВІРЕНО**).
+Потік: вибір файлів → перевірка введення → `CreateDocument` (реєстрація `ToolsActivity.kt:82-83`, запуск `:371`) → `ToolsViewModel.execute*` → `PageOperationsEngine` (PdfBox) → interstitial з кулдауном 5 хв і діалог результату (`ToolsActivity.kt:487`). Вихід завжди в новий файл за вибором користувача; захист від збігу вхідного й вихідного файлу: `CT PdfIoSameTargetTest` (висновок щодо UI: **НЕ ПЕРЕВІРЕНО**).
 
 | ID | Інструмент | Налаштування | Обмеження | Тести |
 |---|---|---|---|---|
-| T1 | Створити порожній PDF | Без налаштувань; створює й відкриває (`ToolsActivity.kt:107-119`) | — | `CT PdfBoxPageOperationsEngineTest` |
+| T1 | Створити порожній PDF | Без налаштувань; створює й відкриває (`ToolsActivity.kt:117`) | — | `CT PdfBoxPageOperationsEngineTest` |
 | T2 | Сканувати | Запускає `ScanDocumentActivity` і закриває екран | Google Play Services | `DocumentScannerLogicTest` |
 | T3 | Зображення → PDF | `OpenMultipleDocuments` (`image/jpeg`, `image/png`, `image/*`), список файлів (`SelectedFileAdapter`) | Завеликі зображення: див. O-1; великі файли: `CT large/LargePageOpsTest` | `CT PdfBoxPageOperationsEngineTest`, `LargePageOpsTest` |
 | T4 | Упорядкувати сторінки | Окремий екран `PageOrganizerActivity`: переставлення, поворот, видалення, «Скинути» | Один файл | `PageOrganizerLogicTest`; `CT PdfBoxOrganizePagesTest` |
-| T5 | Об'єднати | Мінімум 2 файли (`error_select_min_two_files`, `ToolsActivity.kt:278`) | — | `CT PdfBoxPageOperationsEngineTest` |
+| T5 | Об'єднати | Мінімум 2 файли (`error_select_min_two_files`, `ToolsActivity.kt:281`) | — | `CT PdfBoxPageOperationsEngineTest` |
 | T6 | Розділити (витягти сторінки) | Діапазон, наприклад «1-3,5» (`PageRangeParser`), обов'язковий | — | `AT PageRangeParserTest` |
 | T7 | Повернути | 90/180/270 (`rbRotate*`, `:388-395`), діапазон необов'язковий | — | `CT PdfBoxPageOperationsEngineTest` |
 | T8 | Видалити сторінки | Діапазон обов'язковий | Видалення всіх сторінок: **НЕ ПЕРЕВІРЕНО** | `CT PdfBoxPageOperationsEngineTest` |
@@ -194,7 +194,7 @@
 | ID | Функція | Код | Працює | Обмеження | Тести |
 |---|---|---|---|---|---|
 | P1 | Адаптивний банер | `core-ads/.../AdMobAdsManager.kt`, `MainActivity.kt:161-167` | Так, на двох екранах: головний (`MainActivity.kt:161-167`, `bannerContainer`) і `ToolsActivity` (`ToolsActivity.kt:147 bindAdaptiveBanner`, контейнер `res/layout/activity_tools.xml:444`). У читалці реклами немає: `ReaderActivity.kt` не звертається до `AdMobAdsManager` (`grep`: лише `MainActivity.kt` і `ToolsActivity.kt`) | Банер після завершення UMP | `AdMobAdsManagerTest`, `AdIdsConfigTest` |
-| P2 | Interstitial після завершеної дії інструмента, кулдаун 5 хв | `AdMobAdsManager.kt:168 showActionInterstitial`; виклик `ToolsActivity.kt:485` | Так | Реальні ID лише в release (`admob.properties`); debug тестові (`VerifyAdmobManifestTask` у `app/build.gradle.kts`) | `AdMobAdsManagerTest` |
+| P2 | Interstitial після завершеної дії інструмента, кулдаун 5 хв | `AdMobAdsManager.kt:168 showActionInterstitial`; виклик `ToolsActivity.kt:487` | Так | Реальні ID лише в release (`admob.properties`); debug тестові (`VerifyAdmobManifestTask` у `app/build.gradle.kts`) | `AdMobAdsManagerTest` |
 | P3 | Згода UMP, «Налаштування приватності» | `AdMobAdsManager.requestConsentAndInit`, `isPrivacyOptionsRequired`, `showPrivacyOptionsForm`; `MainActivity.kt:411, 456` | Так | Пункт видно лише коли UMP вимагає | `AdMobAdsManagerTest`, `PrivacyMenuTest` |
 | S4 | Тема застосунку Світла/Темна за системою | `res/values/themes.xml:3`, `res/values-night/themes.xml` | Так | Власного перемикача нема | `AppearanceContrastTest` |
 | S3 | Динамічні кольори (Android 12+) | L13 | Так | | `ThemesDialogTest` |
@@ -208,7 +208,7 @@
 |---|---|---|---|---|
 | O1 | «Відкрити в Anti PDF» з менеджера файлів, пошти, браузера | `AndroidManifest.xml:31-38`, `MainActivity.kt:178-197` (`onNewIntent` і `handleIntent` для `ACTION_VIEW` та `ACTION_EDIT` з `data`; `onDocumentSelected` додає в «Останні» й відкриває `ReaderActivity`) | Так за кодом | `ACTION_EDIT` обробляється в коді, але фільтра `EDIT` у маніфесті немає, тож зовнішні програми його до нас не спрямують |
 | O1b | Онбординг при відкритті з інтенту | `OnboardingLogic.shouldShow(..., isDocumentIntent)` | Так: з інтенту онбординг пропускається | Тест `HomeOnboardingTest` |
-| O1c | Збереження прав на URI | `SafUtils.takePersistableUriPermissionSafe` (`ToolsActivity.kt:70`) | Частково: чи відкриється зовнішній `content://` з «Останніх» після перезапуску, **НЕ ПЕРЕВІРЕНО** | — |
+| O1c | Збереження прав на URI | `SafUtils.takePersistableUriPermissionSafe` (`ToolsActivity.kt:45, 56, 72`) | Частково: чи відкриється зовнішній `content://` з «Останніх» після перезапуску, **НЕ ПЕРЕВІРЕНО** | — |
 | O1d | `file://` | Схема `file` є в маніфесті; на Android 7+ поведінка: **НЕ ПЕРЕВІРЕНО** | | |
 | O2 | `SEND` / «Поділитися в Anti PDF» | Фільтра немає | Нема | |
 
