@@ -3,6 +3,11 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25: R1 device gate закрито (R1–R11 ок, R12 TalkBack пропущено)
+- Власник пройшов чекліст R1 на S24 Ultra з `com.savoj.volumpdf.anti.r1qa`: R1–R11 ок. R12 (TalkBack) пропущено Власником: НЕ ПЕРЕВІРЕНО.
+- R1 готовий до злиття; злиття чекає слова Власника. O-1 залишається відкритим рішенням.
+- НЕ ПЕРЕВІРЕНО: TalkBack; Android 9–11; планшет.
+
 ## Оновлення 2026-11-24 (нічна робота): R1 — код QA Verified, device gate відкритий; D3 у main
 - D3 злито в `main` (PR #13, merge `484c346`). R1 (гілка `codex/redesign-r1-reader-menu`): «Друкувати» і «Зберегти копію» постійно в «⋮», діалог про незбережені зміни, «Зберегти» в «Редагувати» завжди видно (неактивне без змін). Автор `d35af44`+`47281f9`; незалежний QA Verified (код) після 2 кіл (дефекти D-1…D-3 виправлено; D-4 низький, недосяжний).
 - XML (QA, JDK 21, `--no-daemon`): app 431/0/0/0; core-pdf 107/0/0/1 на варіант; lint 0 errors/149 warnings.
