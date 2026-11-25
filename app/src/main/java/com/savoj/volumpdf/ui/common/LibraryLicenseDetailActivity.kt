@@ -43,10 +43,10 @@ class LibraryLicenseDetailActivity : AppCompatActivity() {
         binding.loading.visibility = View.VISIBLE
         binding.licenseText.visibility = View.GONE
         Thread({
-            val text = runCatching {
-                val bytes = resources.openRawResource(R.raw.third_party_licenses).use { it.readBytes() }
-                OssLicenseParser.licenseText(bytes, entry)
-            }.getOrNull()
+            val text = OssLicenseParser.loadText(
+                readBlob = { resources.openRawResource(R.raw.third_party_licenses).use { it.readBytes() } },
+                entry = entry,
+            )
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 binding.loading.visibility = View.GONE
