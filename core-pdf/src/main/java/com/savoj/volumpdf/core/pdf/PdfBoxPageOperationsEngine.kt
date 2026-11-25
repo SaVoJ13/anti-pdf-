@@ -268,8 +268,7 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                         else -> PDRectangle.A4.height.toInt()
                     }
 
-                    val width = imgWidth.toFloat()
-                    val height = imgHeight.toFloat()
+                    val (width, height) = ImagePageGeometry.pageSizePt(imgWidth, imgHeight)
                     val page = PDPage(PDRectangle(width, height))
                     doc.addPage(page)
 
@@ -711,22 +710,23 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                                 imageBytes,
                                 "append_img_${index}_${System.currentTimeMillis()}"
                             )
-                            val imgWidth = when {
+                            val imgWidthPx = when {
                                 imgX.width > 0 -> imgX.width
                                 parsedDim != null && parsedDim.first > 0 -> {
                                     imgX.width = parsedDim.first
                                     parsedDim.first
                                 }
                                 else -> PDRectangle.A4.width.toInt()
-                            }.toFloat()
-                            val imgHeight = when {
+                            }
+                            val imgHeightPx = when {
                                 imgX.height > 0 -> imgX.height
                                 parsedDim != null && parsedDim.second > 0 -> {
                                     imgX.height = parsedDim.second
                                     parsedDim.second
                                 }
                                 else -> PDRectangle.A4.height.toInt()
-                            }.toFloat()
+                            }
+                            val (imgWidth, imgHeight) = ImagePageGeometry.pageSizePt(imgWidthPx, imgHeightPx)
 
                             val page = PDPage(PDRectangle(imgWidth, imgHeight))
                             targetDoc.addPage(page)
