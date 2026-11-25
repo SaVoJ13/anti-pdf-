@@ -13,7 +13,7 @@
 **SDK з мережею:** Google AdMob (`com.google.android.gms:play-services-ads:25.5.0`), Google UMP (`com.google.android.ump:user-messaging-platform:4.0.0`), Google ML Kit Document Scanner (`com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1`, працює через Google Play services; збирає технічну діагностику; застосунок скани не передає).
 **Інші SDK:** PdfBox-Android, androidx.pdf, Room (усе локально); екрани ліцензій власні (`LibraryLicensesActivity`, `LibraryLicenseDetailActivity`, `OssLicenseParser`); тексти беруться з локальних ресурсів `res/raw/third_party_license_metadata` і `res/raw/third_party_licenses`, які під час збірки генерує Gradle-плагін `oss-licenses-plugin` (у APK плагін не потрапляє). Залежність `play-services-oss-licenses` видалено в D1 (`docs/governance/DECISIONS.md:104`, `docs/THIRD_PARTY.md:45`); екрани ліцензій мережі не використовують і даних не збирають.
 **Резервне копіювання:** `allowBackup="false"` (рішення Власника 2026-11-14); `dataExtractionRules` / `fullBackupContent` не задано, бо автокопіювання вимкнено.
-**Дозволи у власному маніфесті:** лише `INTERNET`. Склеєний маніфест релізу перевірено, дивись `docs/project_log.md` (запис release-prep).
+**Дозволи у власному маніфесті:** лише `INTERNET`. Склеєний маніфест релізу перевірено, дивись `docs/project_log.md` (запис 2026-11-16 «Підготовка до публікації», release-prep).
 **Склеєний маніфест релізу (повторно зібрано 2026-11-25 на `fb99f35`):** 9 `uses-permission` (власний лише `INTERNET`; решта від SDK реклами та `androidx.work`); `uses-feature android.hardware.screen.portrait required=false` (власний маніфест); `<queries>` із `com.android.vending`. Деталі й посилання: `docs/store/PLAY_DECLARATIONS_RC3_REVIEW.md`.
 
 ---
