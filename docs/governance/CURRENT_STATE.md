@@ -3,6 +3,10 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25 (злиття R1): R1 у main
+- R1 злито в `main` PR #14, merge-коміт `2111870` (без squash, без force). Рішення Власника: «злити R1». Документи AGENTS.md, CLAUDE.md, конституція, профіль до і після злиття збігаються (SHA-256).
+- Далі (автономно, у гілках, у main НЕ зливати): O-1 (`codex/fix-o1-image-page-size`), Feature Audit (`docs/feature-audit`), дрібний беклог. Статус кожної гілки — нижче в журналі.
+
 ## Оновлення 2026-11-25: R1 device gate закрито (R1–R11 ок, R12 TalkBack пропущено)
 - Власник пройшов чекліст R1 на S24 Ultra з `com.savoj.volumpdf.anti.r1qa`: R1–R11 ок. R12 (TalkBack) пропущено Власником: НЕ ПЕРЕВІРЕНО.
 - R1 готовий до злиття; злиття чекає слова Власника. O-1 залишається відкритим рішенням.
