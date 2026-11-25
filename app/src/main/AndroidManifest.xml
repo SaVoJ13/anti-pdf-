@@ -3,6 +3,11 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Не обмежувати пристрої за портретним екраном: застосунок працює й у ландшафті (беклог, попередження Google) -->
+    <uses-feature
+        android:name="android.hardware.screen.portrait"
+        android:required="false" />
+
     <application
         android:name=".VolumPdfApp"
         android:allowBackup="false"
