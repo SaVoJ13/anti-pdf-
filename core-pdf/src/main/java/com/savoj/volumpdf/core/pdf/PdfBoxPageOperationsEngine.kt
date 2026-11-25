@@ -226,7 +226,8 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
     override suspend fun imagesToPdf(
         context: Context,
         imageUris: List<Uri>,
-        outputUri: Uri
+        outputUri: Uri,
+        rotationsDegrees: List<Int>
     ): PdfOperationResult = withContext(Dispatchers.IO) {
         try {
             init(context)
@@ -268,8 +269,10 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                         else -> PDRectangle.A4.height.toInt()
                     }
 
-                    val (width, height) = ImagePageGeometry.pageSizePt(imgWidth, imgHeight)
+                    val rotation = ImagePageGeometry.normalizeRotation(rotationsDegrees.getOrElse(index) { 0 })
+                    val (width, height) = ImagePageGeometry.pageSizePt(imgWidth, imgHeight, rotation)
                     val page = PDPage(PDRectangle(width, height))
+                    if (rotation != 0) page.rotation = rotation
                     doc.addPage(page)
 
                     PDPageContentStream(doc, page).use { contentStream ->

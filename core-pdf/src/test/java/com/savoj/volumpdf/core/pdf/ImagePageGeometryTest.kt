@@ -27,10 +27,8 @@ class ImagePageGeometryTest {
     private fun size(w: Int, h: Int) = ImagePageGeometry.pageSizePt(w, h)
 
     private fun assertInsideA4(p: Pair<Float, Float>) {
-        val long = maxOf(p.first, p.second)
-        val short = minOf(p.first, p.second)
-        assertTrue("довга сторона ${long}", long <= 842.01f)
-        assertTrue("коротка сторона ${short}", short <= 595.01f)
+        assertTrue("ширина ${p.first}", p.first <= 595.01f)
+        assertTrue("висота ${p.second}", p.second <= 842.01f)
     }
 
     @Test
@@ -48,7 +46,8 @@ class ImagePageGeometryTest {
         assertInsideA4(p)
         assertTrue(p.first > p.second)
         assertEquals(4000f / 3000f, p.first / p.second, 0.001f)
-        assertEquals(793.33f, p.first, 0.01f)
+        assertEquals(595f, p.first, 0.01f)
+        assertEquals(446.25f, p.second, 0.01f)
     }
 
     @Test
@@ -64,8 +63,8 @@ class ImagePageGeometryTest {
         val p = size(8000, 6000)
         assertInsideA4(p)
         assertEquals(8000f / 6000f, p.first / p.second, 0.001f)
-        assertEquals(793.33f, p.first, 0.01f)
-        assertEquals(595f, p.second, 0.01f)
+        assertEquals(595f, p.first, 0.01f)
+        assertEquals(446.25f, p.second, 0.01f)
     }
 
     @Test
@@ -97,12 +96,82 @@ class ImagePageGeometryTest {
     }
 
     @Test
-    fun portraitBetweenShortAndLongNotRotated() {
-        // 700x600: ширше за коротку сторону A4, але альбомне -> вписується в 842x595
+    fun landscapeWiderThanA4WidthIsShrunkToWidth() {
+        // 700x600: ширше за 595 -> зменшується до ширини 595
         val p = size(700, 600)
         assertInsideA4(p)
-        assertTrue(p.first > p.second)
+        assertEquals(595f, p.first, 0.01f)
         assertEquals(700f / 600f, p.first / p.second, 0.001f)
+    }
+
+    @Test
+    fun veryWideStaysWithinWidth() {
+        val p = size(20000, 100)
+        assertInsideA4(p)
+        assertEquals(595f, p.first, 0.01f)
+        assertEquals(20000f / 100f, p.first / p.second, 0.1f)
+    }
+
+    @Test
+    fun veryNarrowStaysWithinHeight() {
+        val p = size(50, 10000)
+        assertInsideA4(p)
+        assertEquals(842f, p.second, 0.01f)
+    }
+
+    @Test
+    fun rotation90SwapsDisplayedSizeAndFitsAfterRotation() {
+        // 4000x3000 повернуте на 90 -> видиме 3000x4000 -> 595x793
+        val d = ImagePageGeometry.displayedSizePt(4000, 3000, 90)
+        assertInsideA4(d)
+        assertEquals(595f, d.first, 0.01f)
+        assertEquals(793.33f, d.second, 0.01f)
+        // MediaBox лишається в орієнтації зображення
+        val m = ImagePageGeometry.pageSizePt(4000, 3000, 90)
+        assertEquals(793.33f, m.first, 0.01f)
+        assertEquals(595f, m.second, 0.01f)
+    }
+
+    @Test
+    fun rotation270SameAs90() {
+        assertEquals(
+            ImagePageGeometry.displayedSizePt(4000, 3000, 90),
+            ImagePageGeometry.displayedSizePt(4000, 3000, 270)
+        )
+        assertEquals(
+            ImagePageGeometry.displayedSizePt(4000, 3000, -90),
+            ImagePageGeometry.displayedSizePt(4000, 3000, 270)
+        )
+    }
+
+    @Test
+    fun rotation180KeepsSize() {
+        val d = ImagePageGeometry.displayedSizePt(4000, 3000, 180)
+        assertEquals(595f, d.first, 0.01f)
+        assertEquals(446.25f, d.second, 0.01f)
+    }
+
+    @Test
+    fun rotationOfPortraitToLandscapeShrinksToWidth() {
+        // 3000x4000 + 90 -> видиме 4000x3000 -> 595x446
+        val d = ImagePageGeometry.displayedSizePt(3000, 4000, 90)
+        assertEquals(595f, d.first, 0.01f)
+        assertEquals(446.25f, d.second, 0.01f)
+    }
+
+    @Test
+    fun smallImageRotationKeepsNaturalSize() {
+        val d = ImagePageGeometry.displayedSizePt(300, 100, 90)
+        assertEquals(100f, d.first, 0.001f)
+        assertEquals(300f, d.second, 0.001f)
+    }
+
+    @Test
+    fun normalizeRotation() {
+        assertEquals(0, ImagePageGeometry.normalizeRotation(0))
+        assertEquals(90, ImagePageGeometry.normalizeRotation(450))
+        assertEquals(270, ImagePageGeometry.normalizeRotation(-90))
+        assertEquals(0, ImagePageGeometry.normalizeRotation(45))
     }
 
     @Test
@@ -186,8 +255,8 @@ class ImagePageGeometryTest {
             val dims = (0 until 4).map { doc.getPage(it).mediaBox.let { b -> b.width to b.height } }
             // портрет 1500x2000 -> ширина 595
             assertEquals(595f, dims[0].first, 0.1f); assertEquals(793.33f, dims[0].second, 0.1f)
-            // альбом 2000x1500 -> висота 595
-            assertEquals(793.33f, dims[1].first, 0.1f); assertEquals(595f, dims[1].second, 0.1f)
+            // альбом 2000x1500 -> ширина 595
+            assertEquals(595f, dims[1].first, 0.1f); assertEquals(446.25f, dims[1].second, 0.1f)
             // квадрат -> 595x595
             assertEquals(595f, dims[2].first, 0.1f); assertEquals(595f, dims[2].second, 0.1f)
             // мале -> природний розмір
@@ -217,8 +286,30 @@ class ImagePageGeometryTest {
         PDDocument.load(out).use { doc ->
             assertEquals(2, doc.numberOfPages)
             val b = doc.getPage(1).mediaBox
-            assertEquals(793.33f, b.width, 0.1f)
-            assertEquals(595f, b.height, 0.1f)
+            assertEquals(595f, b.width, 0.1f)
+            assertEquals(446.25f, b.height, 0.1f)
+        }
+    }
+
+    @Test
+    fun engineImagesToPdfRotationAppliedWithoutPixelChange() = runBlocking {
+        val engine = PdfBoxPageOperationsEngine()
+        val files = listOf(jpeg("a.jpg", 4000, 3000), jpeg("b.jpg", 4000, 3000), jpeg("c.jpg", 4000, 3000))
+        val out = tempFolder.newFile("rot.pdf")
+        val result = engine.imagesToPdf(mockContext, files.map(::uriOf), uriOf(out), listOf(90, 0))
+        assertTrue("$result", result is PdfOperationResult.Success)
+        PDDocument.load(out).use { doc ->
+            val p0 = doc.getPage(0)
+            assertEquals(90, p0.rotation)
+            // MediaBox 793x595, видимий розмір після /Rotate 90: 595x793
+            assertEquals(793.33f, p0.mediaBox.width, 0.1f)
+            assertEquals(595f, p0.mediaBox.height, 0.1f)
+            assertEquals(0, doc.getPage(1).rotation)
+            assertEquals(0, doc.getPage(2).rotation)
+            val xo = p0.resources.getXObject(p0.resources.xObjectNames.first())
+                as com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
+            assertEquals(4000, xo.width)
+            assertEquals(3000, xo.height)
         }
     }
 }

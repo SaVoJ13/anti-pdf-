@@ -3,6 +3,11 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25: O1-3 у `codex/fix-o1-image-page-size` (готово до QA)
+- Геометрія сторінки із зображення змінена: ширина <= 595 pt і висота <= 842 pt для будь-якої орієнтації (масштаб min(1, 595/w, 842/h)). Альбомне 4000x3000 -> 595x446 (раніше 842x595).
+- Контракт core-pdf: `imagesToPdf(..., rotationsDegrees: List<Int> = emptyList())` (поворот через /Rotate). У «Зображення у PDF» кнопка повороту біля кожного зображення.
+- XML: app 438/0/0/0; core-pdf 128/0/0/1; lint 0 errors/149 warnings. НЕ ПЕРЕВІРЕНО на телефоні; QA немає; у main не злито.
+
 ## Оновлення 2026-11-25: O1-2 (скан) доповнення в `codex/fix-o1-image-page-size` (готово до QA)
 - Дефект: скан з «Сканувати» лишався більшим за A4: `ScanDocumentActivity` копіював PDF ML Kit повз `imagesToPdf`. Виправлено: за наявності JPEG-сторінок PDF будується через `imagesToPdf` (вибір у `DocumentScannerLogic.chooseScanSource`), PDF ML Kit запасний.
 - XML: app 435/0/0/0; core-pdf 119/0/0/1; lint 0 errors/149 warnings. НЕ ПЕРЕВІРЕНО на телефоні; QA ще немає; у main не злито.
