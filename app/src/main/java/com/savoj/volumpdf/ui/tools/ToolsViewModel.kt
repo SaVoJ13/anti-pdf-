@@ -33,10 +33,13 @@ sealed interface OperationUiState {
     data class Error(val message: UserMessage) : OperationUiState
 }
 
-class ToolsViewModel(application: Application) : AndroidViewModel(application) {
-
+class ToolsViewModel @JvmOverloads constructor(
+    application: Application,
+    /** Рушій операцій; у юніт-тестах підміняється підробкою. */
     private val engine: PageOperationsEngine = PdfBoxPageOperationsEngine()
-    private val repository: DocumentRepository = (application as VolumPdfApp).repository
+) : AndroidViewModel(application) {
+
+    private val repository: DocumentRepository by lazy { (application as VolumPdfApp).repository }
 
     private val _selectedFiles = MutableStateFlow<List<SelectedFileItem>>(emptyList())
     val selectedFiles: StateFlow<List<SelectedFileItem>> = _selectedFiles.asStateFlow()
