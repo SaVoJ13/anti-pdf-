@@ -1,3 +1,22 @@
+## 2026-11-25 — Автор (Claude, реліз RC3): гілка `release/rc3` (версія 1.0.2, код 3), готово до QA
+
+**Простими словами**
+- Підготовлено випуск RC3 для закритого тесту: версія 1.0.2 (код версії 3). У коді змінено лише номер версії.
+- Написано текст «Що нового» (лише українська, 439 символів з 500; за рішенням Власника блок en прибрано), інструкцію збірки для Власника й чекліст завантаження та перевірки на телефоні.
+- Без підпису перевірено: тести зелені, помилок lint немає, release збирається з мінімізацією R8, нових дозволів немає, нативних бібліотек немає.
+- Підписаний файл і завантаження в Google Play не робились: це за Власником, збірка на його ПК.
+- Статус: готово до QA, `QA Verified` немає.
+
+**Що зроблено / змінено:** `app/build.gradle.kts` (versionCode 2→3, versionName 1.0.1→1.0.2; більше нічого в коді, залежностях, дозволах, маніфесті); нові `docs/store/RELEASE_NOTES_RC3.md`, `docs/release/RC3_BUILD_GUIDE.md`, `docs/release/RC3_CHECKLIST.md`. База: `main` `fb99f35`.
+**Числа (XML Gradle, JDK 21, `--no-daemon`):** app 451/0/0/0; core-pdf 137/0/0/1; lint `lint-results-debug.xml` 0 errors/143 warnings.
+**Маніфест release RC3 проти RC2 (`origin/release/rc2` `ed93b7e`, окремий worktree, `:app:processReleaseManifest`, diff повних файлів):** дозволи (9), `<queries>`, intent-filters, провайдери й сервіси без змін. Різниця лише: (1) versionCode/Name 2/1.0.1 -> 3/1.0.2; (2) `uses-feature android.hardware.screen.portrait required=false` (нове); (3) додано `LibraryLicensesActivity` і `LibraryLicenseDetailActivity` (`exported=false`); прибрано `OssLicensesMenuActivity` і `OssLicensesActivity` (залежність oss-licenses видалена в D1).
+**R8:** `:app:bundleRelease` без підпису: BUILD SUCCESSFUL (7m 17s), `minifyReleaseWithR8` пройшов; `mapping.txt` 556 982 рядки (у RC2 556 966). Файли `.pro` і `libs.versions.toml` проти `release/rc2` не змінені. AAB 16 320 010 байт (RC2: 16 320 218), SHA-256 починається `3a8f0dba94db9f7f`, непідписаний (`jarsigner -verify` = `no manifest.`); `1.0.2` у `base/manifest/AndroidManifest.xml` є, `1.0.1` немає.
+**16 KB (за методикою `ELF_16KB_CHECK_2026-11-18.md`):** у AAB (1209 записів) `.so` і `/lib/` немає (0 збігів): перевіряти `p_align` нічого. `bundletool`/APK-`zipalign` НЕ запускались (не потрібно без `.so`).
+**AdMob:** `admob.properties` у worktree немає; release зібрано з тестовими ID, `verifyAdmobReleaseManifest` вивів «тестовий Application ID». Це правильна політика; справжній реліз Власник збирає на своєму ПК з `admob.properties`. Значень не читав.
+**Не чіпав:** keystore, `keystore.properties`, паролі, AGENTS.md, CLAUDE.md, `.agents/**`, конституцію. PR і злиття в `main` не робились, у Play Console нічого не завантажувалось.
+**Що передати далі:** незалежний QA гілки `release/rc3`; після `QA Verified` і слова Власника: злиття, збірка AAB Власником за `RC3_BUILD_GUIDE.md`, Alpha за `RC3_CHECKLIST.md`.
+**Відкриті питання:** немає (рішення Власника: у магазині лише українська, примітки лише `<uk>`; формулювання про зображення уточнено, дрібні виправлення названо конкретно за `git log origin/release/rc2..origin/main`). **НЕ ПЕРЕВІРЕНО:** підпис ключем Власника; поведінка release на телефоні (R8, реклама, UMP, ліцензії, друк, збереження копії, фото/скани, пошук); фільтрація пристроїв у Play Console для `uses-feature` portrait; Data safety без змін після RC2 (лише оцінка за маніфестом); TalkBack, Android 9–11, планшет, PNG/WebP.
+
 ## 2026-11-25 — Керівник проєкту (Агент 0): усе погоджене злито в main
 
 **Простими словами**
