@@ -3,6 +3,17 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25 (друга нічна): підготовлені гілки, у main НЕ злиті
+Усі гілки від main `b65a684`, автор ≠ QA, числа з XML Gradle (JDK 21). Рекомендований порядок злиття (після слова Власника і, де потрібно, device gate):
+1. `codex/backlog-es-plurals` (d45fd5c) — QA Verified (qa/…-es-plurals 73d5635); app 431/0/0/0, lint 0 errors/143 warnings (було 149). Телефон: не потрібен.
+2. `codex/backlog-portrait-feature` (83a831c) — QA Verified (3b676c8); app 431, lint 149. Телефон: не потрібен; перевірити в Play Console після релізу.
+3. `codex/backlog-no-invalidate-optionsmenu-test` (86374c0) — QA Verified (242074b), мутації ловляться; app 435. Телефон: не потрібен.
+4. `codex/backlog-release-no-admob-test` (027c073) — QA Verified (4b28509); app 435. Телефон: не потрібен.
+5. `codex/backlog-licenses-error-test` (939d471) — QA Verified (084e954); app 436 (рефакторинг двох Activity). Телефон: відкрити екрани ліцензій (звичайні).
+6. `codex/fix-o1-image-page-size` (e31d11b) — QA Verified (код) (1dbc652); core-pdf 119/0/0/1, app 431, lint 149. ЗМІНА КОНТРАКТУ core-pdf: розмір сторінки з зображення (A4 з орієнтацією за зображенням; більше за A4 зменшується, менше лишається 1 px = 1 pt). Потрібен device gate: порівняти Play-копію і нову QA-копію (фото камери, скан, мала іконка, альбомне фото, додати порожню сторінку). Рішення про контракт за Власником.
+7. `docs/feature-audit` (d92ee40) — QA Verified (4f28b77), коло 2; лише документи; низький D-8 (зсунутий номер рядка T5). Передати ролі «Монетизація і Google Play»: застарілий `DATA_SAFETY.md:14`.
+- НЕ ПЕРЕВІРЕНО: усе на пристрої; TalkBack; Android 9–11; планшет.
+
 ## Оновлення 2026-11-25 (злиття R1): R1 у main
 - R1 злито в `main` PR #14, merge-коміт `2111870` (без squash, без force). Рішення Власника: «злити R1». Документи AGENTS.md, CLAUDE.md, конституція, профіль до і після злиття збігаються (SHA-256).
 - Далі (автономно, у гілках, у main НЕ зливати): O-1 (`codex/fix-o1-image-page-size`), Feature Audit (`docs/feature-audit`), дрібний беклог. Статус кожної гілки — нижче в журналі.
