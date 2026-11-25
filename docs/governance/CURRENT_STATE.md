@@ -3,6 +3,19 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25 (нічна 3 завершена): гілки готові, у main НЕ злиті (main = c65e367)
+Усі від `c65e367`, автор ≠ QA, числа з XML Gradle (JDK 21). QA Verified (код/документи), на пристрої не перевірялось.
+- `codex/backlog-vm-rotation-test` (05fce97) — QA `f30ec5c`; app 455/0/0/0, lint 143 warnings. Рефакторинг конструктора ToolsViewModel (`@JvmOverloads`, lazy repository).
+- `codex/backlog-print-label` (06fefbd) — QA `4522058`; app 451; «Друкувати»/«Печатать» у шторці (uk, ru).
+- `codex/backlog-unused-tools-group-strings` (3f45d11) — QA `b2b0fcb`; app 451, lint 140 warnings; видалено 15 рядків.
+- `docs/audit-d8-fix` (61c46a3) — QA `b9bbb59`; лише docs.
+- `codex/rotate-scan-and-reader-image` (f6d1ad7) — QA `f9e8ab4`; app 454/0/0/0, core-pdf 137/0/0/1, lint 143. Поворот у читалці вже був; ImageRotationHelper.nextClockwise + тести. НЕ зроблено: поворот у запасному вході з галереї (потрібен екран; рішення Власника).
+- `docs/research-exif-mirror` (9d69e92) — QA `2eba7ff`; лише план, код не змінено.
+- `docs/research-password-protect` (f00cec3) — QA `1d7634b`; `docs/research-ocr` (c861da3) — QA `017363d`: рекомендація після релізу; ML Kit OCR не підтримує кирилицю (uk/ru), Tesseract додає .so.
+- Порядок злиття (після слова Власника): audit-d8-fix, unused-tools-group-strings, print-label, vm-rotation-test, rotate-scan-and-reader-image; потім дослідження (docs). Конфлікти лише в project_log.md (залишати всі записи). Телефон: print-label (підпис у шторці), vm-rotation-test і rotate (повертання в «Зображення у PDF»).
+- НЕ ПЕРЕВІРЕНО: усе на пристрої; обертання у вбудованому інтерфейсі ML Kit; TalkBack; Android 9–11; планшет.
+- Попередній запис «нічна 3, зупинка через ліміт» (гілка `docs/night3-progress`) втратив чинність.
+
 ## Оновлення 2026-11-25 (RC3 злито в main): 1.0.2 (код 3), наступний крок «збираємо RC3»
 - За словом Власника злито окремими PR, merge-коміти без squash і без force: `release/rc3` (PR #24, merge `56662e8`) і `docs/rc3-play-declarations` (merge `544d967`, main). Перед злиттям виправлено примітки RC3 (`09b3f6c`): точне формулювання про A4, конкретний зміст, лише `<uk>` 439 символів; QA Verified (`qa/release-rc3` `7f9d06a`).
 - Перевірено на main: versionCode 3, versionName "1.0.2"; у коді відносно `fb99f35` змінено лише версію; merged-маніфест release: 9 дозволів без змін відносно RC2 (QA: рівно 4 очікувані різниці — версія, uses-feature portrait, власні екрани ліцензій замість OssLicenses*); документи правил (AGENTS.md, CLAUDE.md, конституція, профіль) без змін; робоче дерево чисте. Числа (QA, XML): app 451/0/0/0, core-pdf 137/0/0/1, lint 0 errors/143 warnings. R8 bundleRelease без підпису пройшов; `.so` у AAB немає.
