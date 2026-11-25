@@ -269,7 +269,10 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                         else -> PDRectangle.A4.height.toInt()
                     }
 
-                    val rotation = ImagePageGeometry.normalizeRotation(rotationsDegrees.getOrElse(index) { 0 })
+                    // Сумарний кут = EXIF-автоповорот (лише JPEG) + ручний; пікселі не перекодуються.
+                    val exifDeg = ExifOrientation.rotationDegrees(ExifOrientation.read(imageBytes))
+                    val manualDeg = ImagePageGeometry.normalizeRotation(rotationsDegrees.getOrElse(index) { 0 })
+                    val rotation = ImagePageGeometry.normalizeRotation(exifDeg + manualDeg)
                     val (width, height) = ImagePageGeometry.pageSizePt(imgWidth, imgHeight, rotation)
                     val page = PDPage(PDRectangle(width, height))
                     if (rotation != 0) page.rotation = rotation
@@ -729,9 +732,11 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                                 }
                                 else -> PDRectangle.A4.height.toInt()
                             }
-                            val (imgWidth, imgHeight) = ImagePageGeometry.pageSizePt(imgWidthPx, imgHeightPx)
+                            val exifRotation = ExifOrientation.rotationDegrees(ExifOrientation.read(imageBytes))
+                            val (imgWidth, imgHeight) = ImagePageGeometry.pageSizePt(imgWidthPx, imgHeightPx, exifRotation)
 
                             val page = PDPage(PDRectangle(imgWidth, imgHeight))
+                            if (exifRotation != 0) page.rotation = exifRotation
                             targetDoc.addPage(page)
                             PDPageContentStream(targetDoc, page).use { cs ->
                                 cs.drawImage(imgX, 0f, 0f, imgWidth, imgHeight)
