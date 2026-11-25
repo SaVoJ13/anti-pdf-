@@ -3,6 +3,12 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25 (нічна 3, зупинка через ліміт): стан
+- Зроблено (готово до QA, QA ще йде): `docs/research-password-protect` (f00cec3), `docs/research-ocr` (c861da3). QA цих двох запущено (гілки `qa/research-password-protect`, `qa/research-ocr`), вердикту на момент зупинки немає.
+- У роботі авторів (пушать після кожного пункту): беклог (`codex/backlog-vm-rotation-test`, `codex/backlog-print-label`, `codex/backlog-unused-tools-group-strings`, `docs/audit-d8-fix`) і поворот у «Сканувати»/читалці (`codex/rotate-scan-and-reader-image`, `docs/research-exif-mirror`). QA для них НЕ запущено.
+- Лишилось: QA беклогу і повороту (автор ≠ QA), числа з XML, close-session (LESSONS). main не змінювався (c65e367).
+- НЕ ПЕРЕВІРЕНО: усе перелічене вище.
+
 ## Оновлення 2026-11-25 (RC3 злито в main): 1.0.2 (код 3), наступний крок «збираємо RC3»
 - За словом Власника злито окремими PR, merge-коміти без squash і без force: `release/rc3` (PR #24, merge `56662e8`) і `docs/rc3-play-declarations` (merge `544d967`, main). Перед злиттям виправлено примітки RC3 (`09b3f6c`): точне формулювання про A4, конкретний зміст, лише `<uk>` 439 символів; QA Verified (`qa/release-rc3` `7f9d06a`).
 - Перевірено на main: versionCode 3, versionName "1.0.2"; у коді відносно `fb99f35` змінено лише версію; merged-маніфест release: 9 дозволів без змін відносно RC2 (QA: рівно 4 очікувані різниці — версія, uses-feature portrait, власні екрани ліцензій замість OssLicenses*); документи правил (AGENTS.md, CLAUDE.md, конституція, профіль) без змін; робоче дерево чисте. Числа (QA, XML): app 451/0/0/0, core-pdf 137/0/0/1, lint 0 errors/143 warnings. R8 bundleRelease без підпису пройшов; `.so` у AAB немає.
