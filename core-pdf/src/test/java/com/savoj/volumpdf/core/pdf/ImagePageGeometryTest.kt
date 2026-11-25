@@ -221,6 +221,21 @@ class ImagePageGeometryTest {
         return f
     }
 
+    /** JPEG 4000x3000 з APP1/Exif (little endian, Orientation=o) після SOI. */
+    private fun jpegWithOrientation(name: String, w: Int, h: Int, o: Int): File {
+        val base = jpeg(name, w, h).readBytes()
+        val tiff = byteArrayOf(
+            0x49, 0x49, 42, 0, 8, 0, 0, 0, 1, 0,
+            0x12, 0x01, 3, 0, 1, 0, 0, 0, o.toByte(), 0, 0, 0, 0, 0, 0, 0
+        )
+        val payload = byteArrayOf('E'.code.toByte(), 'x'.code.toByte(), 'i'.code.toByte(), 'f'.code.toByte(), 0, 0) + tiff
+        val len = payload.size + 2
+        val seg = byteArrayOf(0xFF.toByte(), 0xE1.toByte(), (len shr 8).toByte(), len.toByte()) + payload
+        val f = tempFolder.newFile(name + ".exif.jpg")
+        f.writeBytes(base.copyOfRange(0, 2) + seg + base.copyOfRange(2, base.size))
+        return f
+    }
+
     private companion object {
         const val SAMPLE_JPEG_BASE64 =
             "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK" +
@@ -310,6 +325,69 @@ class ImagePageGeometryTest {
                 as com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
             assertEquals(4000, xo.width)
             assertEquals(3000, xo.height)
+        }
+    }
+
+    @Test
+    fun exifOrientation6MakesLandscapeFilePortraitPage() = runBlocking {
+        val engine = PdfBoxPageOperationsEngine()
+        val out = tempFolder.newFile("exif6.pdf")
+        val r = engine.imagesToPdf(mockContext, listOf(uriOf(jpegWithOrientation("e6", 4000, 3000, 6))), uriOf(out))
+        assertTrue("$r", r is PdfOperationResult.Success)
+        PDDocument.load(out).use { doc ->
+            val p = doc.getPage(0)
+            assertEquals(90, p.rotation)
+            // видимий розмір: ширина 595, портрет
+            assertEquals(595f, p.mediaBox.height, 0.1f)
+            assertEquals(793.33f, p.mediaBox.width, 0.1f)
+        }
+    }
+
+    @Test
+    fun exifPlusManualRotationAdds() = runBlocking {
+        val engine = PdfBoxPageOperationsEngine()
+        val out = tempFolder.newFile("exif6m90.pdf")
+        val r = engine.imagesToPdf(
+            mockContext, listOf(uriOf(jpegWithOrientation("e6m", 4000, 3000, 6))), uriOf(out), listOf(90)
+        )
+        assertTrue("$r", r is PdfOperationResult.Success)
+        PDDocument.load(out).use { doc ->
+            val p = doc.getPage(0)
+            assertEquals(180, p.rotation)
+            assertEquals(595f, p.mediaBox.width, 0.1f)
+            assertEquals(446.25f, p.mediaBox.height, 0.1f)
+        }
+    }
+
+    @Test
+    fun exifOrientation1AndNoExifUnchanged() = runBlocking {
+        val engine = PdfBoxPageOperationsEngine()
+        val out = tempFolder.newFile("exif1.pdf")
+        val files = listOf(jpegWithOrientation("e1", 4000, 3000, 1), jpeg("plain.jpg", 4000, 3000))
+        val r = engine.imagesToPdf(mockContext, files.map(::uriOf), uriOf(out))
+        assertTrue("$r", r is PdfOperationResult.Success)
+        PDDocument.load(out).use { doc ->
+            for (i in 0..1) {
+                assertEquals(0, doc.getPage(i).rotation)
+                assertEquals(595f, doc.getPage(i).mediaBox.width, 0.1f)
+                assertEquals(446.25f, doc.getPage(i).mediaBox.height, 0.1f)
+            }
+        }
+    }
+
+    @Test
+    fun appendFilesAppliesExifRotation() = runBlocking {
+        val engine = PdfBoxPageOperationsEngine()
+        val base = tempFolder.newFile("base2.pdf")
+        PDDocument().use { d ->
+            d.addPage(com.tom_roush.pdfbox.pdmodel.PDPage(com.tom_roush.pdfbox.pdmodel.common.PDRectangle.A4))
+            d.save(base)
+        }
+        val out = tempFolder.newFile("app6.pdf")
+        val r = engine.appendFiles(mockContext, uriOf(base), listOf(uriOf(jpegWithOrientation("a6", 4000, 3000, 6))), uriOf(out))
+        assertTrue("$r", r is PdfOperationResult.Success)
+        PDDocument.load(out).use { doc ->
+            assertEquals(90, doc.getPage(1).rotation)
         }
     }
 }
