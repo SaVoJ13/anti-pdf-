@@ -76,3 +76,46 @@
 - Заяви про шторку (15 дій `ReaderToolAction`), «Видалити з історії», типи полів форм, значення `CompressionLevel`, 9 дозволів склеєного маніфесту.
 - Цитати з `DECISIONS.md:87, 97`, `CURRENT_STATE.md`, `OWNER_INBOX.md`, `COMPETITIVE_AND_INNOVATION` §5.2.
 - Розділ 9 (карта ChatGPT): перевірено лише відповідність фактам коду, самої карти я не бачив.
+
+---
+
+# Коло 2 (повторний огляд), SHA автора `d92ee40`
+
+Метод: `git merge origin/docs/feature-audit` у `qa/feature-audit` (без force); перегляд `git diff 3d98e07 d92ee40`; перевірка кожного виправлення читанням коду.
+
+## Вердикт кола 2: **QA Verified** (з одним дрібним зауваженням D-8)
+
+## Межі змін
+- `git diff --name-only origin/main origin/docs/feature-audit`: лише `docs/FEATURE_AUDIT.md`, `docs/FEATURE_MAP.md`, `docs/project_log.md`.
+- Diff для `app/`, `core-pdf/`, `core-ads/`, `AGENTS.md`, `CLAUDE.md`, `.agents/`, `docs/governance/`: порожній. Код і governance не чіпались.
+
+## Перевірка виправлень D-1…D-7
+
+| Дефект | Статус | Доказ |
+|---|---|---|
+| D-1 банер лише в бібліотеці | виправлено, вірно | AUDIT P1 і §9 №11, MAP P1 тепер: головний екран + `ToolsActivity.kt:147`, `activity_tools.xml:444`. Перечитано: `ToolsActivity.kt:147 bindAdaptiveBanner`, `activity_tools.xml:444 bannerContainer`, у `ui/reader` реклами немає |
+| D-2 oss-licenses | виправлено, вірно | AUDIT §6 і §10: залежність видалена в D1, `DECISIONS.md:104`, `THIRD_PARTY.md:45`, `LicensesDialogHelperTest.kt:79`; плагін лишився `app/build.gradle.kts:6`; застарів `DATA_SAFETY.md:14`. Усе звірено в колі 1 |
+| D-3 «Захистити паролем» | виправлено, вірно | AUDIT §5.1 цитує `DECISIONS.md:106`; рядок 106 існує зі змістом «беклог, термін не визначено» |
+| D-4 рядки | виправлено, вірно | `ToolsActivity.kt:82-83`/`:370` (CreateDocument), `PageOperationsEngine.kt:20, 30, 39`, `MainActivity.kt:312` (AUDIT L10 і MAP L10), усе збігається з кодом |
+| D-5 «AUDIT §3.2» | виправлено | MAP R11 тепер «AUDIT §2.3»; розділ існує |
+| D-6 дубль-документ | виправлено | у шапках AUDIT і MAP є попередження про `docs/product/FEATURE_AUDIT_2026-11-23.md`; узгодженість двох чесно позначена НЕ ПЕРЕВІРЕНО |
+| D-7 ID | виправлено | шапки AUDIT і MAP тепер явно перелічують винятки (L13-L16 ↔ S3, P1, S1/P3, S6; R13, E14) |
+
+## 5 нових випадкових тверджень (не перевірялись у колі 1)
+
+| # | Твердження | Результат | Доказ |
+|---|---|---|---|
+| 26 | Стиснення: LOW 1800/0.85, MEDIUM 1400/0.70, HIGH 1000/0.50 | підтверджено | `CompressionLevel.kt:7-9` |
+| 27 | Сортування лише 3 варіанти | підтверджено | `SortOrder.kt`: DATE_DESC, NAME_ASC, SIZE_DESC |
+| 28 | Шторка читалки має 15 дій | підтверджено | `ReaderToolsBottomSheetDialogFragment.kt:16-32`: 15 значень `ReaderToolAction` |
+| 29 | Скан копіюється в `filesDir/scanned/` (`persistScannedPdf`) | підтверджено | `DocumentScannerLogic.kt:39-43`, `ScanDocumentActivity.kt:159` |
+| 30 | Поля форм: `FormField.Text/CheckBox/Choice` (`FormField.kt:12, 21, 30`) | підтверджено | рядки точні |
+| 31 | `error_select_min_two_files` на `ToolsActivity.kt:278` (інструмент «Об'єднати») | підтверджено частково | рядок насправді `:280` (зсув на 2) |
+
+Підсумок кола 2: з 6 нових вибіркових тверджень 5 підтверджено, 1 з неточним рядком.
+
+## Нові дефекти
+- D-8 (низький). `ToolsActivity.kt:278` у AUDIT §4 (T5) і, ймовірно, поряд: фактичний рядок `:280`. Не блокує.
+
+## Що НЕ ПЕРЕВІРЕНО (кола 2)
+Те саме, що в колі 1 (пристрій, TalkBack, Android 9-11, вміст тестів, більшість рядків-посилань, склеєний маніфест, розділ 9 без самої карти ChatGPT). Рядки `ToolsActivity.kt:388-413` (повернення/нумерація) окремо не звіряв.
