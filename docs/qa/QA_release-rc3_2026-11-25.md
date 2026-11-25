@@ -49,3 +49,11 @@ Critical/High/Medium: немає.
 
 ## НЕ ПЕРЕВІРЕНО
 Підпис ключем Власника і збіг відбитка з Play Console; запуск release (R8) на пристрої; реклама/UMP/ліцензії/друк/збереження копії/фото/скани на телефоні; фільтрація пристроїв у Play Console після `uses-feature` portrait; Data safety без змін; виконання кроків гайда Власником; TalkBack, Android 9-11, планшет; поведінка Play без тегів de/ru/es.
+
+## Примітки (коло 2): `release/rc3` 09b3f6c (поверх cb8114e)
+Вердикт: **QA Verified** для змін у примітках. Нових дефектів немає; L-1, L-2, L-3 з основного звіту закрито.
+1. `git diff cb8114e 09b3f6c`: 4 файли, лише docs (`RELEASE_NOTES_RC3.md`, `RC3_CHECKLIST.md`, `project_log.md`, `CURRENT_STATE.md`). `app/build.gradle.kts` не змінено: versionCode 3, versionName "1.0.2" (diff проти main).
+2. Python `len`: `<uk>` = 439 (≤ 500). Формат `<uk>...</uk>`; тегів `<en>/<de>/<ru>/<es>` немає. Ліміт 362 з RC2 перевищено (439), але вимога Play 500; у чеклісті це не заявлено як ≤362. Приймання самої консоллю НЕ ПЕРЕВІРЕНО.
+3. Твердження звірено: групи, порожні стани, пошук (D1-D3; `tools_group_*`, `empty_*`, `SearchView`); D2-1 `eb888e9` існує в main; R1 `d35af44` («permanent Print and Save a copy..., always-visible Save in edit mode»), діалог незбережених змін (`place_unsaved_*`), `action_save` showAsAction=always; O-1 `e31d11b`, `96adaba`, `8f80dee`, `4188580` у main, `ImagePageGeometry` = min(1, 595/w, 842/h) (великі зменшуються зі збереженням пропорцій, малі не збільшуються), поворот у `SelectedFileAdapter`, `ExifOrientation.kt`; `d45fd5c`, у `values-es` є `quantity="many"`. Формулювання про A4 тепер точне; загальних фраз («виправлено помилки») не лишилось.
+4. Чекліст (п. A2) узгоджений: лише `<uk>`, 439, <500; `CURRENT_STATE.md` і `RELEASE_NOTES_RC3.md` теж 439. Розбіжностей немає.
+Код і AAB цього кола не перезбирались (зміни лише docs; результати розділів 4-7 чинні для коду cb8114e = коду 09b3f6c).
