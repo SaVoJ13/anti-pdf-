@@ -226,7 +226,8 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
     override suspend fun imagesToPdf(
         context: Context,
         imageUris: List<Uri>,
-        outputUri: Uri
+        outputUri: Uri,
+        rotationsDegrees: List<Int>
     ): PdfOperationResult = withContext(Dispatchers.IO) {
         try {
             init(context)
@@ -268,9 +269,13 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                         else -> PDRectangle.A4.height.toInt()
                     }
 
-                    val width = imgWidth.toFloat()
-                    val height = imgHeight.toFloat()
+                    // Сумарний кут = EXIF-автоповорот (лише JPEG) + ручний; пікселі не перекодуються.
+                    val exifDeg = ExifOrientation.rotationDegrees(ExifOrientation.read(imageBytes))
+                    val manualDeg = ImagePageGeometry.normalizeRotation(rotationsDegrees.getOrElse(index) { 0 })
+                    val rotation = ImagePageGeometry.normalizeRotation(exifDeg + manualDeg)
+                    val (width, height) = ImagePageGeometry.pageSizePt(imgWidth, imgHeight, rotation)
                     val page = PDPage(PDRectangle(width, height))
+                    if (rotation != 0) page.rotation = rotation
                     doc.addPage(page)
 
                     PDPageContentStream(doc, page).use { contentStream ->
@@ -711,24 +716,27 @@ class PdfBoxPageOperationsEngine : PageOperationsEngine {
                                 imageBytes,
                                 "append_img_${index}_${System.currentTimeMillis()}"
                             )
-                            val imgWidth = when {
+                            val imgWidthPx = when {
                                 imgX.width > 0 -> imgX.width
                                 parsedDim != null && parsedDim.first > 0 -> {
                                     imgX.width = parsedDim.first
                                     parsedDim.first
                                 }
                                 else -> PDRectangle.A4.width.toInt()
-                            }.toFloat()
-                            val imgHeight = when {
+                            }
+                            val imgHeightPx = when {
                                 imgX.height > 0 -> imgX.height
                                 parsedDim != null && parsedDim.second > 0 -> {
                                     imgX.height = parsedDim.second
                                     parsedDim.second
                                 }
                                 else -> PDRectangle.A4.height.toInt()
-                            }.toFloat()
+                            }
+                            val exifRotation = ExifOrientation.rotationDegrees(ExifOrientation.read(imageBytes))
+                            val (imgWidth, imgHeight) = ImagePageGeometry.pageSizePt(imgWidthPx, imgHeightPx, exifRotation)
 
                             val page = PDPage(PDRectangle(imgWidth, imgHeight))
+                            if (exifRotation != 0) page.rotation = exifRotation
                             targetDoc.addPage(page)
                             PDPageContentStream(targetDoc, page).use { cs ->
                                 cs.drawImage(imgX, 0f, 0f, imgWidth, imgHeight)

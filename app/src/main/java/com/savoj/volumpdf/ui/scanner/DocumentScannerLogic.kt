@@ -14,6 +14,25 @@ import java.util.Locale
  */
 object DocumentScannerLogic {
 
+    /** Джерело для побудови PDF із результату сканера. */
+    sealed class ScanSource {
+        /** JPEG-сторінки сканера: PDF будується через imagesToPdf (A4, O-1). */
+        data class Images(val imageUris: List<Uri>, val fallbackPdfUri: Uri?) : ScanSource()
+
+        /** Готовий PDF від ML Kit (немає JPEG-сторінок). */
+        data class MlKitPdf(val pdfUri: Uri) : ScanSource()
+    }
+
+    /**
+     * Чиста логіка вибору: є JPEG-сторінки -> [ScanSource.Images] (ML Kit PDF лишається запасним),
+     * інакше PDF від ML Kit; якщо нема нічого -> null.
+     */
+    fun chooseScanSource(pageImageUris: List<Uri>, pdfUri: Uri?): ScanSource? = when {
+        pageImageUris.isNotEmpty() -> ScanSource.Images(pageImageUris, pdfUri)
+        pdfUri != null -> ScanSource.MlKitPdf(pdfUri)
+        else -> null
+    }
+
     fun generateScannedFileName(timestampMs: Long = System.currentTimeMillis()): String {
         val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
         val formattedDate = dateFormat.format(Date(timestampMs))
