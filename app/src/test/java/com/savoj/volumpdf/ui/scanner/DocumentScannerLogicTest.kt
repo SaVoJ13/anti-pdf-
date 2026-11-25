@@ -54,4 +54,35 @@ class DocumentScannerLogicTest {
         assertEquals("TestScan.pdf", savedFile.name)
         assertEquals(sampleData.size.toLong(), savedFile.length())
     }
+
+    @Test
+    fun chooseScanSource_pagesPresent_usesImagesWithPdfFallback() {
+        val page = Mockito.mock(Uri::class.java)
+        val pdf = Mockito.mock(Uri::class.java)
+        val src = DocumentScannerLogic.chooseScanSource(listOf(page), pdf)
+        assertTrue(src is DocumentScannerLogic.ScanSource.Images)
+        src as DocumentScannerLogic.ScanSource.Images
+        assertEquals(listOf(page), src.imageUris)
+        assertEquals(pdf, src.fallbackPdfUri)
+    }
+
+    @Test
+    fun chooseScanSource_pagesWithoutPdf_usesImagesNoFallback() {
+        val page = Mockito.mock(Uri::class.java)
+        val src = DocumentScannerLogic.chooseScanSource(listOf(page), null)
+        assertTrue(src is DocumentScannerLogic.ScanSource.Images)
+        assertEquals(null, (src as DocumentScannerLogic.ScanSource.Images).fallbackPdfUri)
+    }
+
+    @Test
+    fun chooseScanSource_noPages_usesMlKitPdf() {
+        val pdf = Mockito.mock(Uri::class.java)
+        val src = DocumentScannerLogic.chooseScanSource(emptyList(), pdf)
+        assertEquals(DocumentScannerLogic.ScanSource.MlKitPdf(pdf), src)
+    }
+
+    @Test
+    fun chooseScanSource_nothing_returnsNull() {
+        assertEquals(null, DocumentScannerLogic.chooseScanSource(emptyList(), null))
+    }
 }
