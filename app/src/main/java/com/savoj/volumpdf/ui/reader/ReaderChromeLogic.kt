@@ -18,9 +18,20 @@ object ReaderChromeLogic {
     /** Стан пошуку змінився відносно того, з яким останній раз рахували видимість: треба перерахувати. */
     fun needsChromeRefresh(lastApplied: Boolean, current: Boolean): Boolean = lastApplied != current
 
+    /**
+     * R1 (D-1): після «Зберегти зміни» запускати вибір файлу для копії лише коли збереження було на місці.
+     * Якщо зміни збережено в нову копію (NEW_COPY / «лише копіювати»), поточним документом уже стала ця копія
+     * (змінився uri), і другий вибір файлу був би зайвим.
+     */
+    fun shouldLaunchCopyAfterSave(uriBeforeSave: String?, uriAfterSave: String?): Boolean =
+        uriBeforeSave != null && uriBeforeSave == uriAfterSave
+
     /** Видимість пунктів верхньої панелі й меню ⋮. */
     data class MenuState(
+        /** «Зберегти» у режимі «Редагувати» видно завжди (R1). */
         val placeSave: Boolean,
+        /** «Зберегти» активне лише за незбережених змін; без змін — сіре. */
+        val placeSaveEnabled: Boolean,
         val placeDone: Boolean,
         /** «+» у верхній панелі лише в режимі «Редагувати»; у читанні ці дії в «Сторінки й файл». */
         val add: Boolean,
@@ -29,7 +40,10 @@ object ReaderChromeLogic {
         /** Пошук у меню ⋮ лише коли пігулки немає (режим «Редагувати»); у читанні це лупа в пігулці. */
         val searchInOverflow: Boolean,
         val forms: Boolean,
+        /** «Зберегти копію» (R1): для будь-якого відкритого документа, також у режимі «Редагувати». */
         val saveCopy: Boolean,
+        /** «Друкувати» (R1): для відкритого документа, також у режимі «Редагувати». */
+        val print: Boolean,
         /** Решта пунктів: обране, поділитися, «Сторінки й файл», організатор, відомості. */
         val documentActions: Boolean,
     )
@@ -42,16 +56,18 @@ object ReaderChromeLogic {
         openFailed: Boolean,
     ): MenuState {
         if (openFailed) {
-            return MenuState(false, false, false, false, false, false, false, false)
+            return MenuState(false, false, false, false, false, false, false, false, false, false)
         }
         return MenuState(
-            placeSave = placeMode && hasUnsaved,
+            placeSave = placeMode,
+            placeSaveEnabled = placeMode && hasUnsaved,
             placeDone = placeMode,
             add = placeMode,
             readingTheme = true,
             searchInOverflow = placeMode,
             forms = formFieldCount > 0,
-            saveCopy = readOnlyDocument && !placeMode,
+            saveCopy = true,
+            print = true,
             documentActions = true,
         )
     }

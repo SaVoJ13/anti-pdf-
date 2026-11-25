@@ -563,6 +563,27 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
+    /** R1: за незбережених змін копія їх не міститиме, тому спершу питаємо (критичне повідомлення = діалог). */
+    private fun onSaveCopyRequested() {
+        if (!viewModel.hasUnsaved.value) {
+            launchSaveCopy()
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.save_copy_unsaved_title)
+            .setMessage(R.string.save_copy_unsaved_message)
+            .setPositiveButton(R.string.save_copy_unsaved_save) { _, _ ->
+                val before = documentUri?.toString()
+                savePending(onSuccess = {
+                    // D-1: якщо збереження пішло в нову копію, документ уже змінено на неї: другого вибору файлу не треба
+                    if (ReaderChromeLogic.shouldLaunchCopyAfterSave(before, documentUri?.toString())) launchSaveCopy()
+                })
+            }
+            .setNegativeButton(R.string.save_copy_unsaved_as_is) { _, _ -> launchSaveCopy() }
+            .setNeutralButton(R.string.action_cancel, null)
+            .showTracked()
+    }
+
     private fun launchSaveCopy() {
         saveCopyLauncher.launch(ReadOnlyCheck.copyName(documentTitle))
     }
@@ -824,7 +845,7 @@ class ReaderActivity : AppCompatActivity() {
     private fun renderUnsavedUi() {
         val unsaved = viewModel.hasUnsaved.value
         binding.unsavedBar.visibility = if (unsaved && !viewModel.placeModeActive) View.VISIBLE else View.GONE
-        invalidateOptionsMenu() // «Зберегти» у верхній панелі показується лише за незбережених змін
+        invalidateOptionsMenu() // оновлює «Зберегти» у режимі «Редагувати»: видно завжди, активне лише за незбережених змін
     }
 
     // --- компактна панель дій біля виділеного об'єкта (SelectionPill) ---
@@ -2973,13 +2994,17 @@ class ReaderActivity : AppCompatActivity() {
             readOnlyDocument = readOnlyDocument,
             openFailed = openFailed,
         )
-        menu.findItem(R.id.action_place_save)?.isVisible = state.placeSave
+        menu.findItem(R.id.action_place_save)?.let {
+            it.isVisible = state.placeSave
+            it.isEnabled = state.placeSaveEnabled
+        }
         menu.findItem(R.id.action_place_done)?.isVisible = state.placeDone
         menu.findItem(R.id.action_add)?.isVisible = state.add
         menu.findItem(R.id.action_reading_theme)?.isVisible = state.readingTheme
         menu.findItem(R.id.action_search)?.isVisible = state.searchInOverflow
         menu.findItem(R.id.action_forms)?.isVisible = state.forms
         menu.findItem(R.id.action_save_copy)?.isVisible = state.saveCopy
+        menu.findItem(R.id.action_print)?.isVisible = state.print
         for (id in intArrayOf(
             R.id.action_toggle_favorite, R.id.action_share, R.id.action_tools,
             R.id.action_organize_pages, R.id.action_details,
@@ -3069,7 +3094,11 @@ class ReaderActivity : AppCompatActivity() {
                 true
             }
             R.id.action_save_copy -> {
-                launchSaveCopy()
+                onSaveCopyRequested()
+                true
+            }
+            R.id.action_print -> {
+                printCurrentDocument()
                 true
             }
             android.R.id.home -> {

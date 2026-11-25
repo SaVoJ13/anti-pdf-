@@ -42,7 +42,8 @@ class ReaderChromeLogicTest {
         assertTrue("тема читання в меню ⋮", m.readingTheme)
         assertTrue(m.documentActions)
         assertFalse(m.forms)
-        assertFalse(m.saveCopy)
+        assertTrue("R1: «Зберегти копію» видно в читанні для будь-якого відкритого документа", m.saveCopy)
+        assertTrue("R1: «Друкувати» у меню ⋮", m.print)
     }
 
     @Test
@@ -58,21 +59,59 @@ class ReaderChromeLogicTest {
         assertTrue(clean.placeDone)
         assertTrue(clean.add)
         assertTrue("у режимі «Редагувати» пігулки немає, пошук у меню ⋮", clean.searchInOverflow)
-        assertFalse("«Зберегти» лише за незбережених змін", clean.placeSave)
-        assertTrue(ReaderChromeLogic.menuState(true, true, 0, false, false).placeSave)
+        assertTrue("R1: «Зберегти» у режимі «Редагувати» видно завжди", clean.placeSave)
+        assertFalse("R1: без змін «Зберегти» неактивне", clean.placeSaveEnabled)
+        val dirty = ReaderChromeLogic.menuState(true, true, 0, false, false)
+        assertTrue(dirty.placeSave)
+        assertTrue("R1: зі змінами «Зберегти» активне", dirty.placeSaveEnabled)
         assertTrue("тема читання не зникає в режимі «Редагувати»", clean.readingTheme)
     }
 
     @Test
-    fun `save copy only for read only document outside place mode`() {
-        assertTrue(ReaderChromeLogic.menuState(false, false, 0, true, false).saveCopy)
-        assertFalse(ReaderChromeLogic.menuState(true, false, 0, true, false).saveCopy)
+    fun `save copy is shown for every open document in reading and place mode`() {
+        // R1: раніше saveCopy = readOnly && !placeMode; тепер постійний пункт ⋮ (рішення Власника 2026-11-24)
+        for (place in listOf(false, true)) for (ro in listOf(false, true)) for (unsaved in listOf(false, true)) {
+            assertTrue(ReaderChromeLogic.menuState(place, unsaved, 0, ro, false).saveCopy)
+        }
+    }
+
+    @Test
+    fun `print is shown for open documents in reading and place mode but not on open failure`() {
+        for (place in listOf(false, true)) for (ro in listOf(false, true)) {
+            assertTrue(ReaderChromeLogic.menuState(place, false, 0, ro, false).print)
+        }
+        assertFalse(ReaderChromeLogic.menuState(false, false, 0, false, true).print)
+        assertFalse(ReaderChromeLogic.menuState(true, true, 0, false, true).print)
+    }
+
+    @Test
+    fun `place save is never enabled outside place mode`() {
+        assertFalse(ReaderChromeLogic.menuState(false, true, 0, false, false).placeSaveEnabled)
+        assertFalse(ReaderChromeLogic.menuState(false, true, 0, false, false).placeSave)
+    }
+
+    @Test
+    fun `save copy after save changes launches only when saved in place`() {
+        assertTrue("збережено на місці: документ той самий", ReaderChromeLogic.shouldLaunchCopyAfterSave("content://a/1", "content://a/1"))
+        assertFalse("збережено в нову копію: документ змінився", ReaderChromeLogic.shouldLaunchCopyAfterSave("content://a/1", "content://b/2"))
+        assertFalse("документа немає", ReaderChromeLogic.shouldLaunchCopyAfterSave(null, null))
+    }
+
+    @Test
+    fun `menu order puts print and save copy after share and before pages and file`() {
+        val order = ids("menu/menu_reader.xml").map { it.removePrefix("@+id/") }
+        fun at(n: String) = order.indexOf(n).also { assertTrue("$n є в меню", it >= 0) }
+        val expected = listOf("action_toggle_favorite", "action_share", "action_print", "action_save_copy",
+            "action_tools", "action_organize_pages", "action_details", "action_reading_theme")
+        assertTrue("усі очікувані пункти є в меню", order.containsAll(expected))
+        assertEquals(expected, expected.sortedBy { at(it) })
+        listOf("action_search", "action_forms", "action_place_save", "action_place_done", "action_add").forEach { at(it) }
     }
 
     @Test
     fun `open failure hides every document action`() {
         val m = ReaderChromeLogic.menuState(placeMode = false, hasUnsaved = true, formFieldCount = 5, readOnlyDocument = true, openFailed = true)
-        assertEquals(ReaderChromeLogic.MenuState(false, false, false, false, false, false, false, false), m)
+        assertEquals(ReaderChromeLogic.MenuState(false, false, false, false, false, false, false, false, false, false), m)
     }
 
     @Test

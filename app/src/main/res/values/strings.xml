@@ -412,4 +412,9 @@
     <string name="onboarding_2_body">In a document, tap “Edit” to add text, a signature or a drawing, and to fill in form fields. Merge, split, scan and other tools are on the Tools tab.</string>
     <string name="onboarding_3_title">Your files stay on your device</string>
     <string name="onboarding_3_body">Documents are opened and edited on your device. There is no account or sign-in. The app shows ads from Google AdMob, which may collect device data; details are in “Privacy policy” in the ⋮ menu.</string>
+    <string name="action_print_menu">Print</string>
+    <string name="save_copy_unsaved_title">Unsaved changes</string>
+    <string name="save_copy_unsaved_message">Unsaved changes will not be included in the copy. Save them first?</string>
+    <string name="save_copy_unsaved_save">Save changes</string>
+    <string name="save_copy_unsaved_as_is">Copy as is</string>
 </resources>
