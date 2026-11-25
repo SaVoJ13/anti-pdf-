@@ -1,3 +1,17 @@
+## 2026-11-25 — Автор (Claude, беклог): тест «release без admob.properties»
+
+**Простими словами**
+- Додано автоматичний тест: у репозиторії немає бойових AdMob ID, а `admob.properties` у `.gitignore`.
+- Тест також стежить, щоб правило збірки не зламали: без `admob.properties` release бере тестові ID Google, а з `-Pproduction=true` збірка падає.
+- Окремо, вручну, прогнано Gradle без `admob.properties`: release-маніфест і BuildConfig мають лише тестові ID.
+- Код збірки, залежності, дозволи, версія не змінювались; доданий лише тестовий файл.
+- Готово до QA (не `QA Verified`).
+
+**Як працює політика за поточним `build.gradle.kts`:** немає `admob.properties` → `release = test`, `releaseIsTest = true`, гучне попередження (лише при запиті release/bundle/assemble); `-Pproduction=true` без файла → `GradleException`; файл є, але неповний/хибного формату/різні видавці → падіння завжди; тестові ID в файлі + production → падіння. debug завжди тестові.
+**Обраний спосіб (журнал рішення):** найпростіший надійний — JUnit-сканер вихідного коду `AdmobReleaseFallbackPolicyTest` (4 тести, працює в `testDebugUnitTest`, не потребує release-збірки й підпису) + існуюча Gradle-задача `:app:verifyAdmobReleaseManifest`. Повний прогін release-збірки не потрібен для перевірки політики.
+**Числа (XML, JDK 21, `--no-daemon`):** app 435 тестів (431 + 4 нових), 0 збоїв, 0 помилок, 0 пропущено; core-pdf 107, 0/0, 1 пропущено на варіант. Нові: `TEST-com.savoj.volumpdf.AdmobReleaseFallbackPolicyTest.xml` tests=4 failures=0 errors=0. Ручний прогін `:app:verifyAdmobReleaseManifest :core-ads:generateReleaseBuildConfig` (без `admob.properties`): «AdMob: маніфест release OK (тестовий Application ID)»; згенерований release BuildConfig: `ca-app-pub-3940256099942544/...`, `ADMOB_USING_TEST_IDS = true`. Це вивід консолі, не XML-звіт.
+**Ризики:** сканер читає текст `build.gradle.kts` (якщо його перепишуть, тест може впасти; це свідомо). Не виконує сам Gradle без файла. **НЕ ПЕРЕВІРЕНО:** реальна release-збірка з реальним `admob.properties`; `-Pproduction=true` не запускався; підписаний APK/AAB.
+
 ## 2026-11-25 — Керівник проєкту (Агент 0): R1 злито в main
 
 **Простими словами**
