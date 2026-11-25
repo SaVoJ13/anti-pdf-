@@ -2,7 +2,8 @@
 
 > Anti PDF. Знімок за `origin/main` = `b65a684` (2026-11-25). Лише читання коду; на пристрої нічого не запускалось. Деталі, мови, дозволи й обмеження: `docs/FEATURE_AUDIT.md` (ID збігаються).
 > Статус: **є** / **частково** / **нема**. «Тест» = файли тестів, що називаються за функцією; чи повно вони покривають поведінку, НЕ ПЕРЕВІРЕНО (тести не запускались).
-> Відповідність ID: L13-L16 в AUDIT = S3, P1, S1/P3, S6 тут. Додаткові рядки: R13 (пігулка і FAB), E14 (режим «Рука»).
+> Відповідність ID: збігаються з AUDIT для L1-L12, R, T, E, O. Винятки: L13-L16 в AUDIT = S3, P1, S1/P3, S6 тут. R13 і E14 є в обох документах.
+> Не плутати з `docs/product/FEATURE_AUDIT_2026-11-23.md` (аудит екранів від 2026-11-23, інший документ).
 > Скорочення шляхів: `A` = `app/src/main/java/com/savoj/volumpdf/`, `C` = `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/`, `AT` = `app/src/test/java/com/savoj/volumpdf/`, `CT` = `core-pdf/src/test/java/com/savoj/volumpdf/core/pdf/`.
 
 | ID | Функція | Екран / точка входу | Код | Статус | Тест |
@@ -16,7 +17,7 @@
 | L7 | Порожні стани (порожньо / нічого не знайдено / немає обраного) | Бібліотека | `A ui/main/HomeLogic.kt:emptyState` | є | `AT ui/HomeOnboardingTest.kt` |
 | L8 | Відкрити PDF (SAF) | FAB «Відкрити PDF» | `MainActivity.kt:208, 295-300` | є | `AT util/SafUtilsTest.kt` |
 | L9 | Створити порожній PDF | FAB-розкриття; Інструменти | `MainActivity.kt:212`, `A util/DocumentCreationHelper.kt` | є | НЕ ПЕРЕВІРЕНО (окремого тесту не знайдено) |
-| L10 | Сканувати (з FAB) | FAB-розкриття | `MainActivity.kt:311`, `A ui/scanner/ScanDocumentActivity.kt` | є | `AT ui/scanner/DocumentScannerLogicTest.kt` |
+| L10 | Сканувати (з FAB) | FAB-розкриття | `MainActivity.kt:312`, `A ui/scanner/ScanDocumentActivity.kt` | є | `AT ui/scanner/DocumentScannerLogicTest.kt` |
 | L11 | Вкладки «Бібліотека» / «Інструменти» | Нижня навігація | `MainActivity.kt:249-293`, `res/menu/menu_main_bottom.xml` | є (лише 2 вкладки) | `AT ui/HomeOnboardingTest.kt` |
 | L12 | Вкладка/розділ «Файли» (огляд сховища) | — | — | нема | — |
 | O1 | Відкриття PDF з інших застосунків (VIEW) | Системний вибір «Відкрити в…» | `AndroidManifest.xml:31-38`, `MainActivity.kt:184-197` | є | `AT ui/HomeOnboardingTest.kt` (`isDocumentIntent`) |
@@ -31,7 +32,7 @@
 | R8 | Зберегти копію | «⋮» → Зберегти копію | `ReaderActivity.kt:567, 2633`, `ReaderChromeLogic.kt` | є | `AT ui/reader/ReaderChromeLogicTest.kt` |
 | R9 | Відомості про документ | «⋮» → Відомості | `ReaderActivity.kt:3152` | є | НЕ ПЕРЕВІРЕНО |
 | R10 | Шторка «Сторінки й файл» (15 дій) | «⋮» → Сторінки й файл | `A ui/reader/ReaderToolsBottomSheetDialogFragment.kt`, `ReaderActivity.kt:2568` | є | НЕ ПЕРЕВІРЕНО (UI) |
-| R11 | Відкриття PDF із паролем | Діалог пароля | `ReaderActivity.kt:397-460`, `EditAccess.kt`, `C PdfIo.kt:51` | частково (див. AUDIT §3.2) | `AT ui/reader/EditAccessTest.kt`, `CT large/LargeEncryptedTest.kt` |
+| R11 | Відкриття PDF із паролем | Діалог пароля | `ReaderActivity.kt:397-460`, `EditAccess.kt`, `C PdfIo.kt:51` | частково (див. AUDIT §2.3) | `AT ui/reader/EditAccessTest.kt`, `CT large/LargeEncryptedTest.kt` |
 | R12 | Заповнення форм AcroForm | «⋮» → Заповнити форму (якщо поля є) | `ReaderActivity.kt:382`, `FillFormBottomSheetDialogFragment.kt`, `C PdfBoxFormEngine.kt` | є (Text, CheckBox, Choice) | `AT ui/reader/FormEditingTest.kt`, `FormFieldsUiLogicTest.kt`; `CT PdfBoxFormEngineTest.kt`, `PdfBoxFormMultilineTest.kt` |
 | E1 | Режим «Редагувати» (вхід/вихід, Готово) | FAB «Редагувати» | `ReaderActivity.kt:1011, 1048, 1081` | є | `AT ui/reader/PlaceBarLogicTest.kt`, `PlaceEditorTest.kt` |
 | E2 | Текстовий напис (розмір, колір, фон, поворот) | Панель «Текст» | `ReaderActivity.kt:1164, 1318`, `PlaceMarkupLogic.kt` | є | `PlaceTextHardBreakTest.kt`, `PlaceTextPaginationTest.kt`, `PlaceMarkupLogicTest.kt`; `CT PdfBoxMarkupEngineTest.kt` |
@@ -62,7 +63,7 @@
 | T12 | Додати сторінку / файл у відкритий документ | «+» / шторка читалки | `ReaderActivity.kt:2534, 2492`, `C appendBlankPages`, `appendFiles` | є | `CT PdfBoxPageOpsMemoryAndSecurityTest.kt` (частково, НЕ ПЕРЕВІРЕНО зміст) |
 | T13 | «Захистити паролем» (нове шифрування) | — | — | нема | — |
 | T14 | OCR / пошук у сканах | — | — | нема (рішення Власника: після релізу) | — |
-| P1 | Реклама: банер | Бібліотека (`bannerContainer`) | `MainActivity.kt:161-167`, `core-ads/.../AdMobAdsManager.kt` | є | `core-ads/src/test/.../AdMobAdsManagerTest.kt`, `AdIdsConfigTest.kt` |
+| P1 | Реклама: банер | Бібліотека і `ToolsActivity` (`bannerContainer`) | `MainActivity.kt:161-167`, `ToolsActivity.kt:147`, `res/layout/activity_tools.xml:444`, `core-ads/.../AdMobAdsManager.kt` | є | `core-ads/src/test/.../AdMobAdsManagerTest.kt`, `AdIdsConfigTest.kt` |
 | P2 | Реклама: interstitial після завершеної дії інструмента (cooldown 5 хв) | Після операції в інструментах | `ToolsActivity.kt:485`, `AdMobAdsManager.kt:168` | є | `AdMobAdsManagerTest.kt` |
 | P3 | Згода UMP + «Налаштування конфіденційності» | Перший запуск; «⋮» бібліотеки | `AdMobAdsManager.requestConsentAndInit`, `MainActivity.kt:411, 456` | є | `AdMobAdsManagerTest.kt`, `AT ui/PrivacyMenuTest.kt` |
 | S1 | Політика приватності (посилання) | «⋮» бібліотеки | `MainActivity.kt:452, 478` | є | `AT ui/PrivacyMenuTest.kt` |
