@@ -3,6 +3,10 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25: O1-2 (скан) доповнення в `codex/fix-o1-image-page-size` (готово до QA)
+- Дефект: скан з «Сканувати» лишався більшим за A4: `ScanDocumentActivity` копіював PDF ML Kit повз `imagesToPdf`. Виправлено: за наявності JPEG-сторінок PDF будується через `imagesToPdf` (вибір у `DocumentScannerLogic.chooseScanSource`), PDF ML Kit запасний.
+- XML: app 435/0/0/0; core-pdf 119/0/0/1; lint 0 errors/149 warnings. НЕ ПЕРЕВІРЕНО на телефоні; QA ще немає; у main не злито.
+
 ## Оновлення 2026-11-25: O-1 у гілці `codex/fix-o1-image-page-size` (готово до QA, у main НЕ злито)
 - Підтверджено за кодом: `imagesToPdf` і `appendFiles` створювали сторінку `PDRectangle(widthPx, heightPx)` (1 px = 1 pt). Скан іде тим самим `imagesToPdf`.
 - Зміна контракту core-pdf: сторінка із зображення має пропорції зображення, орієнтацію за зображенням (ширше за висоту = альбом) і вписується в A4 (595x842 / 842x595). Більше за A4 зменшується масштабом малювання; менше або рівне A4 лишається природного розміру (1 px = 1 pt), тому наявний контракт 16x16 -> 16x16 pt не змінено. Піксельні дані не змінюються. Публічні сигнатури не змінені.
