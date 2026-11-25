@@ -3,6 +3,12 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25 (RC3 злито в main): 1.0.2 (код 3), наступний крок «збираємо RC3»
+- За словом Власника злито окремими PR, merge-коміти без squash і без force: `release/rc3` (PR #24, merge `56662e8`) і `docs/rc3-play-declarations` (merge `544d967`, main). Перед злиттям виправлено примітки RC3 (`09b3f6c`): точне формулювання про A4, конкретний зміст, лише `<uk>` 439 символів; QA Verified (`qa/release-rc3` `7f9d06a`).
+- Перевірено на main: versionCode 3, versionName "1.0.2"; у коді відносно `fb99f35` змінено лише версію; merged-маніфест release: 9 дозволів без змін відносно RC2 (QA: рівно 4 очікувані різниці — версія, uses-feature portrait, власні екрани ліцензій замість OssLicenses*); документи правил (AGENTS.md, CLAUDE.md, конституція, профіль) без змін; робоче дерево чисте. Числа (QA, XML): app 451/0/0/0, core-pdf 137/0/0/1, lint 0 errors/143 warnings. R8 bundleRelease без підпису пройшов; `.so` у AAB немає.
+- Нічого не завантажено в Google Play, Play Console і телефон не чіпали. Підписану збірку робить Власник за `docs/release/RC3_BUILD_GUIDE.md`; далі `RC3_CHECKLIST.md`.
+- НЕ ПЕРЕВІРЕНО: підпис ключем Власника і збіг відбитка; release на телефоні (R8, реклама, UMP, ліцензії, друк, збереження копії, фото і скани); `uses-feature` і Data safety у Play Console; TalkBack, Android 9–11, планшет.
+
 ## Оновлення 2026-11-25 (RC3): `release/rc3`, версія 1.0.2 (код 3), готово до QA
 - Гілка `release/rc3` від `main` `fb99f35`: змінено лише `versionCode` 2->3 і `versionName` 1.0.1->1.0.2; додано `RELEASE_NOTES_RC3.md`, `RC3_BUILD_GUIDE.md`, `RC3_CHECKLIST.md`. PR/злиття не робились, у Play нічого не завантажено.
 - XML (JDK 21): app 451/0/0/0; core-pdf 137/0/0/1; lint 0 errors/143 warnings. Маніфест release RC3 проти RC2: дозволи, queries, intent-filters без змін; нове лише uses-feature portrait required=false і дві внутрішні activity ліцензій (замість двох gms OssLicenses). R8 пройшов (непідписаний AAB 16 320 010 байт); `.so` у AAB немає (16 KB: нічого перевіряти).
