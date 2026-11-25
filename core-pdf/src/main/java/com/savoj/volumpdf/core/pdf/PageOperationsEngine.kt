@@ -39,8 +39,15 @@ interface PageOperationsEngine {
         password: String? = null
     ): PdfOperationResult
 
-    // Створення PDF із зображень (JPEG/PNG)
-    suspend fun imagesToPdf(context: Context, imageUris: List<Uri>, outputUri: Uri): PdfOperationResult
+    // Створення PDF із зображень (JPEG/PNG).
+    // rotationsDegrees: необов'язкові кути (0/90/180/270, за годинниковою стрілкою) для кожного зображення
+    // за індексом; відсутні значення = 0. Поворот через /Rotate сторінки, без перекодування пікселів.
+    suspend fun imagesToPdf(
+        context: Context,
+        imageUris: List<Uri>,
+        outputUri: Uri,
+        rotationsDegrees: List<Int> = emptyList()
+    ): PdfOperationResult
 
     // Додавання водяного знака на сторінки (ТОП-4)
     suspend fun addWatermark(

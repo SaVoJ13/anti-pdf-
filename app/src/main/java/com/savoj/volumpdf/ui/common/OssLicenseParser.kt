@@ -24,6 +24,21 @@ object OssLicenseParser {
         return entries.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
     }
 
+    /**
+     * Індекс ліцензій для екрана списку. Гілка помилки (L8): будь-який збій читання ресурсу, пошкоджений індекс
+     * або запис, чий текст не читається, дає порожній список (екран показує licenses_load_failed).
+     */
+    fun loadIndex(readMetadata: () -> String, readBlob: () -> ByteArray): List<OssLicenseEntry> =
+        runCatching {
+            val entries = parseMetadata(readMetadata())
+            val blob = readBlob()
+            entries.takeIf { list -> list.isNotEmpty() && list.all { licenseText(blob, it) != null } }.orEmpty()
+        }.getOrDefault(emptyList())
+
+    /** Текст однієї ліцензії; null, якщо ресурс не читається або зріз некоректний (екран показує licenses_load_failed). */
+    fun loadText(readBlob: () -> ByteArray, entry: OssLicenseEntry): String? =
+        runCatching { licenseText(readBlob(), entry) }.getOrNull()
+
     fun licenseText(blob: ByteArray, entry: OssLicenseEntry): String? {
         if (entry.offset < 0 || entry.length <= 0) return null
         val end = entry.offset.toLong() + entry.length.toLong()
