@@ -3,6 +3,12 @@
 > За п. 5.1 конституції. Веде Агент 0 / Керівник проєкту. Оновлено: 2026-11-23 (D2 у `codex/redesign-d2-library` = `6ad52f5`, локальні перевірки зелені, незалежний QA зупинено без вердикту; D1 код **QA Verified**, device gate очікує; `main` = `67758d0`; закритий тест не змінено; репозиторій `https://github.com/SaVoJ13/anti-pdf-`).
 > Джерела: `docs/research/MARKUP_STAGES.md`, `docs/project_log.md`, `docs/governance/DECISIONS.md`, `docs/research/LARGE_FILES_REPORT.md`, `docs/THIRD_PARTY.md`. Що там не підтверджено, позначено «НЕ ПЕРЕВІРЕНО».
 
+## Оновлення 2026-11-25 (O-1, device gate): пройдено на телефоні
+- Збірка `com.savoj.volumpdf.anti.o1qa` на SHA `4188580`. Власник: O1-1 (фото з камери) ок; O1-2 (скан) спершу не ок (скан ML Kit обходив `imagesToPdf`, виправлено `8f80dee`), потім ок; O1-3 (альбомне ширше за A4) не ок → рішення Власника: зменшувати до ширини A4 і додати поворот зображення (`96adaba`), потім ок; «вертикальні фото лягають горизонтально» → автоповорот за EXIF (`4188580`), O1-4 ок; O1-5 (скан після EXIF) ок.
+- QA Verified (код) у 4 кола (qa/o1-image-page-size, `175cb78`): core-pdf 137/0/0/1, app 438/0/0/0, lint 0 errors/149 warnings.
+- У `main` НЕ злито: чекає слова Власника. Зміни контракту core-pdf: `imagesToPdf(..., rotationsDegrees = emptyList())`, ширина сторінки з зображення ≤595 pt, EXIF-автоповорот JPEG.
+- НЕ ПЕРЕВІРЕНО: PNG/WebP, Android 9–11, планшет, TalkBack, дзеркальні EXIF, тест ViewModel (L5).
+
 ## Оновлення 2026-11-25: O1-4 (EXIF) у `codex/fix-o1-image-page-size` (готово до QA)
 - `imagesToPdf` і `appendFiles` враховують EXIF Orientation JPEG (чистий парсер `ExifOrientation`); сумарний кут = EXIF + ручний; дзеркало ігнорується. Контракт core-pdf без нових параметрів.
 - XML: app 438/0/0/0; core-pdf 137/0/0/1; lint 0 errors/149 warnings. НЕ ПЕРЕВІРЕНО на телефоні; QA немає; у main не злито.
