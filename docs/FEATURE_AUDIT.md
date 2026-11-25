@@ -2,7 +2,8 @@
 
 > Автор: Агент (Feature Audit), гілка `docs/feature-audit`. Основа: `origin/main` = `b65a684` (2026-11-25). Версія в коді: `1.0.1` / код `2` (`app/build.gradle.kts:32-33`), minSdk 28, targetSdk 36.
 > Метод: лише читання коду й ресурсів. Нічого не запускалось: ні Gradle, ні телефон, ні емулятор. Тому «працює» тут означає «реалізовано й підключено в коді», а не «перевірено на пристрої». Усе, що я не зміг підтвердити читанням, позначено **НЕ ПЕРЕВІРЕНО**.
-> Скорочення: `A` = `app/src/main/java/com/savoj/volumpdf/`, `C` = `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/`, `AT` / `CT` = тести `app` / `core-pdf` (шляхи в `docs/FEATURE_MAP.md`). ID функцій збігаються з `FEATURE_MAP.md`.
+> Скорочення: `A` = `app/src/main/java/com/savoj/volumpdf/`, `C` = `core-pdf/src/main/java/com/savoj/volumpdf/core/pdf/`, `AT` / `CT` = тести `app` / `core-pdf` (шляхи в `docs/FEATURE_MAP.md`). ID функцій AUDIT і `FEATURE_MAP.md` збігаються для рядків R, T, E, O, P2/P3, S4/S5. Винятки: L13-L16 в AUDIT = S3, P1, S1/P3, S6 у MAP; R13 і E14 є в обох. Пошук за назвою функції надійніший за ID.
+> Не плутати з попереднім `docs/product/FEATURE_AUDIT_2026-11-23.md` (аудит екранів на 2026-11-23, до D2/D3/R1); цей документ звіряє стан `main` `b65a684`. Узгодженість двох документів між собою не перевірялась: **НЕ ПЕРЕВІРЕНО**.
 > Статус: готово до QA (самоверифікації немає).
 
 ## Простими словами
@@ -45,7 +46,7 @@
 | L7 | Порожні стани: порожньо / нічого не знайдено / немає обраного | Бібліотека | Так: `HomeLogic.kt:emptyState`, `emptyStateButtons` | — | `HomeOnboardingTest` | 5/5 | Немає |
 | L8 | «Відкрити PDF» | FAB | Так: `MainActivity.kt:208` (`OpenDocument`, `application/pdf`) | Лише PDF | `SafUtilsTest` | 5/5 | SAF |
 | L9 | «Створити PDF» (порожній) | FAB-розкриття | Так: `MainActivity.kt:212-221`, `A util/DocumentCreationHelper.kt` | Місце збереження: **НЕ ПЕРЕВІРЕНО** | Окремого тесту не знайшов: **НЕ ПЕРЕВІРЕНО** | 5/5 | Немає |
-| L10 | «Сканувати» | FAB-розкриття | Так: `MainActivity.kt:311`, `ScanDocumentActivity.start` | Потрібні Google Play Services (§2.4) | `DocumentScannerLogicTest` | 5/5 | Через Play Services |
+| L10 | «Сканувати» | FAB-розкриття | Так: `MainActivity.kt:312`, `ScanDocumentActivity.start` | Потрібні Google Play Services (§2.4) | `DocumentScannerLogicTest` | 5/5 | Через Play Services |
 | L11 | Вкладки Бібліотека/Інструменти | Нижня навігація | Так | Лише 2 вкладки | `HomeOnboardingTest` | 5/5 | Немає |
 | L12 | Вкладка «Файли» | — | **Нема** | — | — | — | — |
 | L13 | Динамічні кольори (Material You) | Toolbar «⋮» (лише Android 12+) | Так: `MainActivity.kt:419-423, 462-468` (`recreate()` після перемикання) | На Android 9–11 пункт сховано | `AppearancePreferencesIsolatedProcessTest`, `ThemesDialogTest`, `AppearanceContrastTest` | 5/5 | Немає |
@@ -95,7 +96,7 @@
 1. **Перегляд зашифрованого PDF** виконує `androidx.pdf`. У `PdfViewerBridge.kt` обробки пароля немає (`grep`). Як бібліотека питає пароль і чи локалізує діалог: **НЕ ПЕРЕВІРЕНО**.
 2. **Режим «Редагувати» і форми для зашифрованого документа.** Власний діалог пароля: `ReaderActivity.kt:397-460` (`obtainAccess`, `askPassword`), макет `DialogDocumentPasswordBinding`, рядки `password_title`, `password_wrong`, `password_continue`. Пароль живе лише у `ReaderViewModel.documentPassword`, на диск не пишеться (коментар `:433`). Стан: `EditAccessModel.resolve` (`A ui/reader/EditAccess.kt`). Права автора: `PlaceMarkupLogic.kt:784-789` (`Gate.ENCRYPTED`, `NO_MARKUP_RIGHTS`).
 3. **Збереження** зберігає шифрування: `PdfIo.copyEncryption` (`C PdfIo.kt:175-182`) і `keepEncryption` (`:190`); ключ 40/128/256, AES для ≥128.
-4. **Інструменти** (`ToolsActivity`) для зашифрованих PDF: `ToolsViewModel` не передає пароль (`password = null` за замовчуванням у `PageOperationsEngine.kt:60-68`; виклики `ToolsViewModel.kt:99-118`). Помилка пароля зіставляється з `ErrorMessages.Kind.PASSWORD` → `error_invalid_password` (`A util/ErrorMessages.kt:32, 61`). Тобто інструменти не питають пароль, а показують помилку (висновок із коду, не перевірено на пристрої). Для інструментів «відкриття із паролем» неповне.
+4. **Інструменти** (`ToolsActivity`) для зашифрованих PDF: `ToolsViewModel` не передає пароль (`password = null` за замовчуванням у `PageOperationsEngine.kt:20, 30, 39`; виклики `ToolsViewModel.kt:99-118`). Помилка пароля зіставляється з `ErrorMessages.Kind.PASSWORD` → `error_invalid_password` (`A util/ErrorMessages.kt:32, 61`). Тобто інструменти не питають пароль, а показують помилку (висновок із коду, не перевірено на пристрої). Для інструментів «відкриття із паролем» неповне.
 
 Тести: `EditAccessTest`, `PendingLoadGuardTest`; `CT large/LargeEncryptedTest`, `PdfIoErrorMappingTest`.
 
@@ -132,7 +133,7 @@
 
 `ToolType` (11): `CREATE_BLANK`, `SCAN_DOCUMENT`, `ORGANIZE_PAGES`, `MERGE`, `SPLIT`, `ROTATE`, `DELETE_PAGES`, `IMAGES_TO_PDF`, `WATERMARK`, `PAGE_NUMBERS`, `COMPRESS` (`A ui/tools/ToolsAdapter.kt:12-24`). Групи D3 (`A ui/tools/ToolGroups.kt:7-23`): **Створити** (порожній, Сканувати, Зображення в PDF), **Сторінки** (Упорядкувати, Об'єднати, Розділити, Повернути, Видалити), **Оформити й оптимізувати** (Водяний знак, Нумерація, Стиснення). Тест групування: `AT ui/tools/ToolGroupingLogicTest`.
 
-Потік: вибір файлів → перевірка введення → `CreateDocument` (`ToolsActivity.kt:164`) → `ToolsViewModel.execute*` → `PageOperationsEngine` (PdfBox) → interstitial з кулдауном 5 хв і діалог результату (`ToolsActivity.kt:485-486`). Вихід завжди в новий файл за вибором користувача; захист від збігу вхідного й вихідного файлу: `CT PdfIoSameTargetTest` (висновок щодо UI: **НЕ ПЕРЕВІРЕНО**).
+Потік: вибір файлів → перевірка введення → `CreateDocument` (реєстрація `ToolsActivity.kt:82-83`, запуск `:370`) → `ToolsViewModel.execute*` → `PageOperationsEngine` (PdfBox) → interstitial з кулдауном 5 хв і діалог результату (`ToolsActivity.kt:485-486`). Вихід завжди в новий файл за вибором користувача; захист від збігу вхідного й вихідного файлу: `CT PdfIoSameTargetTest` (висновок щодо UI: **НЕ ПЕРЕВІРЕНО**).
 
 | ID | Інструмент | Налаштування | Обмеження | Тести |
 |---|---|---|---|---|
@@ -156,7 +157,7 @@
 ### 5.1 «Захистити паролем» (нове шифрування PDF)
 - **Стан: нема** (T13). У `ToolType` й `ToolGroups.kt` такого інструмента немає. `StandardProtectionPolicy` використовується лише для **збереження вже наявного** шифрування (`C PdfIo.kt:12, 175-182, 190`), а не для встановлення пароля користувачем.
 - Відкриття PDF із паролем уже є (§2.3): діалог пароля, збереження копії з тим самим паролем (`ReaderActivity.kt:2648`).
-- Відкриті питання: поведінка інструментів на зашифрованих файлах (§2.3 п. 4); чи потрібне «зняти пароль». Рішення Власника щодо «Захистити паролем»: в `DECISIONS.md` не знайшов, **НЕ ПЕРЕВІРЕНО**.
+- Відкриті питання: поведінка інструментів на зашифрованих файлах (§2.3 п. 4); чи потрібне «зняти пароль». **Рішення Власника (2026-11-24, `docs/governance/DECISIONS.md:106`): «Захистити паролем» у беклозі, термін не визначено, чекає рішення Власника.**
 
 ### 5.2 OCR і пошук у сканах
 - **Стан: нема** (T14). Розпізнавання тексту в коді немає. Скан із ML Kit Document Scanner це картинки в PDF; пошук R2 їх не бачить (`OWNER_INBOX.md`, §17).
@@ -186,13 +187,13 @@
 | S2b | Екран «Бібліотеки»: список і деталі | `LibraryLicensesActivity`, `LibraryLicenseDetailActivity`, `OssLicenseParser`; кнопка в діалозі (`LicensesDialogHelper.kt:74`) | Так. Дані з плагіна `com.google.android.gms.oss-licenses-plugin` (`app/build.gradle.kts:6`); D1 закрито на `d2qa` (debug) | Release-збірка екранів на пристрої: **НЕ ПЕРЕВІРЕНО** (`CURRENT_STATE.md`, D1 device gate) | `OssLicenseParserTest` |
 | S2c | Реєстр залежностей | `docs/THIRD_PARTY.md` | Документ, не функція | Звірку з `build.gradle.kts` у цій фазі не повторював | — |
 
-Розбіжність для QA: `docs/store/DATA_SAFETY.md` згадує `play-services-oss-licenses:17.1.0`, а в `app/build.gradle.kts` у блоці `dependencies` (рядки 99-117) такого `implementation` я не бачу, є лише плагін (`:6`). Де підключена залежність: **НЕ ПЕРЕВІРЕНО**.
+Факт щодо `play-services-oss-licenses` (розбіжність у документах, не в коді): runtime-залежність `play-services-oss-licenses:17.1.0` **навмисно видалена в D1** (2026-11-23): `docs/governance/DECISIONS.md:104`, `docs/THIRD_PARTY.md:45` («видалено з runtime у D1»), тест `LicensesDialogHelperTest.kt:79` вимагає, щоб `build.gradle.kts` її не містив. У `app/build.gradle.kts` лишився лише build-time плагін `oss-licenses-plugin` (`:6`), який дає дані для власних екранів. Отже `docs/store/DATA_SAFETY.md:14` (рядок «Інші SDK» зі згадкою `play-services-oss-licenses:17.1.0`) **застарілий**. Сам `DATA_SAFETY.md` у цій гілці не змінювався (поза ролями цього завдання). Передача ролі «Монетизація і Google Play» (власник `docs/store/`): оновити `DATA_SAFETY.md:14`, прибравши цю бібліотеку; чи форма вже подана в Play Console (подано 2026-11-18) із цим рядком, враховує Власник.
 
 ## 7. Реклама (AdMob + UMP), теми, мови
 
 | ID | Функція | Код | Працює | Обмеження | Тести |
 |---|---|---|---|---|---|
-| P1 | Адаптивний банер | `core-ads/.../AdMobAdsManager.kt`, `MainActivity.kt:161-167` | Так, лише на головному екрані. У читалці реклами немає: `ReaderActivity.kt` не звертається до `AdMobAdsManager` (`grep`: лише `MainActivity.kt` і `ToolsActivity.kt`) | Банер після завершення UMP | `AdMobAdsManagerTest`, `AdIdsConfigTest` |
+| P1 | Адаптивний банер | `core-ads/.../AdMobAdsManager.kt`, `MainActivity.kt:161-167` | Так, на двох екранах: головний (`MainActivity.kt:161-167`, `bannerContainer`) і `ToolsActivity` (`ToolsActivity.kt:147 bindAdaptiveBanner`, контейнер `res/layout/activity_tools.xml:444`). У читалці реклами немає: `ReaderActivity.kt` не звертається до `AdMobAdsManager` (`grep`: лише `MainActivity.kt` і `ToolsActivity.kt`) | Банер після завершення UMP | `AdMobAdsManagerTest`, `AdIdsConfigTest` |
 | P2 | Interstitial після завершеної дії інструмента, кулдаун 5 хв | `AdMobAdsManager.kt:168 showActionInterstitial`; виклик `ToolsActivity.kt:485` | Так | Реальні ID лише в release (`admob.properties`); debug тестові (`VerifyAdmobManifestTask` у `app/build.gradle.kts`) | `AdMobAdsManagerTest` |
 | P3 | Згода UMP, «Налаштування приватності» | `AdMobAdsManager.requestConsentAndInit`, `isPrivacyOptionsRequired`, `showPrivacyOptionsForm`; `MainActivity.kt:411, 456` | Так | Пункт видно лише коли UMP вимагає | `AdMobAdsManagerTest`, `PrivacyMenuTest` |
 | S4 | Тема застосунку Світла/Темна за системою | `res/values/themes.xml:3`, `res/values-night/themes.xml` | Так | Власного перемикача нема | `AppearanceContrastTest` |
@@ -229,7 +230,7 @@
 | 8 | «Цифровий підпис» | Лише підпис-зображення від руки (E5), не криптографічний | Уточнити |
 | 9 | «Редагування наявного тексту PDF» | Немає: застосунок додає нові об'єкти (текст, ✓/✗, штрих, підпис, зображення) і заповнює форми; наявний текст не змінює | Розбіжність, якщо карта обіцяє |
 | 10 | «11 інструментів» | Збіг: 11 `ToolType`. У шторці читалки 15 дій (додатково сторінка, зображення, вставка файлу, друк, поширення, відомості) | Збіг |
-| 11 | «Реклама при відкритті файлу» | Немає: банер лише в бібліотеці, interstitial лише після дії інструмента | Розбіжність, якщо карта каже інакше |
+| 11 | «Реклама при відкритті файлу» | Немає: банер на головному екрані й в `ToolsActivity`, interstitial лише після дії інструмента; у читалці й при відкритті файлу реклами немає | Розбіжність, якщо карта каже інакше |
 | 12 | «Мови uk/en/de/es/ru» | Збіг (5/5, по 360 рядків) | Збіг |
 | 13 | «Хмара, облікові записи, синхронізація» | Немає; `allowBackup=false`; файли лише SAF | Розбіжність, якщо карта обіцяє |
 | 14 | «Експорт у зображення/Word» | Інструмента немає | Розбіжність, якщо карта обіцяє |
@@ -239,7 +240,7 @@
 - Діалог пароля самого `androidx.pdf` (чи питає, чи локалізований).
 - Поведінка інструментів на зашифрованих PDF (за кодом: помилка, не запит пароля).
 - Повнота покриття тестами: перелічено файли за назвою, вміст не читався.
-- Склеєний маніфест (9 дозволів із SDK); де підключено `play-services-oss-licenses`.
+- Склеєний маніфест (9 дозволів із SDK). (Питання про `play-services-oss-licenses` закрито: це застарілий рядок `DATA_SAFETY.md:14`, див. §6.)
 - Розмір APK/AAB; `.so` і 16 KB; Data safety для OCR.
 - Текст ChatGPT-карти «Повна карта функціональності» (розділ 9 без нього).
 - «Видалити з історії», «Очистити історію» (що саме видаляється), місце створеного порожнього PDF, `file://`, відкликані URI в «Останніх».
