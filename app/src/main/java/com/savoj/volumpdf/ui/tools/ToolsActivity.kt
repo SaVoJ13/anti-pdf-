@@ -236,9 +236,10 @@ class ToolsActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        filesAdapter = SelectedFileAdapter { pos ->
-            viewModel.removeFileAt(pos)
-        }
+        filesAdapter = SelectedFileAdapter(
+            onRemoveClicked = { pos -> viewModel.removeFileAt(pos) },
+            onRotateClicked = { pos -> viewModel.rotateFileAt(pos) }
+        )
         binding.recyclerViewSelectedFiles.layoutManager = LinearLayoutManager(this)
         binding.recyclerViewSelectedFiles.adapter = filesAdapter
     }

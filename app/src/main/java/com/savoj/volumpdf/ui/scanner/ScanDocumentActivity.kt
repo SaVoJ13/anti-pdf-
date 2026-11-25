@@ -116,27 +116,61 @@ class ScanDocumentActivity : AppCompatActivity() {
         binding.tvStatus.text = getString(R.string.scan_processing)
 
         val scanResult = GmsDocumentScanningResult.fromActivityResultIntent(intentData)
-        val pdfUri = scanResult?.pdf?.uri
+        // URI сторінок і PDF зчитуємо одразу з результату, поки він дійсний.
+        val pageUris = scanResult?.pages?.mapNotNull { it.imageUri } ?: emptyList()
+        val source = DocumentScannerLogic.chooseScanSource(pageUris, scanResult?.pdf?.uri)
 
-        if (pdfUri == null) {
+        if (source == null) {
             Toast.makeText(this, R.string.error_title, Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        val pageCount = scanResult.pages?.size ?: 1
+        val mlKitPageCount = scanResult?.pages?.size ?: 1
         lifecycleScope.launch {
             try {
                 val fileName = DocumentScannerLogic.generateScannedFileName()
-                val persistedFile = withContext(Dispatchers.IO) {
-                    DocumentScannerLogic.persistScannedPdf(this@ScanDocumentActivity, pdfUri, fileName)
+                val targetFile = File(File(filesDir, "scanned").apply { mkdirs() }, fileName)
+                val persistentUri = Uri.fromFile(targetFile)
+
+                var pageCount = mlKitPageCount
+                var done = false
+                if (source is DocumentScannerLogic.ScanSource.Images) {
+                    source.imageUris.forEach { uri ->
+                        SafUtils.takePersistableUriPermissionSafe(this@ScanDocumentActivity, uri)
+                    }
+                    val result = try {
+                        withContext(Dispatchers.IO) {
+                            engine.imagesToPdf(this@ScanDocumentActivity, source.imageUris, persistentUri)
+                        }
+                    } catch (e: Exception) {
+                        PdfOperationResult.Error(e, e.message ?: "")
+                    }
+                    if (result is PdfOperationResult.Success) {
+                        pageCount = result.pagesCount
+                        done = true
+                    } else {
+                        if (result is PdfOperationResult.Error) {
+                            ErrorMessages.report("ScanDocument", result.cause)
+                        }
+                        targetFile.delete()
+                        if (source.fallbackPdfUri == null) throw IllegalStateException("imagesToPdf failed")
+                    }
+                }
+                if (!done) {
+                    val pdfUri = when (source) {
+                        is DocumentScannerLogic.ScanSource.MlKitPdf -> source.pdfUri
+                        is DocumentScannerLogic.ScanSource.Images -> source.fallbackPdfUri!!
+                    }
+                    withContext(Dispatchers.IO) {
+                        DocumentScannerLogic.persistScannedPdf(this@ScanDocumentActivity, pdfUri, fileName)
+                    }
                 }
 
-                val persistentUri = Uri.fromFile(persistedFile)
                 val repository = (application as VolumPdfApp).repository
                 repository.recordDocumentOpened(this@ScanDocumentActivity, persistentUri, pageCount)
 
-                openScannedDocument(persistentUri, persistedFile.name)
+                openScannedDocument(persistentUri, targetFile.name)
             } catch (e: Exception) {
                 ErrorMessages.report("ScanDocument", e)
                 Toast.makeText(this@ScanDocumentActivity, ErrorMessages.forFailure(e, R.string.err_save_scan).resolve(this@ScanDocumentActivity), Toast.LENGTH_LONG).show()
